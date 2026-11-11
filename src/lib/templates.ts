@@ -1,20 +1,29 @@
-export interface TemplateField {
-  id: string;
-  label: string;
-  type: "text" | "number" | "date" | "textarea" | "select";
-  defaultValue?: string | number;
-  placeholder?: string;
+export interface InvoiceItem {
+  name: string;
+  quantity: number;
+  price: number;
+}
+
+export interface TemplateLocaleData {
+  title: string;
+  description: string;
+  badge?: string;
+  defaultData: any;
 }
 
 export interface TemplateDefinition {
   id: string;
   slug: string;
-  title: string;
   category: "Business" | "Education" | "Healthcare" | "Restaurant" | "Printables";
-  description: string;
   paperSize: "A4" | "POS_80MM";
   badge?: string;
+  title: string;
+  description: string;
   defaultData: any;
+  locales: {
+    en: TemplateLocaleData;
+    bn: TemplateLocaleData;
+  };
 }
 
 export const INITIAL_TEMPLATES: TemplateDefinition[] = [
@@ -48,6 +57,62 @@ export const INITIAL_TEMPLATES: TemplateDefinition[] = [
       notes: "Thank you for shopping with us! For return or exchange, please notify us within 48 hours of parcel delivery.",
       signatoryTitle: "Authorized Signature",
     },
+    locales: {
+      en: {
+        title: "Facebook Shop & F-Commerce Cash Memo",
+        description: "Perfect for online sellers, Facebook clothing & gadget shops. Includes customer address, courier note, and payment status.",
+        badge: "Most Popular in BD",
+        defaultData: {
+          businessName: "Stylist Fashion BD",
+          tagline: "Quality Products Delivered to Your Doorstep",
+          phone: "+880 1712-345678",
+          address: "Dhanmondi, Dhaka - 1205",
+          invoiceNumber: "INV-2026-089",
+          date: "2026-11-11",
+          customerName: "Md. Tanvir Ahmed",
+          customerPhone: "+880 1819-987654",
+          customerAddress: "House 14, Road 5, Mirpur-10, Dhaka",
+          courierPartner: "Steadfast Courier",
+          currency: "৳",
+          items: [
+            { name: "Premium Cotton Formal Shirt (L)", quantity: 2, price: 1250 },
+            { name: "Slim Fit Chino Pant (32)", quantity: 1, price: 1450 },
+          ],
+          deliveryCharge: 120,
+          discount: 100,
+          paidAmount: 500,
+          notes: "Thank you for shopping with us! For return or exchange, please notify us within 48 hours of parcel delivery.",
+          signatoryTitle: "Authorized Signature",
+        },
+      },
+      bn: {
+        title: "ফেসবুক শপ ও অনলাইন ক্যাশ মেমো",
+        description: "অনলাইন বিক্রেতা, ফেসবুক শপ ও বুটিকের জন্য আদর্শ ক্যাশ মেমো। ক্রেতার ঠিকানা, কুরিয়ার স্লিপ এবং বাকি টাকার হিসাব সহ।",
+        badge: "সবচেয়ে জনপ্রিয়",
+        defaultData: {
+          businessName: "স্টাইলিস্ট ফ্যাশন বিডি",
+          tagline: "সেরা মানের পোশাক আপনার ঘরের দোরগোড়ায়",
+          phone: "+৮৮০ ১৭১২-৩৪৫৬৭৮",
+          address: "ধানমন্ডি, ঢাকা - ১২০৫",
+          invoiceNumber: "মেমো-২০২৬-০৮৯",
+          date: "১১/১১/২০২৬",
+          customerName: "মোঃ তানভীর আহমেদ",
+          customerPhone: "+৮৮০ ১৮১৯-৯৮৭৬৫৪",
+          customerAddress: "বাসা ১৪, রোড ৫, মিরপুর-১০, ঢাকা",
+          courierPartner: "স্টিডফাস্ট কুরিয়ার",
+          currency: "৳",
+          items: [
+            { name: "প্রিমিয়াম কটন ফরমাল শার্ট (L)", quantity: 2, price: 1250 },
+            { name: "স্লিম ফিট চিনো প্যান্ট (৩২)", quantity: 1, price: 1450 },
+          ],
+          deliveryCharge: 120,
+          discount: 100,
+          paidAmount: 500,
+          notes: "আমাদের সাথে শপিং করার জন্য ধন্যবাদ! পার্সেল গ্রহণের ৪৮ ঘণ্টার মধ্যে এক্সচেঞ্জের সুযোগ রয়েছে।",
+          signatoryTitle: "অনুমোদিত স্বাক্ষর",
+        },
+      },
+    },
   },
   {
     id: "school-result-sheet",
@@ -80,6 +145,58 @@ export const INITIAL_TEMPLATES: TemplateDefinition[] = [
       signatory1: "Class Teacher",
       signatory2: "Headmaster / Principal",
     },
+    locales: {
+      en: {
+        title: "School / Coaching Center Result & Marksheet",
+        description: "Format for academic evaluations, quarterly examinations, and coaching center progress cards with GPA calculation.",
+        badge: "Schools & Madrasahs",
+        defaultData: {
+          instituteName: "Dhaka Ideal Academic Care",
+          tagline: "Inspiring Excellence in Education",
+          phone: "+880 2-9876543",
+          address: "Sector 4, Uttara, Dhaka",
+          examTitle: "Annual Examination - 2026",
+          studentName: "Sadia Rahman",
+          rollNo: "12",
+          classGrade: "Class 9 (Science)",
+          academicYear: "2026",
+          date: "2026-11-11",
+          subjects: [
+            { name: "Bangla", marks: 88, fullMarks: 100, grade: "A+" },
+            { name: "English", marks: 82, fullMarks: 100, grade: "A+" },
+            { name: "General Mathematics", marks: 95, fullMarks: 100, grade: "A+" },
+          ],
+          remarks: "Excellent academic performance and analytical skills.",
+          signatory1: "Class Teacher",
+          signatory2: "Headmaster / Principal",
+        },
+      },
+      bn: {
+        title: "বিদ্যালয় ও কোচিং সেন্টার ফলাফল ও নম্বরপত্র",
+        description: "বার্ষিক পরীক্ষা, সেমিস্টার মূল্যায়ন এবং প্রগ্রেস রিপোর্টের জন্য প্রমিত মার্কশিট ফরম্যাট।",
+        badge: "বিদ্যালয় ও মাদ্রাসা",
+        defaultData: {
+          instituteName: "ঢাকা আইডিয়াল একাডেমিক কেয়ার",
+          tagline: "শিক্ষায় উৎকর্ষ ও নৈতিকতার অঙ্গীকার",
+          phone: "+৮৮০ ২-৯৮৭৬৫৪৩",
+          address: "সেক্টর ৪, উত্তরা, ঢাকা",
+          examTitle: "বার্ষিক পরীক্ষা - ২০২৬",
+          studentName: "সাদিয়া রহমান",
+          rollNo: "১২",
+          classGrade: "নবম শ্রেণি (বিজ্ঞান শাখা)",
+          academicYear: "২০২৬",
+          date: "১১/১১/২০২৬",
+          subjects: [
+            { name: "বাংলা", marks: 88, fullMarks: 100, grade: "A+" },
+            { name: "ইংরেজি", marks: 82, fullMarks: 100, grade: "A+" },
+            { name: "সাধারণ গণিত", marks: 95, fullMarks: 100, grade: "A+" },
+          ],
+          remarks: "মেধা ও শৃঙ্খলার চমৎকার স্বাক্ষর রেখেছে। উত্তরোত্তর সাফল্য কামনা করি।",
+          signatory1: "শ্রেণি শিক্ষক",
+          signatory2: "প্রধান শিক্ষক / অধ্যক্ষ",
+        },
+      },
+    },
   },
   {
     id: "doctor-prescription",
@@ -105,10 +222,61 @@ export const INITIAL_TEMPLATES: TemplateDefinition[] = [
       medicines: [
         { name: "Tab. Napa Extra 665mg", dosage: "1 + 0 + 1 (After Meal)", duration: "5 Days" },
         { name: "Tab. Fexo 120mg", dosage: "0 + 0 + 1 (At Night)", duration: "7 Days" },
-        { name: "Syr. Adrylex", dosage: "2 Teaspoon 3 times daily", duration: "5 Days" },
       ],
-      advice: "Drink plenty of warm water. Avoid cold drinks and dust. Return for follow-up if symptoms persist after 5 days.",
+      advice: "Drink plenty of warm water. Avoid dust. Follow up after 5 days.",
       signatoryTitle: "Doctor's Signature & Seal",
+    },
+    locales: {
+      en: {
+        title: "Doctor & Clinic Prescription Pad (Rx)",
+        description: "Professional doctor prescription layout with patient vitals, diagnosis, medicines with dosage instructions, and advice.",
+        badge: "Clinics & Doctors",
+        defaultData: {
+          doctorName: "Dr. Farhana Yasmin, MBBS, FCPS",
+          degrees: "Specialist in Internal Medicine & Diabetes Care",
+          regNo: "BMDC Reg No: A-54321",
+          hospitalName: "Popular Diagnostic & Care Center",
+          phone: "+880 1911-223344",
+          date: "2026-11-11",
+          patientName: "Kamal Hossain",
+          patientAge: "45 Yrs",
+          patientGender: "Male",
+          patientWeight: "68 kg",
+          bp: "125/85 mmHg",
+          complaints: "Mild fever and dry cough for 3 days.",
+          medicines: [
+            { name: "Tab. Napa Extra 665mg", dosage: "1 + 0 + 1 (After Meal)", duration: "5 Days" },
+            { name: "Tab. Fexo 120mg", dosage: "0 + 0 + 1 (At Night)", duration: "7 Days" },
+          ],
+          advice: "Drink plenty of warm water. Avoid dust. Follow up after 5 days.",
+          signatoryTitle: "Doctor's Signature & Seal",
+        },
+      },
+      bn: {
+        title: "ডাক্তার ও ক্লিনিকের ব্যবস্থাপত্র (প্রেসক্রিপশন)",
+        description: "রোগীর শারীরিক বিবরণ, ওষুধের তালিকা ও সেবনবিধি এবং ডাক্তারের পরামর্শ সংবলিত প্রফেশনাল প্রেসক্রিপশন।",
+        badge: "ক্লিনিক ও ডাক্তার",
+        defaultData: {
+          doctorName: "ডাঃ ফারহানা ইয়াসমিন, এমবিবিএস, এফসিপিএস",
+          degrees: "মেডিসিন ও ডায়াবেটিস বিশেষজ্ঞ",
+          regNo: "বিএমডিসি রেজি নং: এ-৫৪৩২১",
+          hospitalName: "পপুলার ডায়াগনস্টিক ও কেয়ার সেন্টার",
+          phone: "+৮৮০ ১৯১১-২২৩৩৪৪",
+          date: "১১/১১/২০২৬",
+          patientName: "কামাল হোসেন",
+          patientAge: "৪৫ বছর",
+          patientGender: "পুরুষ",
+          patientWeight: "৬৮ কেজি",
+          bp: "১২৫/৮৫ মিমি",
+          complaints: "৩ দিন যাবত হালকা জ্বর ও শুকনো কাশি।",
+          medicines: [
+            { name: "ট্যাব. নাপা এক্সট্রা ৬৬৫মিগ্রা", dosage: "১ + ০ + ১ (খাবারের পর)", duration: "৫ দিন" },
+            { name: "ট্যাব. ফেক্সো ১২০মিগ্রা", dosage: "০ + ০ + ১ (রাতে)", duration: "৭ দিন" },
+          ],
+          advice: "পর্যাপ্ত কুসুম গরম পানি পান করুন। ধুলাবালি এড়িয়ে চলুন। ৫ দিন পর পুনরায় যোগাযোগ করবেন।",
+          signatoryTitle: "ডাক্তারের স্বাক্ষর ও সিল",
+        },
+      },
     },
   },
   {
@@ -132,12 +300,61 @@ export const INITIAL_TEMPLATES: TemplateDefinition[] = [
         { name: "Chicken Dum Biryani (Spl)", quantity: 2, price: 380 },
         { name: "Chicken Reshmi Kebab (4pc)", quantity: 1, price: 420 },
         { name: "Butter Naan", quantity: 3, price: 60 },
-        { name: "Mint Borhani (Glass)", quantity: 2, price: 90 },
       ],
       vatPercent: 5,
       serviceCharge: 50,
       discount: 0,
       footerMessage: "Thank you for dining with us! Please visit again.",
+    },
+    locales: {
+      en: {
+        title: "Restaurant & Cafe Food Bill (Thermal Receipt)",
+        description: "Dine-in and takeaway food receipt formatted for standard 80mm POS thermal printers.",
+        badge: "Thermal 80mm",
+        defaultData: {
+          restaurantName: "Dhaba & BBQ Nights",
+          branch: "Banani Branch, Road 11",
+          phone: "+880 1788-990011",
+          billNo: "BILL-5491",
+          tableNo: "Table 04",
+          waiter: "Sujon",
+          date: "2026-11-11 15:30",
+          currency: "৳",
+          items: [
+            { name: "Chicken Dum Biryani (Spl)", quantity: 2, price: 380 },
+            { name: "Chicken Reshmi Kebab (4pc)", quantity: 1, price: 420 },
+            { name: "Butter Naan", quantity: 3, price: 60 },
+          ],
+          vatPercent: 5,
+          serviceCharge: 50,
+          discount: 0,
+          footerMessage: "Thank you for dining with us! Please visit again.",
+        },
+      },
+      bn: {
+        title: "রেস্তোরাঁ ও ক্যাফে ফুড বিল (থার্মাল পিওএস রসিদ)",
+        description: "৮০মিমি থার্মাল পিওএস প্রিন্টারের উপযোগী ডাইন-ইন ও টেকঅ্যাওয়ে খাবারের বিল।",
+        badge: "থার্মাল ৮০মিমি",
+        defaultData: {
+          restaurantName: "ঢাবা অ্যান্ড বারবিকিউ নাইটস",
+          branch: "বনানী শাখা, রোড ১১",
+          phone: "+৮৮০ ১৭৮৮-৯৯০০১১",
+          billNo: "বিল-৫৪৯১",
+          tableNo: "টেবিল ০৪",
+          waiter: "সুজন",
+          date: "১১/১১/২০২৬ ১৫:৩০",
+          currency: "৳",
+          items: [
+            { name: "চিকেন দম বিরিয়ানি (স্পেশাল)", quantity: 2, price: 380 },
+            { name: "চিকেন রেশমি কাবাব (৪ পিস)", quantity: 1, price: 420 },
+            { name: "বাটার নান", quantity: 3, price: 60 },
+          ],
+          vatPercent: 5,
+          serviceCharge: 50,
+          discount: 0,
+          footerMessage: "আমাদের রেস্তোরাঁয় আসার জন্য ধন্যবাদ! আবার আসবেন।",
+        },
+      },
     },
   },
   {
@@ -155,15 +372,40 @@ export const INITIAL_TEMPLATES: TemplateDefinition[] = [
       topPriorities: [
         "Complete client invoice template review",
         "Publish 3 social media product posts",
-        "Review weekly budget and profit sheet",
       ],
-      schedule: [
-        { time: "09:00 AM", task: "Review order messages & packing list" },
-        { time: "11:30 AM", task: "Dispatch courier parcels" },
-        { time: "02:00 PM", task: "Inventory check & supplier coordination" },
-        { time: "05:00 PM", task: "Customer support & review replies" },
-      ],
-      notes: "Remember to drink 8 glasses of water and take 15 min walking break.",
+      notes: "Remember to drink 8 glasses of water.",
+    },
+    locales: {
+      en: {
+        title: "Daily Focus & Habit Tracker (Printable)",
+        description: "Aesthetic minimal daily planner for students and professionals.",
+        badge: "Lifestyle & Study",
+        defaultData: {
+          title: "Daily Focus & Master Plan",
+          date: "2026-11-11",
+          quote: "Small daily improvements over time lead to stunning results.",
+          topPriorities: [
+            "Complete client invoice template review",
+            "Publish 3 social media product posts",
+          ],
+          notes: "Remember to drink 8 glasses of water.",
+        },
+      },
+      bn: {
+        title: "দৈনন্দিন কাজের রুটিন ও অভ্যাস ট্র্যাকার",
+        description: "ছাত্র ও পেশাজীবীদের জন্য নান্দনিক ও কার্যকর দৈনিক দিনলিপি।",
+        badge: "লাইফস্টাইল ও স্টাডি",
+        defaultData: {
+          title: "আজকের মূল লক্ষ্য ও কর্মপরিকল্পনা",
+          date: "১১/১১/২০২৬",
+          quote: "প্রতিদিনের ছোট ছোট ইতিবাচক পরিবর্তনই একসময় অভাবনীয় সাফল্য আনে।",
+          topPriorities: [
+            "ক্লায়েন্ট ইনভয়েস টেমপ্লেট রিভিউ সম্পন্ন করা",
+            "সোশ্যাল মিডিয়ায় পণ্য সংক্রান্ত ৩টি পোস্ট দেওয়া",
+          ],
+          notes: "দিনে অন্তত ৮ গ্লাস পানি পান করুন এবং বিশ্রাম নিন।",
+        },
+      },
     },
   },
 ];

@@ -35,8 +35,8 @@ async function TemplateContent({
       {/* Top Header AdSense (Hidden until approved) */}
       <AdSenseSlot slotId="template-top-ad" format="horizontal" className="print:hidden" />
 
-      {/* The Core Interactive Editor Component with Voice Input */}
-      <InvoiceEditor initialData={template.defaultData} />
+      {/* The Core Interactive Editor Component with Voice Input & Independent Doc Language */}
+      <InvoiceEditor initialData={template.defaultData} locales={template.locales} />
     </>
   );
 }
