@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { GlobalSettingsProvider } from "@/context/GlobalSettingsContext";
 
 export const metadata: Metadata = {
   title: "FreeDocForge.com - Free Smart Business Invoices, School Marksheets & Printables",
@@ -24,10 +25,10 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full antialiased" suppressHydrationWarning>
       <body
-        className="min-h-full flex flex-col bg-slate-50 text-slate-900 font-sans"
+        className="min-h-full flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-200"
         suppressHydrationWarning
       >
-        {children}
+        <GlobalSettingsProvider>{children}</GlobalSettingsProvider>
       </body>
     </html>
   );

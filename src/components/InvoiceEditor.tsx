@@ -77,20 +77,20 @@ export default function InvoiceEditor({ initialData, isUserSaved = false }: { in
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
       {/* LEFT COLUMN: Input Form Controls (Hidden during printing) */}
-      <div className="lg:col-span-5 bg-white border border-gray-200 rounded-xl p-6 shadow-sm print:hidden space-y-6">
-        <div className="flex items-center justify-between border-b pb-4">
+      <div className="lg:col-span-5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl p-6 shadow-sm print:hidden space-y-6 transition-colors">
+        <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-800 pb-4">
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Document Settings</h2>
-            <p className="text-xs text-gray-500">Edit business & customer info to update the live preview.</p>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Document Settings</h2>
+            <p className="text-xs text-gray-500 dark:text-slate-400">Edit business & customer info to update the live preview.</p>
           </div>
-          <span className="text-xs bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full font-semibold">
+          <span className="text-xs bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 px-2.5 py-1 rounded-full font-semibold">
             Instant Free PDF
           </span>
         </div>
 
         {/* Business Details */}
         <div className="space-y-3">
-          <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider block">
+          <label className="text-xs font-semibold text-gray-700 dark:text-slate-300 uppercase tracking-wider block">
             1. Your Business / Shop Details
           </label>
           <div className="grid grid-cols-2 gap-3">
@@ -98,7 +98,7 @@ export default function InvoiceEditor({ initialData, isUserSaved = false }: { in
               <input
                 type="text"
                 placeholder="Shop / Company Name"
-                className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="w-full text-sm border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 value={data.businessName}
                 onChange={(e) => setData({ ...data, businessName: e.target.value })}
               />

@@ -19,19 +19,19 @@ export default async function TemplatePage({ params }: { params: Promise<{ slug:
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-100 text-slate-900">
+    <div className="min-h-screen flex flex-col bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200">
       <Navbar />
 
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
         {/* Breadcrumb & Title */}
         <div className="mb-6 print:hidden">
-          <div className="flex items-center gap-2 text-xs text-slate-500 mb-2">
+          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mb-2">
             <span>Templates</span>
             <span>/</span>
-            <span className="font-semibold text-blue-600">{template.category}</span>
+            <span className="font-semibold text-blue-600 dark:text-blue-400">{template.category}</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900">{template.title}</h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-3xl">{template.description}</p>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{template.title}</h1>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-3xl">{template.description}</p>
         </div>
 
         {/* Top Header AdSense */}

@@ -2,6 +2,51 @@ export type Language = "en" | "bn";
 
 export const translations = {
   en: {
+    // Public Navigation
+    navTemplates: "Templates Gallery",
+    navInvoice: "Cash Memo & Invoice",
+    navSchools: "School Marksheets",
+    navPrescriptions: "Prescriptions",
+    navSignIn: "Sign In",
+    navSaveShop: "Save My Shop",
+    adminPanel: "Admin Panel",
+    userShop: "My Shop",
+
+    // Public Hero Section
+    heroBadge: "100% Free Instant Document & Printable Studio",
+    heroTitle1: "Create, Customize & Print",
+    heroTitle2: "Free Business Documents",
+    heroTitleSuffix: "in Seconds.",
+    heroSubtitle:
+      "The all-in-one free document studio for Bangladeshi F-commerce shops, schools, doctors, and restaurants. No credit card, no watermarks, and no sign-up required.",
+    heroCta1: "Create Cash Memo Now",
+    heroCta2: "Browse All Templates",
+
+    // Feature Badges
+    featZeroWatermark: "Zero Watermark",
+    featZeroWatermarkDesc: "100% clean and professional PDF files.",
+    featBdtReady: "BDT (৳) Currency Ready",
+    featBdtReadyDesc: "Auto words converter & courier slips.",
+    featPaperSizes: "A4 & Thermal 80mm",
+    featPaperSizesDesc: "Prints on office printers and POS rolls.",
+    featFreeForever: "100% Free Forever",
+    featFreeForeverDesc: "Monetized ethically with display ads.",
+
+    // Catalog & Showcase
+    popularTemplates: "Popular Free Templates",
+    popularDesc: "Pick a template below, customize your details, and print instantly.",
+    viewAllCategories: "View All Categories",
+    customizeAndPrint: "Customize & Print",
+    sizeLabel: "Size",
+
+    // Business CTA Section
+    specialFcommerce: "Special for Small Business & F-Commerce",
+    shopCtaTitle: "Save Your Shop Logo, Address & Signature Once",
+    shopCtaDesc:
+      "Stop typing your phone number, logo, and terms every single time! Create a free account to save your shop preset. Every time a customer orders, just enter the items and hit print!",
+    createFreeAccount: "Create Free Shop Account",
+
+    // User Dashboard
     dashboardTitle: "Shop Dashboard",
     activeStatus: "Active Business",
     activeShop: "Active Shop",
@@ -17,7 +62,8 @@ export const translations = {
     userId: "User ID",
     shopAutomationActive: "Shop Automation Active",
     oneClickInvoiceReady: "1-Click Invoice & Memo Ready",
-    shopBannerDesc: "Whenever a customer orders on your Facebook page or phone, open any template and your shop details will auto-fill instantly!",
+    shopBannerDesc:
+      "Whenever a customer orders on your Facebook page or phone, open any template and your shop details will auto-fill instantly!",
     openReadyCashMemo: "Open Ready Cash Memo",
     defaultShopDetails: "My Default Shop Details",
     defaultShopDesc: "This information will automatically appear on all printed documents.",
@@ -31,13 +77,59 @@ export const translations = {
     instantLaunchers: "Instant Template Launchers",
     instantLaunchersDesc: "Click any template to auto-populate your shop details.",
     needCustomLayout: "Need a unique document layout?",
-    aiDesc: "Describe your custom format (e.g. specialized diagnostic slip or gate pass) and our AI will build the layout for your shop.",
+    aiDesc:
+      "Describe your custom format (e.g. specialized diagnostic slip or gate pass) and our AI will build the layout for your shop.",
     launchAiBtn: "Launch AI Assistant",
     themeToggle: "Theme",
     langToggle: "Language",
     closeMenu: "Close Menu",
   },
   bn: {
+    // Public Navigation
+    navTemplates: "টেমপ্লেট গ্যালারি",
+    navInvoice: "ক্যাশ মেমো ও ইনভয়েস",
+    navSchools: "স্কুল মার্কশিট",
+    navPrescriptions: "প্রেসক্রিপশন",
+    navSignIn: "লগইন",
+    navSaveShop: "শপ সেভ করুন",
+    adminPanel: "অ্যাডমিন প্যানেল",
+    userShop: "আমার দোকান",
+
+    // Public Hero Section
+    heroBadge: "১০০% ফ্রি স্মার্ট ডকুমেন্ট ও প্রিন্ট স্টুডিও",
+    heroTitle1: "কয়েক সেকেন্ডেই তৈরি ও প্রিন্ট করুন",
+    heroTitle2: "ফ্রি বিজনেস ডকুমেন্ট",
+    heroTitleSuffix: "বিনা খরচে।",
+    heroSubtitle:
+      "বাংলাদেশি ফেসবুক শপ, স্কুল, ডাক্তার ও রেস্তোরাঁর জন্য সম্পূর্ণ ফ্রি ডকুমেন্ট স্টুডিও। কোনো ক্রেডিট কার্ড বা সাইন-আপ ছাড়াই তাৎক্ষণিক প্রিন্ট করুন।",
+    heroCta1: "ক্যাশ মেমো তৈরি করুন",
+    heroCta2: "সকল টেমপ্লেট দেখুন",
+
+    // Feature Badges
+    featZeroWatermark: "কোনো ওয়াটারমার্ক নেই",
+    featZeroWatermarkDesc: "১০০% প্রফেশনাল ও পরিষ্কার PDF ফাইল।",
+    featBdtReady: "টাকা (৳) কারেন্সি সাপোর্ট",
+    featBdtReadyDesc: "স্বয়ংক্রিয় বাংলায় টাকায় কনভার্ট ও কুরিয়ার স্লিপ।",
+    featPaperSizes: "A4 ও থার্মাল ৮০মিমি",
+    featPaperSizesDesc: "সাধারণ প্রিন্টার ও পিওএস রোলে প্রিন্ট উপযোগী।",
+    featFreeForever: "আজীবন ১০০% ফ্রি",
+    featFreeForeverDesc: "অ্যাডসেন্স বিজ্ঞাপনের মাধ্যমে পরিচালিত।",
+
+    // Catalog & Showcase
+    popularTemplates: "জনপ্রিয় ফ্রি টেমপ্লেটসমূহ",
+    popularDesc: "যেকোনো টেমপ্লেট বেছে নিয়ে আপনার তথ্য বসিয়ে মুহূর্তেই প্রিন্ট করুন।",
+    viewAllCategories: "সব ক্যাটাগরি দেখুন",
+    customizeAndPrint: "এডিট ও প্রিন্ট করুন",
+    sizeLabel: "সাইজ",
+
+    // Business CTA Section
+    specialFcommerce: "ক্ষুদ্র ব্যবসা ও ফেসবুক শপের জন্য বিশেষ সুবিধা",
+    shopCtaTitle: "দোকানের লোগো, ঠিকানা ও স্বাক্ষর একবার সেভ রাখুন",
+    shopCtaDesc:
+      "প্রতিবার বারবার দোকানের নাম ও ঠিকানা টাইপ করার ঝামেলা দূর করুন। একটি ফ্রি অ্যাকাউন্ট বানিয়ে শপ প্রিসেট সেভ করে রাখুন। কাস্টমার অর্ডার করলেই ১ ক্লিকে মেমো প্রিন্ট করুন!",
+    createFreeAccount: "ফ্রি শপ অ্যাকাউন্ট খুলুন",
+
+    // User Dashboard
     dashboardTitle: "শপ ড্যাশবোর্ড",
     activeStatus: "ব্যবসায়িক প্রোফাইল সক্রিয়",
     activeShop: "চলতি দোকান",
@@ -53,7 +145,8 @@ export const translations = {
     userId: "ইউজার আইডি",
     shopAutomationActive: "দোকান অটোমেশন সক্রিয়",
     oneClickInvoiceReady: "১-ক্লিকে ইনভয়েস ও মেমো প্রস্তুত",
-    shopBannerDesc: "ফেসবুক পেজ বা ফোনে কাস্টমার অর্ডার করলেই যেকোনো টেমপ্লেট ওপেন করুন—আপনার দোকানের নাম, ফোন ও ঠিকানা স্বয়ংক্রিয়ভাবে বসে যাবে!",
+    shopBannerDesc:
+      "ফেসবুক পেজ বা ফোনে কাস্টমার অর্ডার করলেই যেকোনো টেমপ্লেট ওপেন করুন—আপনার দোকানের নাম, ফোন ও ঠিকানা স্বয়ংক্রিয়ভাবে বসে যাবে!",
     openReadyCashMemo: "ক্যাশ মেমো ওপেন করুন",
     defaultShopDetails: "দোকানের স্থায়ী তথ্য",
     defaultShopDesc: "এই তথ্যগুলো প্রতিটি প্রিন্ট করা ডকুমেন্টে স্বয়ংক্রিয়ভাবে প্রদর্শিত হবে।",
@@ -67,7 +160,8 @@ export const translations = {
     instantLaunchers: "তাৎক্ষণিক টেমপ্লেট ওপেন করুন",
     instantLaunchersDesc: "যেকোনো টেমপ্লেটে ক্লিক করে আপনার শপের তথ্যে প্রিন্ট করুন।",
     needCustomLayout: "ভিন্ন কোনো স্পেশাল ফরম্যাট প্রয়োজন?",
-    aiDesc: "আপনার কি বিশেষ কোনো মেমো বা স্লট প্রয়োজন? এআই দিয়ে সেকেন্ডে আপনার দোকানের উপযোগী ডিজাইন তৈরি করে নিন।",
+    aiDesc:
+      "আপনার কি বিশেষ কোনো মেমো বা স্লট প্রয়োজন? এআই দিয়ে সেকেন্ডে আপনার দোকানের উপযোগী ডিজাইন তৈরি করে নিন।",
     launchAiBtn: "এআই অ্যাসিস্ট্যান্ট চালু করুন",
     themeToggle: "থিম",
     langToggle: "ভাষা",

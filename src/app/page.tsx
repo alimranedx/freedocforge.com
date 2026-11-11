@@ -1,14 +1,19 @@
+"use client";
+
 import React from "react";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AdSenseSlot from "@/components/AdSenseSlot";
 import { INITIAL_TEMPLATES } from "@/lib/templates";
-import { Printer, Sparkles, CheckCircle2, ArrowRight, ShieldCheck, Zap, Heart } from "lucide-react";
+import { Printer, Sparkles, CheckCircle2, ArrowRight, ShieldCheck, Zap } from "lucide-react";
+import { useGlobalSettings } from "@/context/GlobalSettingsContext";
 
 export default function HomePage() {
+  const { t } = useGlobalSettings();
+
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900">
+    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200">
       <Navbar />
 
       {/* TOP LEADERBOARD ADSENSE UNIT */}
@@ -17,69 +22,71 @@ export default function HomePage() {
       </div>
 
       {/* HERO SECTION */}
-      <section className="relative overflow-hidden py-16 px-4 sm:px-6 lg:px-8 text-center max-w-5xl mx-auto">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold mb-6">
-          <Sparkles className="w-3.5 h-3.5" /> 100% Free Instant Document & Printable Studio
+      <section className="relative overflow-hidden py-12 sm:py-16 px-4 sm:px-6 lg:px-8 text-center max-w-5xl mx-auto">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 text-xs font-semibold mb-6 border border-blue-200 dark:border-blue-900">
+          <Sparkles className="w-3.5 h-3.5" /> {t("heroBadge")}
         </div>
-        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-slate-900 leading-tight">
-          Create, Customize & Print <br />
-          <span className="text-blue-600">Free Business Documents</span> in Seconds.
+        <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight text-slate-900 dark:text-white leading-tight">
+          {t("heroTitle1")} <br />
+          <span className="text-blue-600 dark:text-blue-400">{t("heroTitle2")}</span> {t("heroTitleSuffix")}
         </h1>
-        <p className="mt-5 text-base sm:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
-          The all-in-one free document studio for Bangladeshi F-commerce shops, schools, doctors, and restaurants.
-          No credit card, no watermarks, and no sign-up required.
+        <p className="mt-5 text-sm sm:text-base lg:text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed">
+          {t("heroSubtitle")}
         </p>
 
         {/* Action Buttons */}
         <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
           <Link
             href="/templates/f-commerce-invoice"
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-3.5 rounded-xl shadow-md transition text-sm"
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-3.5 rounded-xl shadow-md transition text-sm cursor-pointer"
           >
-            <Printer className="w-4 h-4" /> Create Cash Memo Now
+            <Printer className="w-4 h-4" /> {t("heroCta1")}
           </Link>
           <Link
             href="/templates"
-            className="flex items-center gap-2 bg-white hover:bg-slate-100 text-slate-800 font-bold px-6 py-3.5 rounded-xl border border-slate-300 shadow-sm transition text-sm"
+            className="flex items-center gap-2 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold px-6 py-3.5 rounded-xl border border-slate-300 dark:border-slate-800 shadow-xs transition text-sm cursor-pointer"
           >
-            Browse All Templates <ArrowRight className="w-4 h-4" />
+            {t("heroCta2")} <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
 
         {/* Feature Badges */}
         <div className="mt-12 grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-3xl mx-auto text-left">
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 mb-2" />
-            <h4 className="text-xs font-bold text-slate-900">Zero Watermark</h4>
-            <p className="text-[11px] text-slate-500">100% clean and professional PDF files.</p>
+          <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs transition-colors">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 mb-2" />
+            <h4 className="text-xs font-bold text-slate-900 dark:text-white">{t("featZeroWatermark")}</h4>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">{t("featZeroWatermarkDesc")}</p>
           </div>
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs transition-colors">
             <Zap className="w-5 h-5 text-amber-500 mb-2" />
-            <h4 className="text-xs font-bold text-slate-900">BDT (৳) Currency Ready</h4>
-            <p className="text-[11px] text-slate-500">Auto words converter & courier slips.</p>
+            <h4 className="text-xs font-bold text-slate-900 dark:text-white">{t("featBdtReady")}</h4>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">{t("featBdtReadyDesc")}</p>
           </div>
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-            <Printer className="w-5 h-5 text-blue-600 mb-2" />
-            <h4 className="text-xs font-bold text-slate-900">A4 & Thermal 80mm</h4>
-            <p className="text-[11px] text-slate-500">Prints on office printers and POS rolls.</p>
+          <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs transition-colors">
+            <Printer className="w-5 h-5 text-blue-600 dark:text-blue-400 mb-2" />
+            <h4 className="text-xs font-bold text-slate-900 dark:text-white">{t("featPaperSizes")}</h4>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">{t("featPaperSizesDesc")}</p>
           </div>
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-            <ShieldCheck className="w-5 h-5 text-purple-600 mb-2" />
-            <h4 className="text-xs font-bold text-slate-900">100% Free Forever</h4>
-            <p className="text-[11px] text-slate-500">Monetized ethically with display ads.</p>
+          <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs transition-colors">
+            <ShieldCheck className="w-5 h-5 text-purple-600 dark:text-purple-400 mb-2" />
+            <h4 className="text-xs font-bold text-slate-900 dark:text-white">{t("featFreeForever")}</h4>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">{t("featFreeForeverDesc")}</p>
           </div>
         </div>
       </section>
 
       {/* TEMPLATE SHOWCASE / CATALOG */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 border-b border-slate-200 pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 border-b border-slate-200 dark:border-slate-800 pb-4">
           <div>
-            <h2 className="text-2xl font-black text-slate-900">Popular Free Templates</h2>
-            <p className="text-sm text-slate-500 mt-1">Pick a template below, customize your details, and print instantly.</p>
+            <h2 className="text-2xl font-black text-slate-900 dark:text-white">{t("popularTemplates")}</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{t("popularDesc")}</p>
           </div>
-          <Link href="/templates" className="text-xs font-bold text-blue-600 hover:underline mt-2 sm:mt-0 flex items-center gap-1">
-            View All Categories <ArrowRight className="w-3.5 h-3.5" />
+          <Link
+            href="/templates"
+            className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline mt-2 sm:mt-0 flex items-center gap-1"
+          >
+            {t("viewAllCategories")} <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
 
@@ -87,34 +94,36 @@ export default function HomePage() {
           {INITIAL_TEMPLATES.map((tmpl) => (
             <div
               key={tmpl.id}
-              className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition flex flex-col justify-between group"
+              className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-xs hover:shadow-md transition flex flex-col justify-between group"
             >
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2.5 py-1 rounded-md">
                     {tmpl.category}
                   </span>
                   {tmpl.badge && (
-                    <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
+                    <span className="text-[10px] font-bold bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded-full">
                       {tmpl.badge}
                     </span>
                   )}
                 </div>
-                <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-600 transition">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">
                   {tmpl.title}
                 </h3>
-                <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
                   {tmpl.description}
                 </p>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
-                <span className="text-[11px] text-slate-400 font-medium">Format: {tmpl.paperSize}</span>
+              <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                  {t("sizeLabel")}: {tmpl.paperSize}
+                </span>
                 <Link
                   href={`/templates/${tmpl.slug}`}
-                  className="inline-flex items-center gap-1 text-xs font-bold bg-slate-900 hover:bg-blue-600 text-white px-3.5 py-2 rounded-lg transition shadow-sm"
+                  className="inline-flex items-center gap-1 text-xs font-bold bg-slate-900 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-700 text-white px-3.5 py-2 rounded-lg transition shadow-xs"
                 >
-                  Customize & Print <ArrowRight className="w-3.5 h-3.5" />
+                  {t("customizeAndPrint")} <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
             </div>
@@ -128,23 +137,23 @@ export default function HomePage() {
       </div>
 
       {/* WHY REGISTER? (FOR F-COMMERCE & BUSINESS OWNERS) */}
-      <section className="bg-blue-600 text-white py-14 px-4 sm:px-6 lg:px-8 my-8">
+      <section className="bg-blue-600 dark:bg-blue-700 text-white py-14 px-4 sm:px-6 lg:px-8 my-8">
         <div className="max-w-5xl mx-auto text-center space-y-4">
-          <span className="inline-block bg-blue-500 text-white text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full">
-            Special for Small Business & F-Commerce
+          <span className="inline-block bg-blue-500 dark:bg-blue-800 text-white text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full">
+            {t("specialFcommerce")}
           </span>
-          <h2 className="text-3xl sm:text-4xl font-black">
-            Save Your Shop Logo, Address & Signature Once
+          <h2 className="text-2xl sm:text-4xl font-black">
+            {t("shopCtaTitle")}
           </h2>
-          <p className="text-blue-100 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed">
-            Stop typing your phone number, logo, and terms every single time! Create a free account to save your shop preset. Every time a customer orders, just enter the items and hit print!
+          <p className="text-blue-100 text-xs sm:text-base max-w-2xl mx-auto leading-relaxed">
+            {t("shopCtaDesc")}
           </p>
           <div className="pt-4">
             <Link
               href="/register"
-              className="inline-flex items-center gap-2 bg-white text-blue-700 hover:bg-blue-50 font-bold px-7 py-3.5 rounded-xl shadow-lg transition text-sm"
+              className="inline-flex items-center gap-2 bg-white text-blue-700 hover:bg-blue-50 font-bold px-7 py-3.5 rounded-xl shadow-lg transition text-xs sm:text-sm"
             >
-              <Sparkles className="w-4 h-4 text-blue-600" /> Create Free Shop Account
+              <Sparkles className="w-4 h-4 text-blue-600" /> {t("createFreeAccount")}
             </Link>
           </div>
         </div>
