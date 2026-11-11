@@ -28,6 +28,7 @@ export default function InvoiceEditor({
   initialData,
   locales,
   isUserSaved = false,
+  templateSlug = "f-commerce-invoice",
 }: {
   initialData: any;
   locales?: {
@@ -35,6 +36,7 @@ export default function InvoiceEditor({
     bn: { defaultData: any; title: string; description: string };
   };
   isUserSaved?: boolean;
+  templateSlug?: string;
 }) {
   // 1. SYSTEM LANGUAGE (Controls Website UI Chrome from Navbar)
   const { lang: sysLang } = useGlobalSettings();
@@ -816,7 +818,19 @@ export default function InvoiceEditor({
 
                 <div className="text-right space-y-1">
                   <span className="inline-block bg-gray-900 text-white font-black tracking-widest text-xs sm:text-sm px-4 py-1.5 uppercase rounded-sm">
-                    {docLang === "bn" ? "ক্যাশ মেমো" : "CASH MEMO"}
+                    {templateSlug.includes("chalan")
+                      ? docLang === "bn" ? "ডেলিভারি চালান" : "DELIVERY CHALAN"
+                      : templateSlug.includes("quotation")
+                      ? docLang === "bn" ? "কোটেশন ও এস্টিমেট" : "QUOTATION"
+                      : templateSlug.includes("warranty")
+                      ? docLang === "bn" ? "ওয়ারেন্টি ইনভয়েস" : "WARRANTY INVOICE"
+                      : templateSlug.includes("rent")
+                      ? docLang === "bn" ? "ভাড়া রসিদ" : "RENT RECEIPT"
+                      : templateSlug.includes("pos")
+                      ? docLang === "bn" ? "পিওএস রসিদ" : "POS RECEIPT"
+                      : templateSlug.includes("boutique")
+                      ? docLang === "bn" ? "বুটিক মেমো" : "BOUTIQUE CASH MEMO"
+                      : docLang === "bn" ? "ক্যাশ মেমো" : "CASH MEMO"}
                   </span>
                   <p className="text-xs font-semibold text-gray-700 mt-2">
                     {docLang === "bn" ? "মেমো নং:" : "Invoice No:"}{" "}

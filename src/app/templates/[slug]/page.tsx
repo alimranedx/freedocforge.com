@@ -41,6 +41,7 @@ async function TemplateContent({
         category={template.category}
         title={template.title}
         description={template.description}
+        locales={template.locales}
       />
 
       {/* Top Header AdSense (Hidden until approved) */}
@@ -63,6 +64,7 @@ async function TemplateContent({
         <InvoiceEditor
           initialData={template.defaultData}
           locales={template.locales}
+          templateSlug={template.slug}
         />
       )}
     </>
