@@ -43,7 +43,7 @@ export default function AdminDashboardPage() {
 
         <div className="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl">
           <div className="flex items-center justify-between text-zinc-400 mb-2">
-            <span className="text-xs font-mono uppercase tracking-wider">Targeted Industries</span>
+            <span className="text-xs font-mono uppercase tracking-wider">Targeted Markets</span>
             <TrendingUp className="w-4 h-4 text-emerald-400" />
           </div>
           <div className="text-2xl font-black text-white">F-Commerce / BD</div>
@@ -54,7 +54,7 @@ export default function AdminDashboardPage() {
 
         <div className="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl">
           <div className="flex items-center justify-between text-zinc-400 mb-2">
-            <span className="text-xs font-mono uppercase tracking-wider">AdSense Status</span>
+            <span className="text-xs font-mono uppercase tracking-wider">AdSense Engine</span>
             <DollarSign className="w-4 h-4 text-amber-400" />
           </div>
           <div className="text-2xl font-black text-emerald-400">Ready</div>

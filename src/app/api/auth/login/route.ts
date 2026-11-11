@@ -33,7 +33,7 @@ export async function POST(req: Request) {
     const response = NextResponse.json({
       success: true,
       user: { id: user.id, name: user.name, email: user.email, role: user.role },
-      redirect: user.role === "ADMIN" ? "/admin" : "/dashboard",
+      redirect: user.role === "ADMIN" ? "/admin/dashboard" : "/dashboard",
     });
 
     response.cookies.set("auth_token", token, {

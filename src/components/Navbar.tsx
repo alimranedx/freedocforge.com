@@ -62,8 +62,8 @@ export default function Navbar() {
             <div className="flex items-center gap-2">
               {user.role === "ADMIN" ? (
                 <Link
-                  href="/admin"
-                  className="flex items-center gap-1 text-xs bg-purple-600 hover:bg-purple-700 text-white font-semibold px-3 py-2 rounded-lg transition"
+                  href="/admin/dashboard"
+                  className="flex items-center gap-1 text-xs bg-red-600 hover:bg-red-700 text-white font-semibold px-3 py-2 rounded-lg transition"
                 >
                   <Shield className="w-3.5 h-3.5" /> Admin Panel
                 </Link>

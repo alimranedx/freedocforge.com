@@ -11,10 +11,9 @@ import {
   BarChart3,
   LogOut,
   ExternalLink,
-  Sliders,
 } from "lucide-react";
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default function AdminDashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [admin, setAdmin] = useState<any>(null);
 
@@ -31,11 +30,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
-    window.location.href = "/login";
+    window.location.href = "/admin/login";
   };
 
   const navItems = [
-    { label: "Master Dashboard", href: "/admin", icon: BarChart3 },
+    { label: "Master Dashboard", href: "/admin/dashboard", icon: BarChart3 },
     { label: "Template CMS", href: "/admin/templates", icon: Layers },
     { label: "Registered Users", href: "/admin/users", icon: Users },
     { label: "AdSense & Monetization", href: "/admin/ads", icon: DollarSign },
@@ -43,7 +42,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="min-h-screen flex bg-zinc-950 text-zinc-100 font-sans">
-      {/* ADMIN SIDEBAR (Distinct Dark High-Tech Theme) */}
+      {/* ADMIN SIDEBAR (Dedicated Dark High-Tech Theme) */}
       <aside className="w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col justify-between shrink-0">
         <div>
           {/* Header */}

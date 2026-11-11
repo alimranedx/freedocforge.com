@@ -20,20 +20,24 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // 1. Strict Admin Route Protection
+  // 1. Dedicated Admin Auth Routes (/admin/login, /admin/registration)
+  if (pathname === "/admin/login" || pathname === "/admin/registration") {
+    if (session && session.role === "ADMIN") {
+      return NextResponse.redirect(new URL("/admin/dashboard", req.url));
+    }
+    return NextResponse.next();
+  }
+
+  // 2. Protected Admin Routes (/admin, /admin/dashboard, /admin/templates, etc.)
   if (pathname.startsWith("/admin")) {
-    if (!session) {
-      const loginUrl = new URL("/login", req.url);
+    if (!session || session.role !== "ADMIN") {
+      const loginUrl = new URL("/admin/login", req.url);
       loginUrl.searchParams.set("redirect", pathname);
       return NextResponse.redirect(loginUrl);
     }
-    if (session.role !== "ADMIN") {
-      // Regular users are barred from admin area
-      return NextResponse.redirect(new URL("/dashboard", req.url));
-    }
   }
 
-  // 2. Strict User Dashboard Protection
+  // 3. Protected User Dashboard Routes (/dashboard, /dashboard/shop-profile, etc.)
   if (pathname.startsWith("/dashboard")) {
     if (!session) {
       const loginUrl = new URL("/login", req.url);
@@ -42,17 +46,24 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // 3. Prevent logged-in users from visiting login/register again
-  if ((pathname === "/login" || pathname === "/register") && session) {
-    if (session.role === "ADMIN") {
-      return NextResponse.redirect(new URL("/admin", req.url));
+  // 4. Regular User Auth Routes (/login, /register)
+  if (pathname === "/login" || pathname === "/register") {
+    if (session) {
+      if (session.role === "ADMIN") {
+        return NextResponse.redirect(new URL("/admin/dashboard", req.url));
+      }
+      return NextResponse.redirect(new URL("/dashboard", req.url));
     }
-    return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/dashboard/:path*", "/login", "/register"],
+  matcher: [
+    "/admin/:path*",
+    "/dashboard/:path*",
+    "/login",
+    "/register",
+  ],
 };
