@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 
 interface AdSenseSlotProps {
   slotId?: string;
@@ -18,7 +18,17 @@ export default function AdSenseSlot({
   className = "",
   label = "Sponsor Advertisement",
 }: AdSenseSlotProps) {
-  // Completely hide the ad slot and all placeholders until approval
+  useEffect(() => {
+    if (ENABLE_ADS && typeof window !== "undefined") {
+      try {
+        ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
+      } catch (err) {
+        // Prevent crashing if AdSense is blocked by client browser or ad-blocker
+      }
+    }
+  }, []);
+
+  // Completely hide the ad slot and all placeholders until approved and enabled
   if (!ENABLE_ADS) {
     return null;
   }

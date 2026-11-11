@@ -15,6 +15,9 @@ import {
   Calendar,
   Clock,
   BookOpen,
+  Save,
+  BookmarkCheck,
+  Loader2,
 } from "lucide-react";
 import AdSenseSlot from "@/components/AdSenseSlot";
 import VoiceInputButton from "@/components/VoiceInputButton";
@@ -47,8 +50,34 @@ export default function SchoolTemplateEditor({
   const [savedSuccess, setSavedSuccess] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
-  // Auto-fill from user's active preset if available
+  const [docSaveLoading, setDocSaveLoading] = useState(false);
+  const [docSaveSuccess, setDocSaveSuccess] = useState(false);
+  const [docSaveMessage, setDocSaveMessage] = useState<string | null>(null);
+
+  // Auto-fill from user's active preset or load saved document
   useEffect(() => {
+    // 1. Check if user opened a saved document via ?docId=...
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const docId = params.get("docId");
+
+      if (docId) {
+        fetch(`/api/user/documents/${docId}`)
+          .then((res) => (res.ok ? res.json() : null))
+          .then((resData) => {
+            if (resData?.document?.dataJson) {
+              const saved = resData.document.dataJson;
+              setData((prev: any) => ({ ...prev, ...saved }));
+              if (saved.signatureUrl) setSignaturePreview(saved.signatureUrl);
+              if (saved.docLang) setDocLang(saved.docLang);
+            }
+          })
+          .catch(() => {});
+        return;
+      }
+    }
+
+    // 2. Load school preset from localStorage first
     const saved = localStorage.getItem("freedocforge_active_preset");
     if (saved) {
       try {
@@ -64,6 +93,24 @@ export default function SchoolTemplateEditor({
           if (p.signatureUrl) setSignaturePreview(p.signatureUrl);
         }
       } catch (e) {}
+    } else {
+      // 3. Fallback: Load saved preset from user cloud account
+      fetch("/api/user/profile")
+        .then((res) => (res.ok ? res.json() : null))
+        .then((resData) => {
+          if (resData?.profile) {
+            const p = resData.profile;
+            setData((prev: any) => ({
+              ...prev,
+              instituteName: p.businessName || prev.instituteName,
+              tagline: p.tagline || prev.tagline,
+              phone: p.phone || prev.phone,
+              address: p.address || prev.address,
+            }));
+            if (p.signatureUrl) setSignaturePreview(p.signatureUrl);
+          }
+        })
+        .catch(() => {});
     }
   }, []);
 
@@ -79,9 +126,108 @@ export default function SchoolTemplateEditor({
     window.print();
   };
 
-  const handleSaveToProfile = () => {
+  const handleSaveToProfile = async () => {
+    const presetData = {
+      businessName: data.instituteName || "",
+      tagline: data.tagline || "",
+      phone: data.phone || "",
+      address: data.address || "",
+      currency: "৳",
+      signatureUrl: signaturePreview || null,
+      presetType: "school",
+    };
+
+    localStorage.setItem("freedocforge_active_preset", JSON.stringify(presetData));
+
+    try {
+      await fetch("/api/user/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(presetData),
+      });
+    } catch (err) {
+      console.warn("Could not sync school profile to cloud:", err);
+    }
+
     setSavedSuccess(true);
     setTimeout(() => setSavedSuccess(false), 3000);
+  };
+
+  const handleSaveDocument = async () => {
+    setDocSaveLoading(true);
+    setDocSaveMessage(null);
+
+    const recipient = data.studentName ? `${data.studentName} (Roll: ${data.rollNumber || "1"})` : "Student";
+    const docNum = data.rollNumber ? `ROLL-${data.rollNumber}` : `ACAD-${Date.now().toString().slice(-5)}`;
+    const details = data.examName || "Academic Report Card";
+
+    const docPayload = {
+      templateSlug,
+      templateTitle: locales?.[docLang]?.title || data.instituteName || "School Template",
+      category: "Education",
+      documentNumber: docNum,
+      recipientName: recipient,
+      amountOrDetails: details,
+      status: "Saved",
+      dataJson: {
+        ...data,
+        signatureUrl: signaturePreview,
+        docLang,
+      },
+    };
+
+    // Save locally first
+    try {
+      const existing = JSON.parse(localStorage.getItem("freedocforge_history") || "[]");
+      const localItem = {
+        id: `local-${Date.now()}`,
+        ...docPayload,
+        date: new Date().toISOString().split("T")[0],
+      };
+      localStorage.setItem("freedocforge_history", JSON.stringify([localItem, ...existing]));
+    } catch (e) {}
+
+    // Persist to user cloud account
+    try {
+      const res = await fetch("/api/user/documents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(docPayload),
+      });
+
+      const resData = await res.json();
+      if (!res.ok) {
+        if (res.status === 401) {
+          setDocSaveMessage(
+            docLang === "bn"
+              ? "ব্রাউজারে সেভ হয়েছে! ক্লাউড হিস্ট্রির জন্য লগইন করুন।"
+              : "Saved in browser! Log in to save to your cloud account."
+          );
+        } else {
+          throw new Error(resData.error || "Failed to save");
+        }
+      } else {
+        setDocSaveMessage(
+          docLang === "bn"
+            ? "মার্কশিট সফলভাবে ক্লাউডে সংরক্ষিত হয়েছে!"
+            : "Academic document saved to your cloud history!"
+        );
+      }
+      setDocSaveSuccess(true);
+      setTimeout(() => {
+        setDocSaveSuccess(false);
+        setDocSaveMessage(null);
+      }, 4000);
+    } catch (err: any) {
+      setDocSaveMessage(err.message || "Saved locally");
+      setDocSaveSuccess(true);
+      setTimeout(() => {
+        setDocSaveSuccess(false);
+        setDocSaveMessage(null);
+      }, 4000);
+    } finally {
+      setDocSaveLoading(false);
+    }
   };
 
   // 1. Marksheet Subject handlers
@@ -497,6 +643,7 @@ export default function SchoolTemplateEditor({
 
           {/* Action Buttons */}
           <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
+            {/* 1. Print / Save as PDF */}
             <button
               onClick={handlePrint}
               className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-xs transition text-xs sm:text-sm cursor-pointer"
@@ -505,6 +652,38 @@ export default function SchoolTemplateEditor({
               {docLang === "bn" ? "মার্কশিট প্রিন্ট / PDF ডাউনলোড" : "Print Academic Sheet / Save PDF"}
             </button>
 
+            {/* 2. Save Document for Next Use (Cloud + Local) */}
+            <button
+              onClick={handleSaveDocument}
+              disabled={docSaveLoading}
+              className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl shadow-xs transition text-xs cursor-pointer disabled:opacity-50"
+            >
+              {docSaveLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>{docLang === "bn" ? "সংরক্ষণ হচ্ছে..." : "Saving..."}</span>
+                </>
+              ) : docSaveSuccess ? (
+                <>
+                  <BookmarkCheck className="w-4 h-4 text-white" />
+                  <span>{docLang === "bn" ? "মার্কশিট সংরক্ষিত হয়েছে!" : "Academic Sheet Saved!"}</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  <span>{docLang === "bn" ? "পরবর্তী ব্যবহারের জন্য মার্কশিট সেভ রাখুন" : "Save Academic Sheet for Next Use"}</span>
+                </>
+              )}
+            </button>
+
+            {/* Feedback notice for document save */}
+            {docSaveMessage && (
+              <div className="text-[11px] text-center font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 p-2 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                {docSaveMessage}
+              </div>
+            )}
+
+            {/* 3. Save Institute Profile Preset */}
             <button
               onClick={handleSaveToProfile}
               className="w-full flex items-center justify-center gap-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-medium py-2.5 rounded-xl transition text-xs cursor-pointer"
@@ -517,7 +696,7 @@ export default function SchoolTemplateEditor({
               ) : (
                 <>
                   <GraduationCap className="w-4 h-4" />
-                  {docLang === "bn" ? "প্রতিষ্ঠানের প্রিসেট সেভ রাখুন" : "Save Institute Profile Preset"}
+                  {docLang === "bn" ? "প্রতিষ্ঠানের লেটারহেড প্রিসেট সেভ রাখুন" : "Save Institute Profile Preset"}
                 </>
               )}
             </button>

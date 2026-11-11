@@ -83,26 +83,70 @@ export default function SavedDocumentsHistoryPage() {
   const [history, setHistory] = useState<HistoryItem[]>(DEFAULT_DEMO_HISTORY);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<"all" | "Business" | "Education" | "Healthcare">("all");
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Load from localStorage if user generated real docs
-    const saved = localStorage.getItem("freedocforge_history");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setHistory(parsed);
+    // 1. Fetch user documents from cloud API
+    fetch("/api/user/documents")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && Array.isArray(data.documents) && data.documents.length > 0) {
+          const cloudDocs: HistoryItem[] = data.documents.map((d: any) => ({
+            id: d.id,
+            templateSlug: d.templateSlug,
+            templateTitle: d.templateTitle,
+            category: d.category as any,
+            documentNumber: d.documentNumber,
+            recipientName: d.recipientName || "Valued Recipient",
+            amountOrDetails: d.amountOrDetails || "Preset Record",
+            date: new Date(d.createdAt).toISOString().split("T")[0],
+            status: (d.status || "Saved") as any,
+          }));
+          setHistory(cloudDocs);
+        } else {
+          // 2. Fallback to localStorage if offline / no cloud records
+          const saved = localStorage.getItem("freedocforge_history");
+          if (saved) {
+            try {
+              const parsed = JSON.parse(saved);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                setHistory(parsed);
+              }
+            } catch (e) {
+              console.error("History parse error", e);
+            }
+          }
         }
-      } catch (e) {
-        console.error("History parse error", e);
-      }
-    }
+      })
+      .catch(() => {
+        // Fallback to localStorage
+        const saved = localStorage.getItem("freedocforge_history");
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setHistory(parsed);
+            }
+          } catch (e) {}
+        }
+      })
+      .finally(() => setIsLoading(false));
   }, []);
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
+    // Optimistic UI removal
     const updated = history.filter((item) => item.id !== id);
     setHistory(updated);
     localStorage.setItem("freedocforge_history", JSON.stringify(updated));
+
+    // Delete from cloud backend API
+    try {
+      await fetch(`/api/user/documents/${id}`, {
+        method: "DELETE",
+      });
+    } catch (err) {
+      console.warn("Could not delete from cloud:", err);
+    }
   };
 
   const filteredHistory = history.filter((item) => {
@@ -242,11 +286,15 @@ export default function SavedDocumentsHistoryPage() {
 
                   <div className="flex items-center gap-2 w-full sm:w-auto justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-800">
                     <Link
-                      href={`/templates/${item.templateSlug}`}
+                      href={
+                        item.id.startsWith("hist-")
+                          ? `/templates/${item.templateSlug}`
+                          : `/templates/${item.templateSlug}?docId=${item.id}`
+                      }
                       className="flex items-center gap-1.5 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2 rounded-xl transition shadow-xs"
                     >
                       <Printer className="w-3.5 h-3.5" />
-                      <span>{lang === "bn" ? "রি-প্রিন্ট" : "Re-Print"}</span>
+                      <span>{lang === "bn" ? "রি-প্রিন্ট / এডিট" : "Re-Print / Edit"}</span>
                     </Link>
 
                     <button

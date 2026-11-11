@@ -22,8 +22,11 @@ enum PaperSize {
 model User {
   id              String                @id @default(cuid())
   name            String
-  email           String                @unique
-  password        String
+  email           String?               @unique
+  phone           String?               @unique
+  password        String?
+  googleId        String?               @unique
+  avatarUrl       String?               @db.Text
   role            Role                  @default(USER)
   aiQuota         Int                   @default(5)
   profiles        OrganizationProfile[]
@@ -77,14 +80,21 @@ model Template {
 }
 
 model SavedDocument {
-  id             String               @id @default(cuid())
-  userId         String?
-  user           User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
-  profileId      String?
-  profile        OrganizationProfile? @relation(fields: [profileId], references: [id], onDelete: SetNull)
-  templateId     String
-  template       Template             @relation(fields: [templateId], references: [id])
-  documentNumber String
-  dataJson       Json
-  createdAt      DateTime             @default(now())
+  id              String               @id @default(cuid())
+  userId          String?
+  user            User?                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profileId       String?
+  profile         OrganizationProfile? @relation(fields: [profileId], references: [id], onDelete: SetNull)
+  templateId      String?
+  template        Template?            @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  templateSlug    String
+  templateTitle   String
+  category        String               @default("Business")
+  documentNumber  String
+  recipientName   String?
+  amountOrDetails String?
+  status          String               @default("Saved")
+  dataJson        Json
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
 }

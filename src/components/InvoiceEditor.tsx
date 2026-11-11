@@ -12,6 +12,9 @@ import {
   Mic,
   Globe,
   FileText,
+  Save,
+  BookmarkCheck,
+  Loader2,
 } from "lucide-react";
 import { numberToWordsEnglish, numberToWordsBengali } from "@/lib/numberToWords";
 import AdSenseSlot from "@/components/AdSenseSlot";
@@ -74,8 +77,35 @@ export default function InvoiceEditor({
   const [savedSuccess, setSavedSuccess] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
-  // Auto-fill from user's active preset if available
+  const [docSaveLoading, setDocSaveLoading] = useState(false);
+  const [docSaveSuccess, setDocSaveSuccess] = useState(false);
+  const [docSaveMessage, setDocSaveMessage] = useState<string | null>(null);
+
+  // Auto-fill from user's active preset or load saved document
   useEffect(() => {
+    // 1. Check if user opened a saved document via ?docId=...
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const docId = params.get("docId");
+
+      if (docId) {
+        fetch(`/api/user/documents/${docId}`)
+          .then((res) => (res.ok ? res.json() : null))
+          .then((resData) => {
+            if (resData?.document?.dataJson) {
+              const saved = resData.document.dataJson;
+              setData((prev: any) => ({ ...prev, ...saved }));
+              if (saved.logoUrl) setLogoPreview(saved.logoUrl);
+              if (saved.signatureUrl) setSignaturePreview(saved.signatureUrl);
+              if (saved.docLang) setDocLang(saved.docLang);
+            }
+          })
+          .catch(() => {});
+        return;
+      }
+    }
+
+    // 2. Load brand preset from localStorage first
     const saved = localStorage.getItem("freedocforge_active_preset");
     if (saved) {
       try {
@@ -94,6 +124,27 @@ export default function InvoiceEditor({
           if (p.signatureUrl) setSignaturePreview(p.signatureUrl);
         }
       } catch (e) {}
+    } else {
+      // 3. Fallback: Load saved preset from user cloud account
+      fetch("/api/user/profile")
+        .then((res) => (res.ok ? res.json() : null))
+        .then((resData) => {
+          if (resData?.profile) {
+            const p = resData.profile;
+            setData((prev: any) => ({
+              ...prev,
+              businessName: p.businessName || prev.businessName,
+              tagline: p.tagline || prev.tagline,
+              phone: p.phone || prev.phone,
+              address: p.address || prev.address,
+              currency: p.currency || prev.currency,
+              notes: p.terms || prev.notes,
+            }));
+            if (p.logoUrl) setLogoPreview(p.logoUrl);
+            if (p.signatureUrl) setSignaturePreview(p.signatureUrl);
+          }
+        })
+        .catch(() => {});
     }
   }, []);
 
@@ -171,8 +222,110 @@ export default function InvoiceEditor({
   };
 
   const handleSaveToProfile = async () => {
+    const presetData = {
+      businessName: data.businessName || "",
+      tagline: data.tagline || "",
+      phone: data.phone || "",
+      address: data.address || "",
+      currency: data.currency || "৳",
+      terms: data.notes || "",
+      logoUrl: logoPreview || null,
+      signatureUrl: signaturePreview || null,
+      presetType: "shop",
+    };
+
+    localStorage.setItem("freedocforge_active_preset", JSON.stringify(presetData));
+
+    try {
+      await fetch("/api/user/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(presetData),
+      });
+    } catch (err) {
+      console.warn("Could not sync brand profile to cloud:", err);
+    }
+
     setSavedSuccess(true);
     setTimeout(() => setSavedSuccess(false), 3000);
+  };
+
+  const handleSaveDocument = async () => {
+    setDocSaveLoading(true);
+    setDocSaveMessage(null);
+
+    const recipient = data.customerName || data.clientName || data.name || "Customer";
+    const docNum = data.invoiceNumber || data.memoNumber || data.billNumber || `INV-${Date.now().toString().slice(-6)}`;
+    const amountStr = `${currency} ${grandTotal.toLocaleString("en-US")}`;
+
+    const docPayload = {
+      templateSlug,
+      templateTitle: locales?.[docLang]?.title || data.businessName || "Invoice / Cash Memo",
+      category: "Business",
+      documentNumber: docNum,
+      recipientName: recipient,
+      amountOrDetails: amountStr,
+      status: due > 0 ? "Saved" : "Paid",
+      dataJson: {
+        ...data,
+        logoUrl: logoPreview,
+        signatureUrl: signaturePreview,
+        docLang,
+      },
+    };
+
+    // Save locally first for instant offline access
+    try {
+      const existing = JSON.parse(localStorage.getItem("freedocforge_history") || "[]");
+      const localItem = {
+        id: `local-${Date.now()}`,
+        ...docPayload,
+        date: new Date().toISOString().split("T")[0],
+      };
+      localStorage.setItem("freedocforge_history", JSON.stringify([localItem, ...existing]));
+    } catch (e) {}
+
+    // Persist to database via API
+    try {
+      const res = await fetch("/api/user/documents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(docPayload),
+      });
+
+      const resData = await res.json();
+      if (!res.ok) {
+        if (res.status === 401) {
+          setDocSaveMessage(
+            docLang === "bn"
+              ? "ব্রাউজারে সেভ হয়েছে! ক্লাউড হিস্ট্রির জন্য লগইন করুন।"
+              : "Saved in browser! Log in to save to your cloud account."
+          );
+        } else {
+          throw new Error(resData.error || "Failed to save");
+        }
+      } else {
+        setDocSaveMessage(
+          docLang === "bn"
+            ? "ডকুমেন্ট ও টেমপ্লেট ডাটা সফলভাবে ক্লাউডে সংরক্ষিত হয়েছে!"
+            : "Document & template saved to your cloud history!"
+        );
+      }
+      setDocSaveSuccess(true);
+      setTimeout(() => {
+        setDocSaveSuccess(false);
+        setDocSaveMessage(null);
+      }, 4000);
+    } catch (err: any) {
+      setDocSaveMessage(err.message || "Saved locally");
+      setDocSaveSuccess(true);
+      setTimeout(() => {
+        setDocSaveSuccess(false);
+        setDocSaveMessage(null);
+      }, 4000);
+    } finally {
+      setDocSaveLoading(false);
+    }
   };
 
   return (
@@ -742,6 +895,7 @@ export default function InvoiceEditor({
 
           {/* Action Buttons */}
           <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
+            {/* 1. Print / Save as PDF */}
             <button
               onClick={handlePrint}
               className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-xs transition text-xs sm:text-sm cursor-pointer"
@@ -750,6 +904,38 @@ export default function InvoiceEditor({
               {docLang === "bn" ? "প্রিন্ট করুন / PDF ডাউনলোড" : "Print / Save as PDF"}
             </button>
 
+            {/* 2. Save Document for Next Use (Cloud + Local) */}
+            <button
+              onClick={handleSaveDocument}
+              disabled={docSaveLoading}
+              className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl shadow-xs transition text-xs cursor-pointer disabled:opacity-50"
+            >
+              {docSaveLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>{docLang === "bn" ? "সংরক্ষণ হচ্ছে..." : "Saving..."}</span>
+                </>
+              ) : docSaveSuccess ? (
+                <>
+                  <BookmarkCheck className="w-4 h-4 text-white" />
+                  <span>{docLang === "bn" ? "ডকুমেন্ট সংরক্ষিত হয়েছে!" : "Document Saved!"}</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  <span>{docLang === "bn" ? "পরবর্তী ব্যবহারের জন্য মেমো সেভ রাখুন" : "Save Document for Next Use"}</span>
+                </>
+              )}
+            </button>
+
+            {/* Feedback notice for document save */}
+            {docSaveMessage && (
+              <div className="text-[11px] text-center font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 p-2 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                {docSaveMessage}
+              </div>
+            )}
+
+            {/* 3. Save Brand Preset */}
             <button
               onClick={handleSaveToProfile}
               className="w-full flex items-center justify-center gap-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-medium py-2.5 rounded-xl transition text-xs cursor-pointer"
@@ -763,7 +949,7 @@ export default function InvoiceEditor({
                 <>
                   <Building className="w-4 h-4" />
                   {docLang === "bn"
-                    ? "পরবর্তী ব্যবহারের জন্য শপ সেভ রাখুন"
+                    ? "ব্র্যান্ড লেটারহেড প্রিসেট সেভ করুন"
                     : "Save Brand Preset for Next Time"}
                 </>
               )}
