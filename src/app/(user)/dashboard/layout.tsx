@@ -23,7 +23,18 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null);
   const { theme, toggleTheme, lang, toggleLang, mobileMenuOpen, setMobileMenuOpen, t } = useUserDashboard();
 
+  const [localPresetName, setLocalPresetName] = useState<string>("");
+
   useEffect(() => {
+    // Check local preset
+    const savedLocal = localStorage.getItem("freedocforge_active_preset");
+    if (savedLocal) {
+      try {
+        const parsed = JSON.parse(savedLocal);
+        if (parsed.businessName) setLocalPresetName(parsed.businessName);
+      } catch (e) {}
+    }
+
     fetch("/api/auth/me")
       .then((res) => res.json())
       .then((data) => {

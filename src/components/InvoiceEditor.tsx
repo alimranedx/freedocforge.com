@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Printer,
   Download,
@@ -71,6 +71,29 @@ export default function InvoiceEditor({
   const [signaturePreview, setSignaturePreview] = useState<string | null>(null);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
+
+  // Auto-fill from user's active preset if available
+  useEffect(() => {
+    const saved = localStorage.getItem("freedocforge_active_preset");
+    if (saved) {
+      try {
+        const p = JSON.parse(saved);
+        if (p.presetType === "shop" || !p.presetType) {
+          setData((prev: any) => ({
+            ...prev,
+            businessName: p.businessName || prev.businessName,
+            tagline: p.tagline || prev.tagline,
+            phone: p.phone || prev.phone,
+            address: p.address || prev.address,
+            currency: p.currency || prev.currency,
+            notes: p.terms || prev.notes,
+          }));
+          if (p.logoUrl) setLogoPreview(p.logoUrl);
+          if (p.signatureUrl) setSignaturePreview(p.signatureUrl);
+        }
+      } catch (e) {}
+    }
+  }, []);
 
   // Switch Document Locale independently of system language
   const handleSwitchDocLang = (targetLang: "en" | "bn") => {

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Printer,
   Download,
@@ -46,6 +46,26 @@ export default function SchoolTemplateEditor({
   const [signaturePreview, setSignaturePreview] = useState<string | null>(null);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
+
+  // Auto-fill from user's active preset if available
+  useEffect(() => {
+    const saved = localStorage.getItem("freedocforge_active_preset");
+    if (saved) {
+      try {
+        const p = JSON.parse(saved);
+        if (p.presetType === "school") {
+          setData((prev: any) => ({
+            ...prev,
+            instituteName: p.businessName || prev.instituteName,
+            tagline: p.tagline || prev.tagline,
+            phone: p.phone || prev.phone,
+            address: p.address || prev.address,
+          }));
+          if (p.signatureUrl) setSignaturePreview(p.signatureUrl);
+        }
+      } catch (e) {}
+    }
+  }, []);
 
   // Switch Document Locale independently of system language
   const handleSwitchDocLang = (targetLang: "en" | "bn") => {
