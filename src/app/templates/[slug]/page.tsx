@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import InvoiceEditor from "@/components/InvoiceEditor";
+import MedicalPrescriptionEditor from "@/components/MedicalPrescriptionEditor";
+import SchoolTemplateEditor from "@/components/SchoolTemplateEditor";
 import AdSenseSlot from "@/components/AdSenseSlot";
 import TemplateLanguageBar from "@/components/TemplateLanguageBar";
 import { INITIAL_TEMPLATES } from "@/lib/templates";
@@ -23,6 +25,15 @@ async function TemplateContent({
     notFound();
   }
 
+  // Domain-Specific Specialized Editor Dispatcher
+  const isMedical =
+    template.category === "Healthcare" ||
+    slug.startsWith("doctor-") ||
+    slug.startsWith("medical-");
+
+  const isSchool =
+    template.category === "Education" || slug.startsWith("school-");
+
   return (
     <>
       {/* Breadcrumb, Title & Dedicated Language Switcher */}
@@ -35,8 +46,25 @@ async function TemplateContent({
       {/* Top Header AdSense (Hidden until approved) */}
       <AdSenseSlot slotId="template-top-ad" format="horizontal" className="print:hidden" />
 
-      {/* The Core Interactive Editor Component with Voice Input & Independent Doc Language */}
-      <InvoiceEditor initialData={template.defaultData} locales={template.locales} />
+      {/* Core Interactive Editor Component */}
+      {isMedical ? (
+        <MedicalPrescriptionEditor
+          initialData={template.defaultData}
+          locales={template.locales}
+          templateSlug={template.slug}
+        />
+      ) : isSchool ? (
+        <SchoolTemplateEditor
+          initialData={template.defaultData}
+          locales={template.locales}
+          templateSlug={template.slug}
+        />
+      ) : (
+        <InvoiceEditor
+          initialData={template.defaultData}
+          locales={template.locales}
+        />
+      )}
     </>
   );
 }

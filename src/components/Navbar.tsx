@@ -1,14 +1,36 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { FileText, User, Shield, LogOut, Sun, Moon, Globe, Menu, X } from "lucide-react";
+import {
+  FileText,
+  User,
+  Shield,
+  LogOut,
+  Sun,
+  Moon,
+  Globe,
+  Menu,
+  X,
+  ChevronDown,
+  ShoppingBag,
+  GraduationCap,
+  Stethoscope,
+  Receipt,
+  Calendar,
+  Clock,
+  ClipboardList,
+} from "lucide-react";
 import { useGlobalSettings } from "@/context/GlobalSettingsContext";
 
 export default function Navbar() {
   const [user, setUser] = useState<{ name: string; role: string } | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeDropdown, setActiveDropdown] = useState<"shop" | "school" | "medical" | null>(null);
+  const [mobileExpanded, setMobileExpanded] = useState<"shop" | "school" | "medical" | null>(null);
+
   const { theme, toggleTheme, lang, toggleLang, t } = useGlobalSettings();
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -19,6 +41,15 @@ export default function Navbar() {
         }
       })
       .catch(() => {});
+
+    // Close dropdown on outside click
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setActiveDropdown(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleLogout = async () => {
@@ -26,11 +57,92 @@ export default function Navbar() {
     window.location.href = "/";
   };
 
+  const shopItems = [
+    {
+      title: t("navCashMemo"),
+      href: "/templates/f-commerce-invoice",
+      desc: lang === "bn" ? "ফেসবুক শপ ও অনলাইন ক্যাশ মেমো" : "F-Commerce & online retail cash memo",
+      badge: "BD Special",
+    },
+    {
+      title: t("navPosReceipt"),
+      href: "/templates/restaurant-pos-bill",
+      desc: lang === "bn" ? "রেস্তোরাঁ ও সুপারশপ ৮০মিমি রসিদ" : "Thermal 80mm POS food & retail receipt",
+      badge: "80mm POS",
+    },
+    {
+      title: t("navDeliveryChalan"),
+      href: "/templates/shop-delivery-chalan",
+      desc: lang === "bn" ? "পণ্য ডেলিভারি চালান ও প্যাকিং স্লিপ" : "Product dispatch & delivery chalan",
+      badge: "A4 Slip",
+    },
+    {
+      title: t("navQuotation"),
+      href: "/templates/shop-quotation",
+      desc: lang === "bn" ? "কাস্টমার কোটেশন ও প্রফর্মা বিল" : "Official quotation & proforma bill",
+      badge: "Business",
+    },
+  ];
+
+  const schoolItems = [
+    {
+      title: t("navMarksheet"),
+      href: "/templates/school-result-sheet",
+      desc: lang === "bn" ? "বার্ষিক ও সেমিস্টার মূল্যায়ন মার্কশিট" : "Annual & semester GPA progress card",
+      badge: "GPA / গ্রেড",
+    },
+    {
+      title: t("navClassRoutine"),
+      href: "/templates/school-class-routine",
+      desc: lang === "bn" ? "সাপ্তাহিক স্কুল ও কলেজ ক্লাস রুটিন" : "Weekly periods & teacher timetable",
+      badge: "Routine",
+    },
+    {
+      title: t("navExamRoutine"),
+      href: "/templates/school-exam-routine",
+      desc: lang === "bn" ? "পরীক্ষার তারিখ ও শিফট রুটিন" : "Exam dates, shifts & room schedule",
+      badge: "Exam",
+    },
+    {
+      title: t("navAdmitCard"),
+      href: "/templates/school-admit-card",
+      desc: lang === "bn" ? "ছাত্র-ছাত্রী পরীক্ষার প্রবেশপত্র" : "Exam hall pass & student admit card",
+      badge: "Admit",
+    },
+  ];
+
+  const medicalItems = [
+    {
+      title: t("navPrescription"),
+      href: "/templates/doctor-prescription",
+      desc: lang === "bn" ? "ডাক্তার ও ক্লিনিকের ব্যবস্থাপত্র" : "Doctor Rx prescription with diagnosis & doses",
+      badge: "Rx Pad",
+    },
+    {
+      title: t("navPatientSerial"),
+      href: "/templates/medical-appointment-token",
+      desc: lang === "bn" ? "রোগীর সিরিয়াল ও অ্যাপয়েন্টমেন্ট স্লিপ" : "Patient queue number & chamber token",
+      badge: "Serial",
+    },
+    {
+      title: t("navDischargeSlip"),
+      href: "/templates/medical-discharge-slip",
+      desc: lang === "bn" ? "হাসপাতাল রিলিজ ও ডিসচার্জ সামারি" : "Hospital patient discharge certificate",
+      badge: "Release",
+    },
+    {
+      title: t("navMoneyReceipt"),
+      href: "/templates/medical-money-receipt",
+      desc: lang === "bn" ? "ডায়াগনস্টিক টেস্ট ও ফি জমার রসিদ" : "Investigation payment receipt & billing",
+      badge: "Receipt",
+    },
+  ];
+
   return (
     <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40 print:hidden transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand */}
-        <Link href="/" className="flex items-center gap-2 group">
+        <Link href="/" className="flex items-center gap-2 group shrink-0">
           <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold shadow-xs group-hover:bg-blue-700 transition">
             <FileText className="w-5 h-5" />
           </div>
@@ -44,23 +156,153 @@ export default function Navbar() {
           </div>
         </Link>
 
-        {/* Desktop Navigation Links */}
-        <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600 dark:text-slate-300">
-          <Link href="/templates" className="hover:text-blue-600 dark:hover:text-blue-400 transition">
+        {/* Desktop Navigation Links with 3 Rich Dropdowns */}
+        <nav
+          ref={dropdownRef}
+          className="hidden md:flex items-center gap-1 lg:gap-2 text-sm font-medium text-slate-600 dark:text-slate-300"
+        >
+          {/* Gallery Link */}
+          <Link
+            href="/templates"
+            className="px-3 py-2 rounded-lg hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+          >
             {t("navTemplates")}
           </Link>
-          <Link href="/templates/f-commerce-invoice" className="hover:text-blue-600 dark:hover:text-blue-400 transition flex items-center gap-1">
-            {t("navInvoice")}
-            <span className="text-[9px] bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 font-bold px-1.5 py-0.5 rounded">
-              BD
-            </span>
-          </Link>
-          <Link href="/templates/school-result-sheet" className="hover:text-blue-600 dark:hover:text-blue-400 transition">
-            {t("navSchools")}
-          </Link>
-          <Link href="/templates/doctor-prescription" className="hover:text-blue-600 dark:hover:text-blue-400 transition">
-            {t("navPrescriptions")}
-          </Link>
+
+          {/* 1. SHOP CATEGORY DROPDOWN */}
+          <div className="relative">
+            <button
+              onClick={() => setActiveDropdown(activeDropdown === "shop" ? null : "shop")}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition cursor-pointer ${
+                activeDropdown === "shop" ? "text-blue-600 dark:text-blue-400 bg-slate-50 dark:bg-slate-800 font-semibold" : ""
+              }`}
+            >
+              <ShoppingBag className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <span>{t("navShop")}</span>
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${activeDropdown === "shop" ? "rotate-180" : ""}`} />
+            </button>
+
+            {activeDropdown === "shop" && (
+              <div className="absolute left-0 mt-2 w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-800">
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{t("navShop")}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{t("navShopDesc")}</p>
+                </div>
+                <div className="p-1.5 space-y-0.5">
+                  {shopItems.map((item, idx) => (
+                    <Link
+                      key={idx}
+                      href={item.href}
+                      onClick={() => setActiveDropdown(null)}
+                      className="flex items-start justify-between p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition group"
+                    >
+                      <div>
+                        <p className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                          {item.title}
+                        </p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
+                          {item.desc}
+                        </p>
+                      </div>
+                      <span className="text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold px-1.5 py-0.5 rounded shrink-0 ml-2">
+                        {item.badge}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 2. SCHOOL CATEGORY DROPDOWN */}
+          <div className="relative">
+            <button
+              onClick={() => setActiveDropdown(activeDropdown === "school" ? null : "school")}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition cursor-pointer ${
+                activeDropdown === "school" ? "text-blue-600 dark:text-blue-400 bg-slate-50 dark:bg-slate-800 font-semibold" : ""
+              }`}
+            >
+              <GraduationCap className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <span>{t("navSchool")}</span>
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${activeDropdown === "school" ? "rotate-180" : ""}`} />
+            </button>
+
+            {activeDropdown === "school" && (
+              <div className="absolute left-0 mt-2 w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-800">
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{t("navSchool")}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{t("navSchoolDesc")}</p>
+                </div>
+                <div className="p-1.5 space-y-0.5">
+                  {schoolItems.map((item, idx) => (
+                    <Link
+                      key={idx}
+                      href={item.href}
+                      onClick={() => setActiveDropdown(null)}
+                      className="flex items-start justify-between p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition group"
+                    >
+                      <div>
+                        <p className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                          {item.title}
+                        </p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
+                          {item.desc}
+                        </p>
+                      </div>
+                      <span className="text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold px-1.5 py-0.5 rounded shrink-0 ml-2">
+                        {item.badge}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 3. MEDICAL CATEGORY DROPDOWN */}
+          <div className="relative">
+            <button
+              onClick={() => setActiveDropdown(activeDropdown === "medical" ? null : "medical")}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition cursor-pointer ${
+                activeDropdown === "medical" ? "text-blue-600 dark:text-blue-400 bg-slate-50 dark:bg-slate-800 font-semibold" : ""
+              }`}
+            >
+              <Stethoscope className="w-4 h-4 text-rose-500" />
+              <span>{t("navMedical")}</span>
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${activeDropdown === "medical" ? "rotate-180" : ""}`} />
+            </button>
+
+            {activeDropdown === "medical" && (
+              <div className="absolute left-0 mt-2 w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-800">
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{t("navMedical")}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{t("navMedicalDesc")}</p>
+                </div>
+                <div className="p-1.5 space-y-0.5">
+                  {medicalItems.map((item, idx) => (
+                    <Link
+                      key={idx}
+                      href={item.href}
+                      onClick={() => setActiveDropdown(null)}
+                      className="flex items-start justify-between p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition group"
+                    >
+                      <div>
+                        <p className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-rose-600 dark:group-hover:text-rose-400">
+                          {item.title}
+                        </p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
+                          {item.desc}
+                        </p>
+                      </div>
+                      <span className="text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold px-1.5 py-0.5 rounded shrink-0 ml-2">
+                        {item.badge}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </nav>
 
         {/* Right CTA / Controls / Auth */}
@@ -143,41 +385,123 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* MOBILE COLLAPSIBLE MENU */}
+      {/* MOBILE COLLAPSIBLE ACCORDION MENU */}
       {mobileMenuOpen && (
         <div className="md:hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 pt-3 pb-5 space-y-3">
-          <nav className="flex flex-col space-y-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+          <nav className="flex flex-col space-y-1.5 text-sm font-medium text-slate-700 dark:text-slate-200">
             <Link
               href="/templates"
               onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+              className="px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
             >
-              {t("navTemplates")}
+              <FileText className="w-4 h-4 text-blue-600" />
+              <span>{t("navTemplates")}</span>
             </Link>
-            <Link
-              href="/templates/f-commerce-invoice"
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between"
-            >
-              <span>{t("navInvoice")}</span>
-              <span className="text-[9px] bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 font-bold px-1.5 py-0.5 rounded">
-                BD
-              </span>
-            </Link>
-            <Link
-              href="/templates/school-result-sheet"
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
-            >
-              {t("navSchools")}
-            </Link>
-            <Link
-              href="/templates/doctor-prescription"
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
-            >
-              {t("navPrescriptions")}
-            </Link>
+
+            {/* Mobile Accordion: SHOP */}
+            <div className="border border-slate-100 dark:border-slate-800 rounded-xl overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setMobileExpanded(mobileExpanded === "shop" ? null : "shop")}
+                className="w-full flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 text-left font-bold text-xs"
+              >
+                <span className="flex items-center gap-2">
+                  <ShoppingBag className="w-4 h-4 text-emerald-600" />
+                  {t("navShop")}
+                </span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${mobileExpanded === "shop" ? "rotate-180" : ""}`} />
+              </button>
+              {mobileExpanded === "shop" && (
+                <div className="p-2 space-y-1 bg-white dark:bg-slate-900">
+                  {shopItems.map((item, idx) => (
+                    <Link
+                      key={idx}
+                      href={item.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-xs"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-slate-800 dark:text-slate-200">{item.title}</span>
+                        <span className="text-[9px] bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-slate-500">
+                          {item.badge}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-0.5">{item.desc}</p>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Mobile Accordion: SCHOOL */}
+            <div className="border border-slate-100 dark:border-slate-800 rounded-xl overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setMobileExpanded(mobileExpanded === "school" ? null : "school")}
+                className="w-full flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 text-left font-bold text-xs"
+              >
+                <span className="flex items-center gap-2">
+                  <GraduationCap className="w-4 h-4 text-blue-600" />
+                  {t("navSchool")}
+                </span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${mobileExpanded === "school" ? "rotate-180" : ""}`} />
+              </button>
+              {mobileExpanded === "school" && (
+                <div className="p-2 space-y-1 bg-white dark:bg-slate-900">
+                  {schoolItems.map((item, idx) => (
+                    <Link
+                      key={idx}
+                      href={item.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-xs"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-slate-800 dark:text-slate-200">{item.title}</span>
+                        <span className="text-[9px] bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-slate-500">
+                          {item.badge}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-0.5">{item.desc}</p>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Mobile Accordion: MEDICAL */}
+            <div className="border border-slate-100 dark:border-slate-800 rounded-xl overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setMobileExpanded(mobileExpanded === "medical" ? null : "medical")}
+                className="w-full flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 text-left font-bold text-xs"
+              >
+                <span className="flex items-center gap-2">
+                  <Stethoscope className="w-4 h-4 text-rose-500" />
+                  {t("navMedical")}
+                </span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${mobileExpanded === "medical" ? "rotate-180" : ""}`} />
+              </button>
+              {mobileExpanded === "medical" && (
+                <div className="p-2 space-y-1 bg-white dark:bg-slate-900">
+                  {medicalItems.map((item, idx) => (
+                    <Link
+                      key={idx}
+                      href={item.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-xs"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-slate-800 dark:text-slate-200">{item.title}</span>
+                        <span className="text-[9px] bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-slate-500">
+                          {item.badge}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-0.5">{item.desc}</p>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
           </nav>
 
           <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center gap-3">
