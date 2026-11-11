@@ -424,7 +424,7 @@ export default function TemplateCardPreview({
             <span className="font-bold text-slate-900">{data.customerName?.split(" ")[0] || "Md. Tanvir Ahmed"}</span>
           </div>
           <span className="bg-amber-100 text-amber-800 font-black px-1.5 py-0.5 rounded text-[6.5px]">
-            COD: ৳ 3,020
+            COD: ৳ 3,470
           </span>
         </div>
 
@@ -455,7 +455,7 @@ export default function TemplateCardPreview({
         <div className="border-t border-slate-200 pt-1 flex justify-between items-end text-[7px]">
           <div>
             <span className="text-[6px] text-slate-400 block">freedocforge.com</span>
-            <span className="font-extrabold text-blue-700">Net Due: ৳ 3,020</span>
+            <span className="font-extrabold text-blue-700">Net Due: ৳ 3,470</span>
           </div>
           <div className="text-center">
             <div className="w-16 border-b border-slate-400 mb-0.5"></div>

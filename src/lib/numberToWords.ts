@@ -10,45 +10,68 @@ const tens = [
   "", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"
 ];
 
-export function numberToWordsEnglish(num: number): string {
-  if (num === 0) return "Zero Taka Only";
-  if (num < 0) return "Minus " + numberToWordsEnglish(Math.abs(num));
-
-  let words = "";
-
-  if (Math.floor(num / 10000000) > 0) {
-    words += numberToWordsEnglish(Math.floor(num / 10000000)) + " Crore ";
-    num %= 10000000;
+// Helper: converts a number < 1000 into pure words without currency suffix
+function convertChunkEnglish(n: number): string {
+  let s = "";
+  if (n >= 100) {
+    s += ones[Math.floor(n / 100)] + " Hundred ";
+    n %= 100;
   }
-
-  if (Math.floor(num / 100000) > 0) {
-    words += numberToWordsEnglish(Math.floor(num / 100000)) + " Lakh ";
-    num %= 100000;
-  }
-
-  if (Math.floor(num / 1000) > 0) {
-    words += numberToWordsEnglish(Math.floor(num / 1000)) + " Thousand ";
-    num %= 1000;
-  }
-
-  if (Math.floor(num / 100) > 0) {
-    words += numberToWordsEnglish(Math.floor(num / 100)) + " Hundred ";
-    num %= 100;
-  }
-
-  if (num > 0) {
-    if (words !== "") words += "and ";
-    if (num < 20) {
-      words += ones[num];
+  if (n > 0) {
+    if (n < 20) {
+      s += ones[n] + " ";
     } else {
-      words += tens[Math.floor(num / 10)];
-      if (num % 10 > 0) {
-        words += " " + ones[num % 10];
+      s += tens[Math.floor(n / 10)] + " ";
+      if (n % 10 > 0) {
+        s += ones[n % 10] + " ";
       }
     }
   }
+  return s.trim();
+}
 
-  return words.trim() + " Taka Only";
+/**
+ * Converts integer to English words following Indian / Bangladeshi numeric scale (Crore, Lakh, Thousand)
+ */
+export function numberToWordsEnglish(num: number, currency = "Taka"): string {
+  if (num === 0) return `Zero ${currency} Only`;
+  const isNegative = num < 0;
+  let n = Math.floor(Math.abs(num));
+
+  const parts: string[] = [];
+
+  // Crores (>= 1,00,00,000)
+  if (n >= 10000000) {
+    const crore = Math.floor(n / 10000000);
+    const croreWords = numberToWordsEnglish(crore, "").replace(" Only", "").trim();
+    parts.push(croreWords + " Crore");
+    n %= 10000000;
+  }
+
+  // Lakhs (>= 1,00,000)
+  if (n >= 100000) {
+    const lakh = Math.floor(n / 100000);
+    parts.push(convertChunkEnglish(lakh) + " Lakh");
+    n %= 100000;
+  }
+
+  // Thousands (>= 1,000)
+  if (n >= 1000) {
+    const thousand = Math.floor(n / 1000);
+    parts.push(convertChunkEnglish(thousand) + " Thousand");
+    n %= 1000;
+  }
+
+  // Remainder (< 1,000)
+  if (n > 0) {
+    parts.push(convertChunkEnglish(n));
+  }
+
+  const resultWords = parts.join(" ").replace(/\s+/g, " ").trim();
+  const prefix = isNegative ? "Minus " : "";
+  const suffix = currency ? ` ${currency} Only` : " Only";
+
+  return `${prefix}${resultWords}${suffix}`;
 }
 
 const bnDigits = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
@@ -65,38 +88,58 @@ const bnWords: Record<number, string> = {
   90: "নব্বই", 91: "একানব্বই", 92: "বানব্বই", 93: "তিরানব্বই", 94: "চুরানব্বই", 95: "পঁচানব্বই", 96: "ছিয়ানব্বই", 97: "সাতানব্বই", 98: "আটানব্বই", 99: "নিরানব্বই"
 };
 
+function convertChunkBengali(n: number): string {
+  let s = "";
+  if (n >= 100) {
+    const hundred = Math.floor(n / 100);
+    s += (bnWords[hundred] || String(hundred)) + " শত ";
+    n %= 100;
+  }
+  if (n > 0) {
+    s += (bnWords[n] || String(n)) + " ";
+  }
+  return s.trim();
+}
+
+/**
+ * Converts integer to Bengali words
+ */
 export function numberToWordsBengali(num: number): string {
   if (num === 0) return "শূন্য টাকা মাত্র";
-  if (num < 0) return "মাইনাস " + numberToWordsBengali(Math.abs(num));
+  const isNegative = num < 0;
+  let n = Math.floor(Math.abs(num));
 
-  let words = "";
+  const parts: string[] = [];
 
-  if (Math.floor(num / 10000000) > 0) {
-    words += numberToWordsBengali(Math.floor(num / 10000000)).replace(" টাকা মাত্র", "") + " কোটি ";
-    num %= 10000000;
+  // কোটি (>= ১,০০,০০,০০০)
+  if (n >= 10000000) {
+    const crore = Math.floor(n / 10000000);
+    const croreWords = numberToWordsBengali(crore).replace(" টাকা মাত্র", "").trim();
+    parts.push(croreWords + " কোটি");
+    n %= 10000000;
   }
 
-  if (Math.floor(num / 100000) > 0) {
-    const lakh = Math.floor(num / 100000);
-    words += (bnWords[lakh] || lakh.toString()) + " লাখ ";
-    num %= 100000;
+  // লাখ (>= ১,০০,০০০)
+  if (n >= 100000) {
+    const lakh = Math.floor(n / 100000);
+    parts.push(convertChunkBengali(lakh) + " লাখ");
+    n %= 100000;
   }
 
-  if (Math.floor(num / 1000) > 0) {
-    const thousand = Math.floor(num / 1000);
-    words += (bnWords[thousand] || thousand.toString()) + " হাজার ";
-    num %= 1000;
+  // হাজার (>= ১,০০০)
+  if (n >= 1000) {
+    const thousand = Math.floor(n / 1000);
+    parts.push(convertChunkBengali(thousand) + " হাজার");
+    n %= 1000;
   }
 
-  if (Math.floor(num / 100) > 0) {
-    const hundred = Math.floor(num / 100);
-    words += (bnWords[hundred] || hundred.toString()) + " শত ";
-    num %= 100;
+  // শত ও বাকি (< ১,০০০)
+  if (n > 0) {
+    parts.push(convertChunkBengali(n));
   }
 
-  if (num > 0) {
-    words += (bnWords[num] || num.toString()) + " ";
-  }
+  const resultWords = parts.join(" ").replace(/\s+/g, " ").trim();
+  const prefix = isNegative ? "মাইনাস " : "";
 
-  return words.trim() + " টাকা মাত্র";
+  return `${prefix}${resultWords} টাকা মাত্র`;
 }

@@ -108,6 +108,7 @@ export default function InvoiceEditor({
 
   // Safe Currency Fallback (prevents "undefined" bug in COD display)
   const currency = data.currency || "৳";
+  const currencyName = currency === "$" ? "Dollars" : currency === "€" ? "Euros" : currency === "₹" ? "Rupees" : "Taka";
 
   // Calculations
   const itemsList: InvoiceItem[] = Array.isArray(data.items) && data.items.length > 0
@@ -900,7 +901,7 @@ export default function InvoiceEditor({
                       {docLang === "bn" ? "কথায়:" : "In Words:"}
                     </span>
                     <p className="text-xs font-semibold text-gray-800 italic">
-                      {docLang === "bn" ? numberToWordsBengali(grandTotal) : numberToWordsEnglish(grandTotal)}
+                      {docLang === "bn" ? numberToWordsBengali(grandTotal) : numberToWordsEnglish(grandTotal, currencyName)}
                     </p>
                   </div>
                   {data.notes && (
