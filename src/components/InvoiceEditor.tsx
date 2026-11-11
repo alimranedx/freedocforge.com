@@ -1,10 +1,21 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { Printer, Download, Plus, Trash2, Building, Upload, Check, Mic, Globe, FileText } from "lucide-react";
+import {
+  Printer,
+  Download,
+  Plus,
+  Trash2,
+  Building,
+  Upload,
+  Check,
+  Mic,
+  Globe,
+  FileText,
+} from "lucide-react";
 import { numberToWordsEnglish, numberToWordsBengali } from "@/lib/numberToWords";
 import AdSenseSlot from "@/components/AdSenseSlot";
-import VoiceInputButton from "@/components/VoiceInputButton";
+import VoiceInputButton, { parseBanglaDigits } from "@/components/VoiceInputButton";
 import { useGlobalSettings } from "@/context/GlobalSettingsContext";
 
 interface InvoiceItem {
@@ -25,13 +36,37 @@ export default function InvoiceEditor({
   };
   isUserSaved?: boolean;
 }) {
-  // 1. SYSTEM LANGUAGE (Controls Website UI Chrome)
+  // 1. SYSTEM LANGUAGE (Controls Website UI Chrome from Navbar)
   const { lang: sysLang } = useGlobalSettings();
 
   // 2. TEMPLATE / DOCUMENT LANGUAGE (Independent! Controls Printed Document Output)
   const [docLang, setDocLang] = useState<"en" | "bn">("en");
 
-  const [data, setData] = useState({ ...initialData });
+  // 3. VOICE INPUT LANGUAGE (Allows speaking in Bangla or English on ALL inputs)
+  const [voiceLang, setVoiceLang] = useState<"bn" | "en">("bn");
+
+  // Initialize data with safe fallbacks (ensuring currency and items are never undefined)
+  const [data, setData] = useState({
+    businessName: "",
+    tagline: "",
+    phone: "",
+    address: "",
+    invoiceNumber: "INV-2026-001",
+    date: "2026-11-11",
+    customerName: "",
+    customerPhone: "",
+    customerAddress: "",
+    courierPartner: "",
+    currency: "৳",
+    items: [{ name: "Standard Product / Service", quantity: 1, price: 500 }],
+    deliveryCharge: 0,
+    discount: 0,
+    paidAmount: 0,
+    notes: "",
+    signatoryTitle: "Authorized Signature",
+    ...initialData,
+  });
+
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [signaturePreview, setSignaturePreview] = useState<string | null>(null);
   const [savedSuccess, setSavedSuccess] = useState(false);
@@ -41,12 +76,21 @@ export default function InvoiceEditor({
   const handleSwitchDocLang = (targetLang: "en" | "bn") => {
     setDocLang(targetLang);
     if (locales && locales[targetLang]) {
-      setData({ ...locales[targetLang].defaultData });
+      setData({
+        currency: "৳",
+        ...locales[targetLang].defaultData,
+      });
     }
   };
 
+  // Safe Currency Fallback (prevents "undefined" bug in COD display)
+  const currency = data.currency || "৳";
+
   // Calculations
-  const itemsList: InvoiceItem[] = Array.isArray(data.items) ? data.items : [];
+  const itemsList: InvoiceItem[] = Array.isArray(data.items) && data.items.length > 0
+    ? data.items
+    : [{ name: docLang === "bn" ? "পণ্য বা সেবার বিবরণ" : "Product / Service", quantity: 1, price: 500 }];
+
   const subtotal = itemsList.reduce(
     (acc: number, item: InvoiceItem) =>
       acc + Number(item.quantity || 0) * Number(item.price || 0),
@@ -122,8 +166,8 @@ export default function InvoiceEditor({
             </h3>
             <p className="text-[11px] text-slate-500 dark:text-slate-400">
               {sysLang === "bn"
-                ? "সিস্টেম ল্যাঙ্গুয়েজের বাইরে সম্পূর্ণ আলাদাভাবে ডকুমেন্টের ভাষা পরিবর্তন করতে পারেন।"
-                : "Manage document output language independently of the website UI language."}
+                ? "সিস্টেম ল্যাঙ্গুয়েজের বাইরে সম্পূর্ণ আলাদাভাবে ডকুমেন্টের ভাষা ও ভয়েস টাইপিং নিয়ন্ত্রণ করুন।"
+                : "Manage printed document language independently of the website UI language."}
             </p>
           </div>
         </div>
@@ -162,24 +206,50 @@ export default function InvoiceEditor({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* LEFT COLUMN: Input Form Controls (Hidden during printing) */}
         <div className="lg:col-span-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs print:hidden space-y-6 transition-colors">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+          {/* Header & Voice Input Language Controls */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 gap-3">
             <div>
               <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <span>{docLang === "bn" ? "ডকুমেন্ট সেটিংস" : "Document Settings"}</span>
-                <span className="text-[10px] bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
-                  <Mic className="w-3 h-3 text-red-500" />
-                  {docLang === "bn" ? "ভয়েস ইনপুট রেডি (বাংলা)" : "Voice Input (EN)"}
-                </span>
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                {docLang === "bn"
-                  ? "দোকান ও কাস্টমারের তথ্য টাইপ করুন বা মাইকে বাংলায় বলুন।"
-                  : "Type details or speak into the microphone to auto-fill."}
+                {sysLang === "bn"
+                  ? "তারিখ বাদে প্রতিটি ফিল্ডে ভয়েস টাইপিং করতে মাইক্রোফোনে ক্লিক করুন।"
+                  : "Click any mic icon to speak into fields. Bangla & English voice supported."}
               </p>
             </div>
-            <span className="text-xs bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 px-2.5 py-1 rounded-full font-semibold shrink-0">
-              {docLang === "bn" ? "ফ্রি PDF" : "Instant PDF"}
-            </span>
+
+            {/* Dedicated Voice Typing Language Selector */}
+            <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 self-start sm:self-auto shrink-0">
+              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 px-1.5 flex items-center gap-1">
+                <Mic className="w-3.5 h-3.5 text-red-500" />
+                <span className="hidden sm:inline">{sysLang === "bn" ? "ভয়েস:" : "Voice:"}</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setVoiceLang("bn")}
+                className={`text-[11px] font-bold px-2 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 ${
+                  voiceLang === "bn"
+                    ? "bg-red-500 text-white shadow-xs"
+                    : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                }`}
+                title="ভয়েস ইনপুট বাংলা ভাষায় গ্রহণ করবে"
+              >
+                <span>বাংলা (bn)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setVoiceLang("en")}
+                className={`text-[11px] font-bold px-2 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 ${
+                  voiceLang === "en"
+                    ? "bg-blue-600 text-white shadow-xs"
+                    : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                }`}
+                title="Voice input will listen in English"
+              >
+                <span>English (en)</span>
+              </button>
+            </div>
           </div>
 
           {/* 1. Business Details */}
@@ -188,59 +258,95 @@ export default function InvoiceEditor({
               {docLang === "bn" ? "১. আপনার দোকান / প্রতিষ্ঠানের তথ্য" : "1. Your Business / Shop Details"}
             </label>
             <div className="grid grid-cols-2 gap-3">
+              {/* Business Name */}
               <div className="col-span-2 relative flex items-center">
                 <input
                   type="text"
                   placeholder={docLang === "bn" ? "দোকান বা পেজের নাম" : "Shop / Company Name"}
                   className="w-full text-xs sm:text-sm border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-9 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"
-                  value={data.businessName}
+                  value={data.businessName || ""}
                   onChange={(e) => setData({ ...data, businessName: e.target.value })}
                 />
                 <div className="absolute right-2">
                   <VoiceInputButton
-                    lang={docLang}
+                    lang={voiceLang}
+                    title={voiceLang === "bn" ? "দোকানের নাম বাংলায় মুখে বলুন" : "Speak Shop Name"}
                     onTranscript={(txt) => setData({ ...data, businessName: txt })}
                   />
                 </div>
               </div>
 
+              {/* Tagline */}
+              <div className="col-span-2 relative flex items-center">
+                <input
+                  type="text"
+                  placeholder={docLang === "bn" ? "স্লোগান / ট্যাগলাইন (যেমন: সেরা মানের পণ্য)" : "Tagline / Slogan"}
+                  className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-9 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"
+                  value={data.tagline || ""}
+                  onChange={(e) => setData({ ...data, tagline: e.target.value })}
+                />
+                <div className="absolute right-2">
+                  <VoiceInputButton
+                    lang={voiceLang}
+                    title={voiceLang === "bn" ? "ট্যাগলাইন মুখে বলুন" : "Speak Tagline"}
+                    onTranscript={(txt) => setData({ ...data, tagline: txt })}
+                  />
+                </div>
+              </div>
+
+              {/* Phone */}
               <div className="relative flex items-center">
                 <input
                   type="text"
                   placeholder={docLang === "bn" ? "মোবাইল নম্বর" : "Phone Number"}
                   className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"
-                  value={data.phone}
+                  value={data.phone || ""}
                   onChange={(e) => setData({ ...data, phone: e.target.value })}
                 />
                 <div className="absolute right-1">
                   <VoiceInputButton
-                    lang={docLang}
-                    onTranscript={(txt) => setData({ ...data, phone: txt })}
+                    lang={voiceLang}
+                    isNumeric={false}
+                    title={voiceLang === "bn" ? "মোবাইল নম্বর মুখে বলুন" : "Speak Phone Number"}
+                    onTranscript={(txt) => {
+                      const normalized = parseBanglaDigits(txt);
+                      setData({ ...data, phone: normalized });
+                    }}
                   />
                 </div>
               </div>
 
-              <div>
+              {/* Invoice Number */}
+              <div className="relative flex items-center">
                 <input
                   type="text"
                   placeholder={docLang === "bn" ? "মেমো নং" : "Invoice #"}
-                  className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"
-                  value={data.invoiceNumber}
+                  className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"
+                  value={data.invoiceNumber || ""}
                   onChange={(e) => setData({ ...data, invoiceNumber: e.target.value })}
                 />
+                <div className="absolute right-1">
+                  <VoiceInputButton
+                    lang={voiceLang}
+                    title={voiceLang === "bn" ? "মেমো নম্বর মুখে বলুন" : "Speak Invoice Number"}
+                    onTranscript={(txt) => setData({ ...data, invoiceNumber: txt })}
+                  />
+                </div>
               </div>
 
+              {/* Address */}
               <div className="col-span-2 relative flex items-center">
                 <input
                   type="text"
                   placeholder={docLang === "bn" ? "দোকানের ঠিকানা / লোকেশন" : "Shop Address / Location"}
                   className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-9 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"
-                  value={data.address}
+                  value={data.address || ""}
                   onChange={(e) => setData({ ...data, address: e.target.value })}
                 />
                 <div className="absolute right-2">
                   <VoiceInputButton
-                    lang={docLang}
+                    lang={voiceLang}
+                    title={voiceLang === "bn" ? "ঠিকানা মুখে বলুন" : "Speak Address"}
                     onTranscript={(txt) => setData({ ...data, address: txt })}
                   />
                 </div>
@@ -272,54 +378,65 @@ export default function InvoiceEditor({
               {docLang === "bn" ? "২. কাস্টমার / ক্রেতার বিবরণ" : "2. Customer / Client Details"}
             </label>
             <div className="grid grid-cols-2 gap-3">
+              {/* Customer Name */}
               <div className="relative flex items-center">
                 <input
                   type="text"
                   placeholder={docLang === "bn" ? "কাস্টমারের নাম" : "Customer Name"}
                   className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"
-                  value={data.customerName}
+                  value={data.customerName || ""}
                   onChange={(e) => setData({ ...data, customerName: e.target.value })}
                 />
                 <div className="absolute right-1">
                   <VoiceInputButton
-                    lang={docLang}
+                    lang={voiceLang}
+                    title={voiceLang === "bn" ? "কাস্টমারের নাম মুখে বলুন" : "Speak Customer Name"}
                     onTranscript={(txt) => setData({ ...data, customerName: txt })}
                   />
                 </div>
               </div>
 
+              {/* Customer Phone */}
               <div className="relative flex items-center">
                 <input
                   type="text"
                   placeholder={docLang === "bn" ? "কাস্টমারের ফোন" : "Customer Phone"}
                   className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"
-                  value={data.customerPhone}
+                  value={data.customerPhone || ""}
                   onChange={(e) => setData({ ...data, customerPhone: e.target.value })}
                 />
                 <div className="absolute right-1">
                   <VoiceInputButton
-                    lang={docLang}
-                    onTranscript={(txt) => setData({ ...data, customerPhone: txt })}
+                    lang={voiceLang}
+                    isNumeric={false}
+                    title={voiceLang === "bn" ? "কাস্টমারের মোবাইল নম্বর মুখে বলুন" : "Speak Customer Phone"}
+                    onTranscript={(txt) => {
+                      const normalized = parseBanglaDigits(txt);
+                      setData({ ...data, customerPhone: normalized });
+                    }}
                   />
                 </div>
               </div>
 
+              {/* Customer Address */}
               <div className="col-span-2 relative flex items-center">
                 <input
                   type="text"
                   placeholder={docLang === "bn" ? "ডেলিভারি ঠিকানা (জেলা, থানা, বাসা)" : "Delivery Address"}
                   className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-9 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"
-                  value={data.customerAddress}
+                  value={data.customerAddress || ""}
                   onChange={(e) => setData({ ...data, customerAddress: e.target.value })}
                 />
                 <div className="absolute right-2">
                   <VoiceInputButton
-                    lang={docLang}
+                    lang={voiceLang}
+                    title={voiceLang === "bn" ? "কাস্টমারের ঠিকানা মুখে বলুন" : "Speak Customer Address"}
                     onTranscript={(txt) => setData({ ...data, customerAddress: txt })}
                   />
                 </div>
               </div>
 
+              {/* Courier Partner */}
               <div className="relative flex items-center">
                 <input
                   type="text"
@@ -327,23 +444,25 @@ export default function InvoiceEditor({
                     docLang === "bn" ? "কুরিয়ার (যেমন: Steadfast/Pathao)" : "Courier Partner"
                   }
                   className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"
-                  value={data.courierPartner}
+                  value={data.courierPartner || ""}
                   onChange={(e) => setData({ ...data, courierPartner: e.target.value })}
                 />
                 <div className="absolute right-1">
                   <VoiceInputButton
-                    lang={docLang}
+                    lang={voiceLang}
+                    title={voiceLang === "bn" ? "কুরিয়ারের নাম মুখে বলুন" : "Speak Courier Partner"}
                     onTranscript={(txt) => setData({ ...data, courierPartner: txt })}
                   />
                 </div>
               </div>
 
+              {/* Date Input: Explicitly NO voice input, per instruction "except date time input" */}
               <div>
                 <input
-                  type="text"
-                  placeholder={docLang === "bn" ? "তারিখ (যেমন: 11/11/2026)" : "Date"}
+                  type="date"
+                  title="Date of Document"
                   className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"
-                  value={data.date}
+                  value={data.date || "2026-11-11"}
                   onChange={(e) => setData({ ...data, date: e.target.value })}
                 />
               </div>
@@ -370,7 +489,8 @@ export default function InvoiceEditor({
                   key={idx}
                   className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/60 p-2 rounded-lg border border-slate-200 dark:border-slate-700"
                 >
-                  <div className="flex-1 relative flex items-center">
+                  {/* Item Description with Voice Input */}
+                  <div className="flex-1 relative flex items-center min-w-0">
                     <input
                       type="text"
                       placeholder={docLang === "bn" ? "পণ্যের নাম" : "Item name"}
@@ -380,31 +500,67 @@ export default function InvoiceEditor({
                     />
                     <div className="absolute right-1">
                       <VoiceInputButton
-                        lang={docLang}
+                        lang={voiceLang}
+                        title={voiceLang === "bn" ? "পণ্যের নাম মুখে বলুন" : "Speak Item Name"}
                         onTranscript={(txt) => handleItemChange(idx, "name", txt)}
                       />
                     </div>
                   </div>
 
-                  <input
-                    type="number"
-                    placeholder="Qty"
-                    className="w-14 text-xs bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-2 py-1.5 focus:outline-none text-center text-slate-900 dark:text-white"
-                    value={item.quantity}
-                    onChange={(e) => handleItemChange(idx, "quantity", Number(e.target.value))}
-                  />
+                  {/* Quantity with Numeric Voice Input */}
+                  <div className="w-20 relative flex items-center shrink-0">
+                    <input
+                      type="number"
+                      min="1"
+                      placeholder="Qty"
+                      className="w-full text-xs bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-2 py-1.5 pr-6 focus:outline-none text-center text-slate-900 dark:text-white"
+                      value={item.quantity}
+                      onChange={(e) =>
+                        handleItemChange(idx, "quantity", Math.max(1, Number(e.target.value) || 1))
+                      }
+                    />
+                    <div className="absolute right-0.5">
+                      <VoiceInputButton
+                        lang={voiceLang}
+                        isNumeric={true}
+                        title={voiceLang === "bn" ? "পরিমাণ মুখে বলুন" : "Speak Quantity"}
+                        onTranscript={(val) => {
+                          const n = Math.max(1, parseInt(val, 10) || 1);
+                          handleItemChange(idx, "quantity", n);
+                        }}
+                      />
+                    </div>
+                  </div>
 
-                  <input
-                    type="number"
-                    placeholder="Price"
-                    className="w-20 text-xs bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-2 py-1.5 focus:outline-none text-right text-slate-900 dark:text-white"
-                    value={item.price}
-                    onChange={(e) => handleItemChange(idx, "price", Number(e.target.value))}
-                  />
+                  {/* Price with Numeric Voice Input */}
+                  <div className="w-24 relative flex items-center shrink-0">
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="Price"
+                      className="w-full text-xs bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-2 py-1.5 pr-6 focus:outline-none text-right text-slate-900 dark:text-white"
+                      value={item.price}
+                      onChange={(e) =>
+                        handleItemChange(idx, "price", Math.max(0, Number(e.target.value) || 0))
+                      }
+                    />
+                    <div className="absolute right-0.5">
+                      <VoiceInputButton
+                        lang={voiceLang}
+                        isNumeric={true}
+                        title={voiceLang === "bn" ? "মূল্য মুখে বলুন" : "Speak Unit Price"}
+                        onTranscript={(val) => {
+                          const n = Math.max(0, parseFloat(val) || 0);
+                          handleItemChange(idx, "price", n);
+                        }}
+                      />
+                    </div>
+                  </div>
 
+                  {/* Remove Button */}
                   <button
                     onClick={() => handleRemoveItem(idx)}
-                    className="text-slate-400 hover:text-red-500 p-1 cursor-pointer"
+                    className="text-slate-400 hover:text-red-500 p-1 cursor-pointer shrink-0"
                     title="Remove Item"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -413,39 +569,147 @@ export default function InvoiceEditor({
               ))}
             </div>
 
+            {/* Financial Adjustments with Numeric Voice Inputs */}
             <div className="grid grid-cols-3 gap-2 pt-2">
+              {/* Delivery Charge */}
               <div>
                 <span className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5 font-medium">
                   {docLang === "bn" ? "ডেলিভারি চার্জ" : "Delivery Fee"}
                 </span>
-                <input
-                  type="number"
-                  className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded px-2 py-1.5 focus:outline-none"
-                  value={data.deliveryCharge}
-                  onChange={(e) => setData({ ...data, deliveryCharge: e.target.value })}
-                />
+                <div className="relative flex items-center">
+                  <input
+                    type="number"
+                    min="0"
+                    className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded px-2 py-1.5 pr-6 focus:outline-none"
+                    value={data.deliveryCharge || 0}
+                    onChange={(e) =>
+                      setData({ ...data, deliveryCharge: Math.max(0, Number(e.target.value) || 0) })
+                    }
+                  />
+                  <div className="absolute right-0.5">
+                    <VoiceInputButton
+                      lang={voiceLang}
+                      isNumeric={true}
+                      title={voiceLang === "bn" ? "ডেলিভারি ফি মুখে বলুন" : "Speak Delivery Fee"}
+                      onTranscript={(val) =>
+                        setData({ ...data, deliveryCharge: Math.max(0, parseFloat(val) || 0) })
+                      }
+                    />
+                  </div>
+                </div>
               </div>
+
+              {/* Discount */}
               <div>
                 <span className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5 font-medium">
-                  {docLang === "bn" ? "ডিসকাউন্ট" : "Discount"}
+                  {docLang === "bn" ? "বিশেষ ছাড়" : "Discount"}
                 </span>
-                <input
-                  type="number"
-                  className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded px-2 py-1.5 focus:outline-none"
-                  value={data.discount}
-                  onChange={(e) => setData({ ...data, discount: e.target.value })}
-                />
+                <div className="relative flex items-center">
+                  <input
+                    type="number"
+                    min="0"
+                    className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded px-2 py-1.5 pr-6 focus:outline-none"
+                    value={data.discount || 0}
+                    onChange={(e) =>
+                      setData({ ...data, discount: Math.max(0, Number(e.target.value) || 0) })
+                    }
+                  />
+                  <div className="absolute right-0.5">
+                    <VoiceInputButton
+                      lang={voiceLang}
+                      isNumeric={true}
+                      title={voiceLang === "bn" ? "ছাড় বা ডিসকাউন্ট মুখে বলুন" : "Speak Discount"}
+                      onTranscript={(val) =>
+                        setData({ ...data, discount: Math.max(0, parseFloat(val) || 0) })
+                      }
+                    />
+                  </div>
+                </div>
               </div>
+
+              {/* Advance Paid */}
               <div>
                 <span className="text-[10px] text-slate-500 dark:text-slate-400 block mb-0.5 font-medium">
-                  {docLang === "bn" ? "অগ্রিম পেমেন্ট" : "Advance Paid"}
+                  {docLang === "bn" ? "অগ্রিম জমা" : "Advance Paid"}
                 </span>
-                <input
-                  type="number"
-                  className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded px-2 py-1.5 focus:outline-none"
-                  value={data.paidAmount}
-                  onChange={(e) => setData({ ...data, paidAmount: e.target.value })}
+                <div className="relative flex items-center">
+                  <input
+                    type="number"
+                    min="0"
+                    className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded px-2 py-1.5 pr-6 focus:outline-none"
+                    value={data.paidAmount || 0}
+                    onChange={(e) =>
+                      setData({ ...data, paidAmount: Math.max(0, Number(e.target.value) || 0) })
+                    }
+                  />
+                  <div className="absolute right-0.5">
+                    <VoiceInputButton
+                      lang={voiceLang}
+                      isNumeric={true}
+                      title={voiceLang === "bn" ? "অগ্রিম টাকা মুখে বলুন" : "Speak Advance Paid"}
+                      onTranscript={(val) =>
+                        setData({ ...data, paidAmount: Math.max(0, parseFloat(val) || 0) })
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 4. Terms, Notes & Signatory with Voice Inputs */}
+          <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
+              {docLang === "bn" ? "৪. শর্তাবলী ও স্বাক্ষর" : "4. Terms & Signature Title"}
+            </label>
+            <div className="space-y-2.5">
+              {/* Notes / Terms */}
+              <div className="relative flex items-start">
+                <textarea
+                  rows={2}
+                  placeholder={
+                    docLang === "bn"
+                      ? "শর্তাবলী বা নোট (যেমন: পার্সেল গ্রহণের ৪৮ ঘণ্টার মধ্যে যাচাই করুন)"
+                      : "Terms, warranty or note..."
+                  }
+                  className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-9 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors resize-none"
+                  value={data.notes || ""}
+                  onChange={(e) => setData({ ...data, notes: e.target.value })}
                 />
+                <div className="absolute right-2 top-2">
+                  <VoiceInputButton
+                    lang={voiceLang}
+                    title={voiceLang === "bn" ? "শর্তাবলী মুখে বলুন" : "Speak Terms & Notes"}
+                    onTranscript={(txt) =>
+                      setData({
+                        ...data,
+                        notes: data.notes ? `${data.notes} ${txt}` : txt,
+                      })
+                    }
+                  />
+                </div>
+              </div>
+
+              {/* Signatory Title */}
+              <div className="relative flex items-center">
+                <input
+                  type="text"
+                  placeholder={
+                    docLang === "bn"
+                      ? "অনুমোদিত স্বাক্ষরকারীর পদবী (যেমন: ম্যানেজার)"
+                      : "Signatory Title (e.g. Authorized Signature)"
+                  }
+                  className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"
+                  value={data.signatoryTitle || ""}
+                  onChange={(e) => setData({ ...data, signatoryTitle: e.target.value })}
+                />
+                <div className="absolute right-1">
+                  <VoiceInputButton
+                    lang={voiceLang}
+                    title={voiceLang === "bn" ? "পদবী মুখে বলুন" : "Speak Signatory Title"}
+                    onTranscript={(txt) => setData({ ...data, signatoryTitle: txt })}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -517,11 +781,13 @@ export default function InvoiceEditor({
                       {data.businessName || (docLang === "bn" ? "আপনার দোকানের নাম" : "Your Shop Name")}
                     </h1>
                   )}
-                  <p className="text-xs text-gray-600 font-medium">{data.tagline}</p>
-                  <p className="text-xs text-gray-500">{data.address}</p>
-                  <p className="text-xs text-gray-500">
-                    {docLang === "bn" ? "মোবাইল:" : "Phone:"} {data.phone}
-                  </p>
+                  {data.tagline && <p className="text-xs text-gray-600 font-medium">{data.tagline}</p>}
+                  {data.address && <p className="text-xs text-gray-500">{data.address}</p>}
+                  {data.phone && (
+                    <p className="text-xs text-gray-500">
+                      {docLang === "bn" ? "মোবাইল:" : "Phone:"} {data.phone}
+                    </p>
+                  )}
                 </div>
 
                 <div className="text-right space-y-1">
@@ -569,8 +835,8 @@ export default function InvoiceEditor({
                         ? "সম্পূর্ণ পরিশোধিত"
                         : "PAID IN FULL"
                       : docLang === "bn"
-                      ? `বাকি (COD): ${data.currency} ${due.toLocaleString()}`
-                      : `COD DUE: ${data.currency} ${due.toLocaleString()}`}
+                      ? `বাকি (COD): ${currency} ${due.toLocaleString()}`
+                      : `COD DUE: ${currency} ${due.toLocaleString()}`}
                   </span>
                 </div>
               </div>
@@ -593,10 +859,10 @@ export default function InvoiceEditor({
                       <td className="py-3 font-semibold text-gray-800">{item.name}</td>
                       <td className="py-3 text-center text-gray-700">{item.quantity}</td>
                       <td className="py-3 text-right text-gray-700">
-                        {data.currency} {Number(item.price).toLocaleString()}
+                        {currency} {Number(item.price).toLocaleString()}
                       </td>
                       <td className="py-3 text-right font-bold text-gray-900">
-                        {data.currency} {(item.quantity * item.price).toLocaleString()}
+                        {currency} {(item.quantity * item.price).toLocaleString()}
                       </td>
                     </tr>
                   ))}
@@ -628,14 +894,14 @@ export default function InvoiceEditor({
                   <div className="flex justify-between text-xs text-gray-600">
                     <span>{docLang === "bn" ? "উপমোট:" : "Subtotal:"}</span>
                     <span className="font-semibold">
-                      {data.currency} {subtotal.toLocaleString()}
+                      {currency} {subtotal.toLocaleString()}
                     </span>
                   </div>
                   {delivery > 0 && (
                     <div className="flex justify-between text-xs text-gray-600">
                       <span>{docLang === "bn" ? "ডেলিভারি চার্জ:" : "Delivery Charge:"}</span>
                       <span>
-                        +{data.currency} {delivery.toLocaleString()}
+                        +{currency} {delivery.toLocaleString()}
                       </span>
                     </div>
                   )}
@@ -643,28 +909,28 @@ export default function InvoiceEditor({
                     <div className="flex justify-between text-xs text-emerald-600">
                       <span>{docLang === "bn" ? "বিশেষ ছাড়:" : "Special Discount:"}</span>
                       <span>
-                        -{data.currency} {discount.toLocaleString()}
+                        -{currency} {discount.toLocaleString()}
                       </span>
                     </div>
                   )}
                   <div className="flex justify-between text-sm font-black border-t-2 border-gray-900 pt-2 text-gray-900">
                     <span>{docLang === "bn" ? "সর্বমোট বিল:" : "Grand Total:"}</span>
                     <span>
-                      {data.currency} {grandTotal.toLocaleString()}
+                      {currency} {grandTotal.toLocaleString()}
                     </span>
                   </div>
                   {paid > 0 && (
                     <div className="flex justify-between text-xs text-gray-600 pt-1">
                       <span>{docLang === "bn" ? "অগ্রিম জমা:" : "Advance Received:"}</span>
                       <span>
-                        {data.currency} {paid.toLocaleString()}
+                        {currency} {paid.toLocaleString()}
                       </span>
                     </div>
                   )}
                   <div className="flex justify-between text-xs font-bold text-gray-800 pt-1">
                     <span>{docLang === "bn" ? "ডেলিভারির সময় প্রদেয়:" : "Net Due on Delivery:"}</span>
                     <span className="text-blue-700 font-black">
-                      {data.currency} {due.toLocaleString()}
+                      {currency} {due.toLocaleString()}
                     </span>
                   </div>
                 </div>

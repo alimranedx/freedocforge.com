@@ -123,6 +123,7 @@ export const INITIAL_TEMPLATES: TemplateDefinition[] = [
     badge: "Schools & Madrasahs",
     description: "Format for academic evaluations, quarterly examinations, and coaching center progress cards with GPA calculation.",
     defaultData: {
+      currency: "৳",
       instituteName: "Dhaka Ideal Academic Care",
       tagline: "Inspiring Excellence in Education",
       phone: "+880 2-9876543",
@@ -207,6 +208,7 @@ export const INITIAL_TEMPLATES: TemplateDefinition[] = [
     badge: "Clinics & Doctors",
     description: "Professional doctor prescription layout with patient vitals, diagnosis, medicines with dosage instructions, and advice.",
     defaultData: {
+      currency: "৳",
       doctorName: "Dr. Farhana Yasmin, MBBS, FCPS",
       degrees: "Specialist in Internal Medicine & Diabetes Care",
       regNo: "BMDC Reg No: A-54321",
@@ -232,6 +234,7 @@ export const INITIAL_TEMPLATES: TemplateDefinition[] = [
         description: "Professional doctor prescription layout with patient vitals, diagnosis, medicines with dosage instructions, and advice.",
         badge: "Clinics & Doctors",
         defaultData: {
+          currency: "৳",
           doctorName: "Dr. Farhana Yasmin, MBBS, FCPS",
           degrees: "Specialist in Internal Medicine & Diabetes Care",
           regNo: "BMDC Reg No: A-54321",
@@ -257,6 +260,7 @@ export const INITIAL_TEMPLATES: TemplateDefinition[] = [
         description: "রোগীর শারীরিক বিবরণ, ওষুধের তালিকা ও সেবনবিধি এবং ডাক্তারের পরামর্শ সংবলিত প্রফেশনাল প্রেসক্রিপশন।",
         badge: "ক্লিনিক ও ডাক্তার",
         defaultData: {
+          currency: "৳",
           doctorName: "ডাঃ ফারহানা ইয়াসমিন, এমবিবিএস, এফসিপিএস",
           degrees: "মেডিসিন ও ডায়াবেটিস বিশেষজ্ঞ",
           regNo: "বিএমডিসি রেজি নং: এ-৫৪৩২১",
