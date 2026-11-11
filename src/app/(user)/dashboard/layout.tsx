@@ -100,18 +100,23 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           </div>
 
           {/* User Shop Badge */}
-          <div className="m-4 p-3 bg-blue-50/70 dark:bg-slate-800/80 border border-blue-100 dark:border-slate-700/60 rounded-xl">
-            <span className="text-[10px] font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wider block">
-              {t("activeShop")}
-            </span>
-            <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
-              {user?.profiles?.[0]?.businessName || user?.name || "Loading..."}
+          <div className="m-4 p-3.5 bg-gradient-to-br from-slate-100 to-slate-200/60 dark:from-slate-800/80 dark:to-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xs">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] font-extrabold text-blue-600 dark:text-blue-400 uppercase tracking-wider block">
+                {t("activeShop")}
+              </span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            </div>
+            <h4 className="text-xs font-black text-slate-900 dark:text-white truncate">
+              {localPresetName || user?.profiles?.[0]?.businessName || user?.name || "Stylist Fashion BD"}
             </h4>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{user?.email}</p>
+            <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
+              {user?.email || "Free Preset Active"}
+            </p>
           </div>
 
           {/* Navigation Links */}
-          <nav className="px-3 space-y-1">
+          <nav className="px-3 space-y-1.5">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
@@ -120,10 +125,10 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                   key={item.href}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-semibold transition ${
+                  className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs transition ${
                     isActive
-                      ? "bg-blue-600 text-white shadow-xs"
-                      : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"
+                      ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold shadow-xs"
+                      : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white font-semibold"
                   }`}
                 >
                   <div className="flex items-center gap-2.5">
@@ -132,10 +137,10 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                   </div>
                   {item.badge && (
                     <span
-                      className={`text-[9px] font-black px-1.5 py-0.5 rounded ${
+                      className={`text-[9px] font-black px-1.5 py-0.5 rounded-md ${
                         isActive
                           ? "bg-white text-blue-700"
-                          : "bg-purple-100 text-purple-700 dark:bg-purple-900/60 dark:text-purple-300"
+                          : "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300 border border-purple-200 dark:border-purple-800"
                       }`}
                     >
                       {item.badge}
@@ -151,13 +156,13 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         <div className="p-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
           <Link
             href="/templates/f-commerce-invoice"
-            className="w-full flex items-center justify-center gap-1.5 bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg text-xs transition shadow-xs"
+            className="w-full flex items-center justify-center gap-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-xs"
           >
             <Printer className="w-3.5 h-3.5" /> {t("instantPrintMemo")}
           </Link>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-1.5 text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 font-semibold py-2 rounded-lg text-xs transition cursor-pointer"
+            className="w-full flex items-center justify-center gap-1.5 text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 font-semibold py-2 rounded-xl text-xs transition cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5" /> {t("logOut")}
           </button>

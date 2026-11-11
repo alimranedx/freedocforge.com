@@ -16,6 +16,7 @@ import {
   ShoppingBag,
   GraduationCap,
   Stethoscope,
+  Store,
   Receipt,
   Calendar,
   Clock,
@@ -367,9 +368,10 @@ export default function Navbar() {
               </Link>
               <Link
                 href="/register"
-                className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2 rounded-lg shadow-xs transition"
+                className="text-xs font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2 rounded-xl shadow-xs hover:shadow transition flex items-center gap-1.5"
               >
-                {t("navSaveShop")}
+                <Store className="w-3.5 h-3.5" />
+                <span>{t("navSaveShop")}</span>
               </Link>
             </div>
           )}
@@ -533,9 +535,10 @@ export default function Navbar() {
                 <Link
                   href="/register"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="text-center text-xs font-semibold py-2.5 rounded-lg bg-blue-600 text-white shadow-xs"
+                  className="text-center text-xs font-bold py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xs flex items-center justify-center gap-1.5"
                 >
-                  {t("navSaveShop")}
+                  <Store className="w-3.5 h-3.5" />
+                  <span>{t("navSaveShop")}</span>
                 </Link>
               </div>
             )}
