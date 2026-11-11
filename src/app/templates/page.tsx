@@ -5,6 +5,7 @@ import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AdSenseSlot from "@/components/AdSenseSlot";
+import TemplateCardPreview from "@/components/TemplateCardPreview";
 import { INITIAL_TEMPLATES, TemplateDefinition } from "@/lib/templates";
 import {
   Printer,
@@ -16,6 +17,9 @@ import {
   Sparkles,
   Layers,
   CheckCircle2,
+  Eye,
+  X,
+  ExternalLink,
 } from "lucide-react";
 import { useGlobalSettings } from "@/context/GlobalSettingsContext";
 
@@ -24,6 +28,7 @@ export default function TemplatesCatalogPage() {
   const [selectedCategory, setSelectedCategory] = useState<"all" | "shop" | "school" | "medical">("all");
   const [selectedSubCategory, setSelectedSubCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [quickViewTemplate, setQuickViewTemplate] = useState<TemplateDefinition | null>(null);
 
   // Category Configuration
   const categoryTabs = [
@@ -146,8 +151,8 @@ export default function TemplatesCatalogPage() {
             <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
             <span>
               {lang === "bn"
-                ? "৩০+ রেডিমেড স্মার্ট প্রিন্ট ফরম্যাট"
-                : "30+ Ready-to-Print Smart Templates"}
+                ? "৩০টি রেডিমেড স্মার্ট প্রিন্ট ফরম্যাট"
+                : "30 Ready-to-Print Smart Templates"}
             </span>
           </div>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white tracking-tight">
@@ -155,8 +160,8 @@ export default function TemplatesCatalogPage() {
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-2 max-w-2xl mx-auto">
             {lang === "bn"
-              ? "দোকানের মেমো, স্কুলের মার্কশিট ও ডাক্তারের প্রেসক্রিপশন সহজে সিলেক্ট করুন, তথ্য লিখুন বা মুখে বলুন এবং ওয়াটারমার্ক ছাড়াই ফ্রি ডাউনলোড করুন।"
-              : "Select any format below to customize details via keyboard or voice typing, add your brand logo, and download a watermark-free PDF instantly."}
+              ? "দোকানের মেমো, স্কুলের মার্কশিট ও ডাক্তারের প্রেসক্রিপশন স্ন্যাপশট দেখে সহজে পছন্দ করুন, তথ্য পরিবর্তন করুন এবং ওয়াটারমার্ক ছাড়াই ফ্রি ডাউনলোড করুন।"
+              : "Preview visual document snapshots for invoices, marksheets & prescriptions. Customize details via keyboard or voice typing, and download watermark-free PDFs."}
           </p>
         </div>
 
@@ -270,9 +275,9 @@ export default function TemplatesCatalogPage() {
           )}
         </div>
 
-        {/* Templates Grid (30 Distinct Beautiful Cards) */}
+        {/* Templates Grid (30 Distinct Beautiful Cards with Visual Snapshot Mockup) */}
         {filteredTemplates.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 my-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-7 my-6">
             {filteredTemplates.map((tmpl) => {
               const isShop = tmpl.category === "Business" || tmpl.category === "Restaurant";
               const isSchool = tmpl.category === "Education";
@@ -291,13 +296,22 @@ export default function TemplatesCatalogPage() {
               return (
                 <div
                   key={tmpl.id}
-                  className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-xs hover:shadow-lg hover:-translate-y-1 transition duration-200 flex flex-col justify-between group"
+                  className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs hover:shadow-xl hover:-translate-y-1 transition duration-200 flex flex-col justify-between group"
                 >
                   <div>
-                    {/* Top Badges */}
-                    <div className="flex items-center justify-between mb-3.5">
+                    {/* 1. VISUAL TEMPLATE SNAPSHOT / MOCKUP VIEW */}
+                    <div className="mb-4">
+                      <TemplateCardPreview
+                        template={tmpl}
+                        lang={lang}
+                        onQuickView={(t) => setQuickViewTemplate(t)}
+                      />
+                    </div>
+
+                    {/* 2. Top Badges */}
+                    <div className="flex items-center justify-between mb-2.5">
                       <span
-                        className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md border flex items-center gap-1 ${categoryBadgeColor}`}
+                        className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border flex items-center gap-1 ${categoryBadgeColor}`}
                       >
                         {isShop && <ShoppingBag className="w-3 h-3" />}
                         {isSchool && <GraduationCap className="w-3 h-3" />}
@@ -318,37 +332,49 @@ export default function TemplatesCatalogPage() {
                       )}
                     </div>
 
-                    {/* Title */}
+                    {/* 3. Title */}
                     <h3 className="text-base font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition leading-snug">
                       {localizedTitle}
                     </h3>
 
-                    {/* Description */}
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-2.5 leading-relaxed line-clamp-3">
+                    {/* 4. Description */}
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed line-clamp-2">
                       {localizedDesc}
                     </p>
 
-                    {/* Design Style Pill */}
+                    {/* 5. Design Style Pill */}
                     {tmpl.designStyle && (
-                      <div className="mt-3 flex items-center gap-1.5 text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                      <div className="mt-2.5 flex items-center gap-1.5 text-[11px] text-slate-400 dark:text-slate-500 font-medium">
                         <CheckCircle2 className="w-3.5 h-3.5 text-blue-500" />
                         <span>Style: {tmpl.designStyle}</span>
                       </div>
                     )}
                   </div>
 
-                  {/* Bottom Action Footer */}
-                  <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                    <span className="text-[11px] text-slate-400 dark:text-slate-500 font-semibold bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
+                  {/* 6. Bottom Action Footer */}
+                  <div className="mt-5 pt-3.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md shrink-0">
                       {tmpl.paperSize === "POS_80MM" ? "৮০মিমি POS" : "A4 সাইজ"}
                     </span>
-                    <Link
-                      href={`/templates/${tmpl.slug}`}
-                      className="inline-flex items-center gap-1.5 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl transition shadow-xs hover:shadow-md cursor-pointer"
-                    >
-                      <Printer className="w-3.5 h-3.5" />
-                      <span>{lang === "bn" ? "কাস্টমাইজ ও প্রিন্ট" : "Edit & Print"}</span>
-                    </Link>
+
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setQuickViewTemplate(tmpl)}
+                        className="p-2 rounded-xl text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                        title={lang === "bn" ? "বড় করে ডিজাইন দেখুন" : "View Template Preview"}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+
+                      <Link
+                        href={`/templates/${tmpl.slug}`}
+                        className="inline-flex items-center gap-1.5 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2 rounded-xl transition shadow-xs hover:shadow-md cursor-pointer shrink-0"
+                      >
+                        <Printer className="w-3.5 h-3.5" />
+                        <span>{lang === "bn" ? "এডিট ও প্রিন্ট" : "Edit & Print"}</span>
+                      </Link>
+                    </div>
                   </div>
                 </div>
               );
@@ -381,6 +407,66 @@ export default function TemplatesCatalogPage() {
         {/* Bottom AdSense Banner */}
         <AdSenseSlot slotId="catalog-bottom-banner" format="horizontal" />
       </main>
+
+      {/* QUICK VIEW POPUP MODAL */}
+      {quickViewTemplate && (
+        <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-in fade-in duration-150">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4 my-auto">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950 px-2 py-0.5 rounded">
+                  {quickViewTemplate.category} • {quickViewTemplate.paperSize}
+                </span>
+                <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mt-1">
+                  {lang === "bn" && quickViewTemplate.locales?.bn?.title
+                    ? quickViewTemplate.locales.bn.title
+                    : quickViewTemplate.title}
+                </h3>
+              </div>
+              <button
+                onClick={() => setQuickViewTemplate(null)}
+                className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Large Snapshot Preview */}
+            <div className="p-2 bg-slate-100 dark:bg-slate-950 rounded-2xl flex items-center justify-center">
+              <div className="w-full max-w-sm">
+                <TemplateCardPreview template={quickViewTemplate} lang={lang} />
+              </div>
+            </div>
+
+            {/* Description */}
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              {lang === "bn" && quickViewTemplate.locales?.bn?.description
+                ? quickViewTemplate.locales.bn.description
+                : quickViewTemplate.description}
+            </p>
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setQuickViewTemplate(null)}
+                className="text-xs font-semibold px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              >
+                {lang === "bn" ? "বন্ধ করুন" : "Close"}
+              </button>
+
+              <Link
+                href={`/templates/${quickViewTemplate.slug}`}
+                className="flex items-center gap-1.5 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl transition shadow-xs hover:shadow-md"
+              >
+                <Printer className="w-4 h-4" />
+                <span>{lang === "bn" ? "এডিট ও কাস্টমাইজ করুন" : "Customize & Print"}</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>
