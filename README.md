@@ -1,36 +1,77 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# FreeDocForge.com 📄✨
+> **Free Printable & Smart Document Studio**  
+> Generate, customize, and print high-quality cash memos, invoices, school marksheets, prescriptions, and planners in seconds with dual-language support (English & বাংলা) and voice typing.
 
-## Getting Started
+---
 
-First, run the development server:
+## 🚀 Key Features
 
+- **Instant Pixel-Perfect Printable Studio:** A4 & POS 80mm thermal receipt formats ready for instant direct print or PDF download.
+- **Dual-Locale Template Engine (English & বাংলা):** Fully separate website UI language from printed document language.
+- **Voice Typing Auto-Fill (Web Speech API):** Speak details in Bengali (`bn-BD`) or English (`en-US`) to auto-fill fields, with intelligent Bengali digit & number word parsing.
+- **Dark Mode & Light Mode:** 100% responsive modern design with theme persistence.
+- **AdSense Monetization Architecture:** Ready-to-monetize ad slots with complete review-mode gating via environment variables.
+- **Role-Based Authentication (RBAC):** JWT session cookies (`jose`), password hashing (`bcryptjs`), and protected user & admin dashboards.
+- **Template Management CMS:** Admin panel for managing and publishing templates with mandatory bilingual support.
+- **Permanent Security Hardening:** Comprehensive security checklist covering OWASP Top 10, IDOR prevention, SQL injection prevention (Prisma), CSP, and RBAC.
+
+---
+
+## 🛠️ Tech Stack
+
+- **Framework:** Next.js 16.4.6 (App Router, Turbopack)
+- **UI Library:** React 19.3.0
+- **Styling:** Tailwind CSS v4, Lucide Icons
+- **Database & ORM:** MySQL with Prisma ORM 6.4.1
+- **Auth & Crypto:** `jose` JWT, `bcryptjs`
+- **Speech Engine:** Web Speech API (`webkitSpeechRecognition`)
+
+---
+
+## 📦 Getting Started
+
+### 1. Prerequisites
+- Node.js 18+ or 20+
+- MySQL Database (Local, cPanel, or Cloud)
+
+### 2. Installation
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/alimranedx/freedocforge.com.git
+cd freedocforge.com
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 3. Environment Setup
+Copy the example environment file and configure your credentials:
+```bash
+cp .env.example .env
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Generate Prisma client:
+```bash
+npx prisma generate
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 4. Running the Development Server
+```bash
+npm run dev
+# or watch mode
+npm run watch
+```
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Learn More
+### 5. Production Build
+```bash
+npm run build
+npm start
+```
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🔒 Security Guidelines
+Please refer to [SECURITY_CHECKLIST.md](SECURITY_CHECKLIST.md) and [AGENTS.md](AGENTS.md) for permanent project security policies, coding standards, and verification guidelines.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📄 License
+This project is proprietary and developed for FreeDocForge.com.
