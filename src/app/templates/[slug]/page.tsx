@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import InvoiceEditor from "@/components/InvoiceEditor";
 import AdSenseSlot from "@/components/AdSenseSlot";
+import TemplateLanguageBar from "@/components/TemplateLanguageBar";
 import { INITIAL_TEMPLATES } from "@/lib/templates";
 
 export function generateStaticParams() {
@@ -23,16 +24,12 @@ export default async function TemplatePage({ params }: { params: Promise<{ slug:
       <Navbar />
 
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
-        {/* Breadcrumb & Title */}
-        <div className="mb-6 print:hidden">
-          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mb-2">
-            <span>Templates</span>
-            <span>/</span>
-            <span className="font-semibold text-blue-600 dark:text-blue-400">{template.category}</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{template.title}</h1>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-3xl">{template.description}</p>
-        </div>
+        {/* Breadcrumb, Title & Dedicated Language Switcher */}
+        <TemplateLanguageBar
+          category={template.category}
+          title={template.title}
+          description={template.description}
+        />
 
         {/* Top Header AdSense */}
         <AdSenseSlot slotId="template-top-ad" format="horizontal" className="print:hidden" />
