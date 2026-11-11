@@ -1,0 +1,90 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum PaperSize {
+  A4
+  LETTER
+  POS_80MM
+  POS_58MM
+}
+
+model User {
+  id              String                @id @default(cuid())
+  name            String
+  email           String                @unique
+  password        String
+  role            Role                  @default(USER)
+  aiQuota         Int                   @default(5)
+  profiles        OrganizationProfile[]
+  documents       SavedDocument[]
+  customTemplates Template[]            @relation("UserCustomTemplates")
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+}
+
+model OrganizationProfile {
+  id           String          @id @default(cuid())
+  userId       String
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessName String
+  tagline      String?
+  logoUrl      String?         @db.Text
+  signatureUrl String?         @db.Text
+  phone        String?
+  address      String?         @db.Text
+  currency     String          @default("BDT")
+  terms        String?         @db.Text
+  documents    SavedDocument[]
+  createdAt    DateTime        @default(now())
+}
+
+model Category {
+  id          String     @id @default(cuid())
+  name        String     @unique
+  slug        String     @unique
+  icon        String?
+  templates   Template[]
+}
+
+model Template {
+  id          String          @id @default(cuid())
+  categoryId  String
+  category    Category        @relation(fields: [categoryId], references: [id])
+  createdById String?
+  createdBy   User?           @relation("UserCustomTemplates", fields: [createdById], references: [id])
+  title       String
+  slug        String          @unique
+  description String?         @db.Text
+  paperSize   PaperSize       @default(A4)
+  fieldSchema Json
+  isFeatured  Boolean         @default(false)
+  isApproved  Boolean         @default(true)
+  documents   SavedDocument[]
+  createdAt   DateTime        @default(now())
+
+  @@fulltext([title, description])
+}
+
+model SavedDocument {
+  id             String               @id @default(cuid())
+  userId         String?
+  user           User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
+  profileId      String?
+  profile        OrganizationProfile? @relation(fields: [profileId], references: [id], onDelete: SetNull)
+  templateId     String
+  template       Template             @relation(fields: [templateId], references: [id])
+  documentNumber String
+  dataJson       Json
+  createdAt      DateTime             @default(now())
+}
