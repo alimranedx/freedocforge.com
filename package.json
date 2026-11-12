@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "db:seed": "node prisma/seed.js",
     "postinstall": "prisma skills sync || exit 0"
   },
   "dependencies": {
@@ -34,5 +35,8 @@
     "prisma": "^6.4.1",
     "tailwindcss": "4.3.3",
     "typescript": "^5"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   }
 }

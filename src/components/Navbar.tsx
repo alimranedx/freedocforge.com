@@ -54,8 +54,13 @@ export default function Navbar() {
   }, []);
 
   const handleLogout = async () => {
+    const isAdmin = user?.role === "ADMIN";
     await fetch("/api/auth/logout", { method: "POST" });
-    window.location.href = "/";
+    if (isAdmin) {
+      window.location.href = "/admin/login";
+    } else {
+      window.location.href = "/login";
+    }
   };
 
   const shopItems = [
@@ -90,7 +95,7 @@ export default function Navbar() {
       title: t("navMarksheet"),
       href: "/templates/school-result-sheet",
       desc: lang === "bn" ? "বার্ষিক ও সেমিস্টার মূল্যায়ন মার্কশিট" : "Annual & semester GPA progress card",
-      badge: "GPA / গ্রেড",
+      badge: lang === "bn" ? "গ্রেড" : "GPA",
     },
     {
       title: t("navClassRoutine"),
@@ -312,7 +317,7 @@ export default function Navbar() {
           <button
             onClick={toggleLang}
             className="flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100/70 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer"
-            title="Language / ভাষা পরিবর্তন"
+            title={lang === "en" ? "বাংলা ভাষায় পরিবর্তন করুন" : "Switch to English"}
           >
             <Globe className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
             <span>{lang === "en" ? "বাংলা" : "EN"}</span>
@@ -341,14 +346,14 @@ export default function Navbar() {
                 >
                   <Shield className="w-3.5 h-3.5" /> {t("adminPanel")}
                 </Link>
-              ) : null}
-
-              <Link
-                href="/dashboard"
-                className="flex items-center gap-1 text-xs bg-blue-50 dark:bg-slate-800 hover:bg-blue-100 dark:hover:bg-slate-700 text-blue-700 dark:text-blue-400 font-semibold px-3 py-2 rounded-lg transition border border-blue-200 dark:border-slate-700"
-              >
-                <User className="w-3.5 h-3.5" /> {user.name.split(" ")[0]}
-              </Link>
+              ) : (
+                <Link
+                  href="/dashboard"
+                  className="flex items-center gap-1 text-xs bg-blue-50 dark:bg-slate-800 hover:bg-blue-100 dark:hover:bg-slate-700 text-blue-700 dark:text-blue-400 font-semibold px-3 py-2 rounded-lg transition border border-blue-200 dark:border-slate-700"
+                >
+                  <User className="w-3.5 h-3.5" /> {user.name.split(" ")[0]}
+                </Link>
+              )}
 
               <button
                 onClick={handleLogout}
@@ -509,16 +514,26 @@ export default function Navbar() {
           <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center gap-3">
             {user ? (
               <div className="w-full flex items-center justify-between">
-                <Link
-                  href="/dashboard"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-slate-800 px-3 py-2 rounded-lg"
-                >
-                  {user.name}'s Shop
-                </Link>
+                {user.role === "ADMIN" ? (
+                  <Link
+                    href="/admin/dashboard"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="text-xs font-bold text-white bg-red-600 hover:bg-red-700 px-3 py-2 rounded-lg flex items-center gap-1.5"
+                  >
+                    <Shield className="w-3.5 h-3.5" /> {t("adminPanel")}
+                  </Link>
+                ) : (
+                  <Link
+                    href="/dashboard"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-slate-800 px-3 py-2 rounded-lg"
+                  >
+                    {user.name}'s Shop
+                  </Link>
+                )}
                 <button
                   onClick={handleLogout}
-                  className="text-xs text-red-600 dark:text-red-400 font-semibold"
+                  className="text-xs text-red-600 dark:text-red-400 font-semibold cursor-pointer"
                 >
                   {t("logOut")}
                 </button>

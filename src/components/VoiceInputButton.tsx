@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Mic, MicOff } from "lucide-react";
+import { useGlobalSettings } from "@/context/GlobalSettingsContext";
 
 interface VoiceInputButtonProps {
   onTranscript: (text: string) => void;
@@ -34,11 +35,16 @@ const BANGLA_WORD_NUMBERS: Record<string, string> = {
 
 export default function VoiceInputButton({
   onTranscript,
-  lang = "bn",
+  lang,
   isNumeric = false,
-  title = "Voice Input / মুখে বলুন",
+  title,
   className = "",
 }: VoiceInputButtonProps) {
+  const { lang: globalLang } = useGlobalSettings();
+  const effectiveLang = lang || globalLang || "bn";
+  const defaultTitle = effectiveLang === "bn" ? "মুখে বলুন" : "Voice Input";
+  const finalTitle = title || defaultTitle;
+
   const [isListening, setIsListening] = useState(false);
 
   const startListening = (e: React.MouseEvent) => {
@@ -50,14 +56,18 @@ export default function VoiceInputButton({
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
-      alert("Voice input is supported in Google Chrome, Microsoft Edge, and modern browsers.");
+      alert(
+        effectiveLang === "bn"
+          ? "ভয়েস ইনপুট গুগল ক্রোম, মাইক্রোসফট এজ ও আধুনিক ব্রাউজারে সমর্থিত।"
+          : "Voice input is supported in Google Chrome, Microsoft Edge, and modern browsers."
+      );
       return;
     }
 
     try {
       const recognition = new SpeechRecognition();
       // bn-BD for Bangla, en-US for English
-      recognition.lang = lang === "bn" ? "bn-BD" : "en-US";
+      recognition.lang = effectiveLang === "bn" ? "bn-BD" : "en-US";
       recognition.interimResults = false;
       recognition.maxAlternatives = 1;
 
@@ -121,7 +131,7 @@ export default function VoiceInputButton({
     <button
       type="button"
       onClick={startListening}
-      title={isListening ? (lang === "bn" ? "শুনছি... বলুন..." : "Listening... speak now...") : title}
+      title={isListening ? (effectiveLang === "bn" ? "শুনছি... বলুন..." : "Listening... speak now...") : finalTitle}
       className={`p-1 rounded-md transition-all flex items-center justify-center cursor-pointer shrink-0 ${
         isListening
           ? "bg-red-500 text-white animate-pulse ring-2 ring-red-400"

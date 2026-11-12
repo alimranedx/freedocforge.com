@@ -38,3 +38,10 @@ export async function verifyToken(token: string): Promise<SessionPayload | null>
     return null;
   }
 }
+
+export async function getAdminSession(cookieToken?: string): Promise<SessionPayload | null> {
+  if (!cookieToken) return null;
+  const payload = await verifyToken(cookieToken);
+  if (!payload || payload.role !== "ADMIN") return null;
+  return payload;
+}

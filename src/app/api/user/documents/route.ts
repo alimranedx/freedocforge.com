@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { handleApiError } from "@/lib/errorHandler";
 
 export async function GET() {
   try {
@@ -24,8 +25,7 @@ export async function GET() {
 
     return NextResponse.json({ success: true, documents });
   } catch (error: any) {
-    console.error("Error fetching documents:", error);
-    return NextResponse.json({ error: "Failed to load documents" }, { status: 500 });
+    return handleApiError(error, "Failed to load documents");
   }
 }
 
@@ -120,7 +120,6 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, document: newDoc });
   } catch (error: any) {
-    console.error("Error saving document:", error);
-    return NextResponse.json({ error: error.message || "Failed to save document" }, { status: 500 });
+    return handleApiError(error, "Failed to save document");
   }
 }

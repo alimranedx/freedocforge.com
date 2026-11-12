@@ -21,6 +21,8 @@ import {
   Save,
   BookmarkCheck,
   Loader2,
+  MessageCircle,
+  Image as ImageIcon,
 } from "lucide-react";
 import AdSenseSlot from "@/components/AdSenseSlot";
 import VoiceInputButton from "@/components/VoiceInputButton";
@@ -31,6 +33,7 @@ import {
   DESIGN_THEMES,
   DesignThemeId,
 } from "@/lib/designThemes";
+import { exportElementToPdf, exportElementToJpg } from "@/lib/pdfExport";
 
 interface SubjectItem {
   name: string;
@@ -63,6 +66,8 @@ export default function SchoolTemplateEditor({
   const [data, setData] = useState({ ...initialData });
   const [signaturePreview, setSignaturePreview] = useState<string | null>(null);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [isExportingJpg, setIsExportingJpg] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
   const [docSaveLoading, setDocSaveLoading] = useState(false);
@@ -139,6 +144,76 @@ export default function SchoolTemplateEditor({
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!printRef.current || isExportingPdf) return;
+    try {
+      setIsExportingPdf(true);
+      await exportElementToPdf({
+        element: printRef.current,
+        filename: `${data.studentRoll || data.examName || "academic-sheet"}.pdf`,
+        paperSize: "A4",
+        scale: 2,
+      });
+    } catch (e) {
+      console.error("Academic sheet PDF export error:", e);
+      alert(
+        docLang === "bn"
+          ? "PDF ডাউনলোড করা যায়নি। প্রিন্ট অপশনটি ব্যবহার করুন।"
+          : "Failed to download PDF. Please use the Print option instead."
+      );
+    } finally {
+      setIsExportingPdf(false);
+    }
+  };
+
+  const handleSaveAsJpg = async () => {
+    if (!printRef.current || isExportingJpg) return;
+    try {
+      setIsExportingJpg(true);
+      await exportElementToJpg(
+        printRef.current,
+        `${data.studentRoll || data.examName || "academic-sheet"}.jpg`,
+        2
+      );
+    } catch (e) {
+      console.error("JPG export error:", e);
+      alert(
+        docLang === "bn"
+          ? "JPG এক্সপোর্ট ব্যর্থ হয়েছে। প্রিন্ট অপশনটি ব্যবহার করুন।"
+          : "Failed to export JPG. Please use Print / PDF instead."
+      );
+    } finally {
+      setIsExportingJpg(false);
+    }
+  };
+
+  const handleWhatsAppShare = () => {
+    try {
+      const institute = data.instituteName || "Academic Institute";
+      const student = data.studentName || "Student";
+      const roll = data.studentRoll ? `রোল: ${data.studentRoll}` : "";
+      const gpa = data.gpa ? `GPA: ${data.gpa}` : "";
+      const exam = data.examName || "Examination";
+
+      const message =
+        docLang === "bn"
+          ? `*${institute}*\nপরীক্ষা: ${exam}\nশিক্ষার্থী: ${student}\n${roll}\n${gpa}\n\nফলাফল বিস্তারিত দেখতে বা প্রিন্ট কপি ডাউনলোড করতে ভিজিট করুন FreeDocForge.com`
+          : `*${institute}*\nExam: ${exam}\nStudent: ${student}\n${roll}\n${gpa}\n\nOfficial Academic Document via FreeDocForge.com`;
+
+      const cleanPhone = (data.guardianPhone || data.phone || "").replace(/[^0-9]/g, "");
+      const targetUrl =
+        cleanPhone.length >= 10
+          ? `https://wa.me/${cleanPhone.startsWith("88") ? cleanPhone : `88${cleanPhone}`}?text=${encodeURIComponent(
+              message
+            )}`
+          : `https://wa.me/?text=${encodeURIComponent(message)}`;
+
+      window.open(targetUrl, "_blank");
+    } catch (e) {
+      console.error("WhatsApp share error:", e);
+    }
   };
 
   const handleSaveToProfile = async () => {
@@ -786,14 +861,68 @@ export default function SchoolTemplateEditor({
 
           {/* Action Buttons */}
           <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
-            {/* 1. Print / Save as PDF */}
+            {/* 1. Direct 1-Click Vector/Raster PDF Download */}
             <button
-              onClick={handlePrint}
-              className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-xs transition text-xs sm:text-sm cursor-pointer"
+              type="button"
+              onClick={handleDownloadPdf}
+              disabled={isExportingPdf}
+              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-3 rounded-xl shadow-md hover:shadow-lg transition text-xs sm:text-sm cursor-pointer disabled:opacity-50"
             >
-              <Printer className="w-4 h-4" />
-              {docLang === "bn" ? "মার্কশিট প্রিন্ট / PDF ডাউনলোড" : "Print Academic Sheet / Save PDF"}
+              {isExportingPdf ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>{docLang === "bn" ? "PDF প্রস্তুত হচ্ছে..." : "Generating Academic PDF..."}</span>
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4" />
+                  <span>{docLang === "bn" ? "১-ক্লিক সরাসরি PDF ডাউনলোড" : "1-Click Direct PDF Download"}</span>
+                </>
+              )}
             </button>
+
+            {/* 2. Print via System Spooler */}
+            <button
+              type="button"
+              onClick={handlePrint}
+              className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 dark:bg-slate-750 dark:hover:bg-slate-700 text-white font-semibold py-2.5 rounded-xl shadow-xs transition text-xs cursor-pointer"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>{docLang === "bn" ? "প্রিন্টার দিয়ে প্রিন্ট করুন" : "Print via System Spooler"}</span>
+            </button>
+
+            {/* 1-Click WhatsApp & JPG Direct Export */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={handleWhatsAppShare}
+                className="flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-3 rounded-xl shadow-xs transition text-xs cursor-pointer"
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+                <span>{docLang === "bn" ? "হোয়াটসঅ্যাপে পাঠান" : "WhatsApp Share"}</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveAsJpg}
+                disabled={isExportingJpg}
+                className="flex items-center justify-center gap-1.5 bg-slate-700 hover:bg-slate-850 text-white font-bold py-2.5 px-3 rounded-xl shadow-xs transition text-xs cursor-pointer disabled:opacity-50"
+              >
+                {isExportingJpg ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <ImageIcon className="w-3.5 h-3.5" />
+                )}
+                <span>
+                  {isExportingJpg
+                    ? docLang === "bn"
+                      ? "সেভ হচ্ছে..."
+                      : "Saving..."
+                    : docLang === "bn"
+                    ? "ছবি সেভ (JPG)"
+                    : "Save as JPG"}
+                </span>
+              </button>
+            </div>
 
             {/* 2. Save Document for Next Use (Cloud + Local) */}
             <button
@@ -856,11 +985,18 @@ export default function SchoolTemplateEditor({
               {docLang === "bn" ? "A4 লাইভ মার্কশিট প্রিভিউ (বাংলা)" : "A4 Academic Live Preview (English)"}
             </div>
             <button
-              onClick={handlePrint}
-              className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline font-semibold cursor-pointer"
+              onClick={handleDownloadPdf}
+              disabled={isExportingPdf}
+              className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline font-semibold cursor-pointer disabled:opacity-50"
             >
               <Download className="w-3.5 h-3.5" />
-              {docLang === "bn" ? "সরাসরি প্রিন্ট" : "Direct Download"}
+              {isExportingPdf
+                ? docLang === "bn"
+                  ? "ডাউনলোড হচ্ছে..."
+                  : "Downloading..."
+                : docLang === "bn"
+                ? "১-ক্লিক PDF ডাউনলোড"
+                : "1-Click PDF"}
             </button>
           </div>
 

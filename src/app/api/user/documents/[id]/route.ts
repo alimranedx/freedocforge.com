@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { handleApiError } from "@/lib/errorHandler";
 
 export async function GET(
   req: Request,
@@ -31,8 +32,7 @@ export async function GET(
 
     return NextResponse.json({ success: true, document: doc });
   } catch (error: any) {
-    console.error("Error fetching single document:", error);
-    return NextResponse.json({ error: "Failed to fetch document" }, { status: 500 });
+    return handleApiError(error, "Failed to fetch document");
   }
 }
 
@@ -68,7 +68,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true, message: "Document deleted successfully" });
   } catch (error: any) {
-    console.error("Error deleting document:", error);
-    return NextResponse.json({ error: "Failed to delete document" }, { status: 500 });
+    return handleApiError(error, "Failed to delete document");
   }
 }

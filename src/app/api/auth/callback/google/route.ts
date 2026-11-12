@@ -105,9 +105,9 @@ export async function GET(req: Request) {
         });
       }
     } else {
-      // First user registered becomes ADMIN, otherwise USER
-      const userCount = await prisma.user.count();
-      const role = userCount === 0 ? "ADMIN" : "USER";
+      // All public Google OAuth registrations receive USER role.
+      // Administrators MUST be provisioned explicitly via /admin/registration with ADMIN_PROVISION_KEY
+      const role = "USER";
 
       user = await prisma.user.create({
         data: {

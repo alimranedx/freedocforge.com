@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { comparePassword, signToken } from "@/lib/auth";
+import { handleApiError } from "@/lib/errorHandler";
+import { checkRateLimit, getClientIp } from "@/lib/rateLimiter";
 
 export async function POST(req: Request) {
   try {
+    const ip = getClientIp(req);
     const body = await req.json();
     const rawIdentifier = (body.identifier || body.email || body.phone || "").trim();
     const password = body.password;
@@ -18,6 +21,22 @@ export async function POST(req: Request) {
 
     const cleanIdentifier = rawIdentifier.toLowerCase();
     const normalizedDigits = rawIdentifier.replace(/[\s\-\(\)]/g, "");
+
+    // Rate Limiting: 5 attempts per 15 minutes per IP + identifier
+    const rateCheck = checkRateLimit(`login:${ip}:${cleanIdentifier}`, 5, 900);
+    if (!rateCheck.success) {
+      return NextResponse.json(
+        {
+          error: `Too many login attempts. Please try again in ${Math.ceil(
+            rateCheck.resetInSeconds / 60
+          )} minutes.`,
+        },
+        {
+          status: 429,
+          headers: { "Retry-After": String(rateCheck.resetInSeconds) },
+        }
+      );
+    }
 
     // Query user by email OR phone
     const user = await prisma.user.findFirst({
@@ -92,10 +111,6 @@ export async function POST(req: Request) {
 
     return response;
   } catch (error: any) {
-    console.error("Login error:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to login" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Failed to authenticate user");
   }
 }

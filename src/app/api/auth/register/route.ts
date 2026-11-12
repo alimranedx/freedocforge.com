@@ -1,9 +1,25 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { hashPassword, signToken } from "@/lib/auth";
+import { handleApiError } from "@/lib/errorHandler";
+import { checkRateLimit, getClientIp } from "@/lib/rateLimiter";
 
 export async function POST(req: Request) {
   try {
+    const ip = getClientIp(req);
+    // Rate Limiting: 5 accounts per hour per IP
+    const rateCheck = checkRateLimit(`register:${ip}`, 5, 3600);
+    if (!rateCheck.success) {
+      return NextResponse.json(
+        {
+          error: `Too many account registrations from this network. Please try again in ${Math.ceil(
+            rateCheck.resetInSeconds / 60
+          )} minutes.`,
+        },
+        { status: 429, headers: { "Retry-After": String(rateCheck.resetInSeconds) } }
+      );
+    }
+
     const body = await req.json();
     const name = (body.name || "").trim();
     const rawEmail = (body.email || "").trim().toLowerCase();
@@ -138,10 +154,6 @@ export async function POST(req: Request) {
 
     return response;
   } catch (error: any) {
-    console.error("Registration error:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to create account" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Failed to create account");
   }
 }

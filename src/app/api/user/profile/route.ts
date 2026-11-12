@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { handleApiError } from "@/lib/errorHandler";
 
 export async function GET() {
   try {
@@ -24,8 +25,7 @@ export async function GET() {
 
     return NextResponse.json({ success: true, profile: profile || null });
   } catch (error) {
-    console.error("Error fetching user profile:", error);
-    return NextResponse.json({ error: "Failed to load profile" }, { status: 500 });
+    return handleApiError(error, "Failed to load profile");
   }
 }
 
@@ -105,7 +105,6 @@ export async function PUT(req: Request) {
 
     return NextResponse.json({ success: true, profile: savedProfile });
   } catch (error) {
-    console.error("Error updating user profile:", error);
-    return NextResponse.json({ error: "Failed to save profile" }, { status: 500 });
+    return handleApiError(error, "Failed to save profile");
   }
 }

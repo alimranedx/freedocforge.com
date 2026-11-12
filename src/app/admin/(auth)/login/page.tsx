@@ -30,6 +30,7 @@ export default function AdminLoginPage() {
       }
 
       if (data.user?.role !== "ADMIN") {
+        await fetch("/api/auth/logout", { method: "POST" });
         throw new Error("Access Denied: This portal requires Administrator privileges.");
       }
 
@@ -110,9 +111,7 @@ export default function AdminLoginPage() {
           </form>
 
           <div className="mt-6 text-center text-xs text-zinc-500 border-t border-zinc-800 pt-4 flex items-center justify-between">
-            <Link href="/" className="hover:text-zinc-300 transition">
-              ← Return to Site
-            </Link>
+            <span className="text-[11px] font-mono text-zinc-500">DocForge Admin Portal</span>
             <Link href="/admin/registration" className="text-red-400 hover:text-red-300 font-mono transition">
               Admin Registration →
             </Link>

@@ -9,8 +9,9 @@ import {
   Users,
   DollarSign,
   BarChart3,
+  FileText,
+  Settings,
   LogOut,
-  ExternalLink,
 } from "lucide-react";
 
 export default function AdminDashboardLayout({ children }: { children: React.ReactNode }) {
@@ -35,9 +36,11 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
 
   const navItems = [
     { label: "Master Dashboard", href: "/admin/dashboard", icon: BarChart3 },
-    { label: "Template CMS", href: "/admin/templates", icon: Layers },
-    { label: "Registered Users", href: "/admin/users", icon: Users },
-    { label: "AdSense & Monetization", href: "/admin/ads", icon: DollarSign },
+    { label: "Users & Merchants", href: "/admin/users", icon: Users },
+    { label: "Document Compliance", href: "/admin/documents", icon: FileText },
+    { label: "Template Studio", href: "/admin/templates", icon: Layers },
+    { label: "AdSense Monetization", href: "/admin/ads", icon: DollarSign },
+    { label: "Platform Settings", href: "/admin/settings", icon: Settings },
   ];
 
   return (
@@ -96,16 +99,13 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
 
         {/* Bottom Actions */}
         <div className="p-4 border-t border-zinc-800 space-y-2">
-          <Link
-            href="/"
-            target="_blank"
-            className="w-full flex items-center justify-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-bold py-2 rounded-lg text-xs transition border border-zinc-700"
-          >
-            <ExternalLink className="w-3.5 h-3.5" /> View Public Site
-          </Link>
+          <div className="w-full py-2 px-3 rounded-lg bg-zinc-800/60 border border-zinc-800 text-[11px] font-mono text-zinc-400 flex items-center justify-between">
+            <span>Security Zone</span>
+            <span className="text-emerald-400 font-bold">ISOLATED</span>
+          </div>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-1.5 text-zinc-400 hover:text-red-400 hover:bg-red-950/40 font-semibold py-2 rounded-lg text-xs transition"
+            className="w-full flex items-center justify-center gap-1.5 text-zinc-400 hover:text-red-400 hover:bg-red-950/40 font-semibold py-2 rounded-lg text-xs transition cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5" /> Exit Admin
           </button>

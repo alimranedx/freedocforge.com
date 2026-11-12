@@ -13,6 +13,7 @@ import {
   Scale,
   Zap,
 } from "lucide-react";
+import { useGlobalSettings } from "@/context/GlobalSettingsContext";
 
 interface FAQItem {
   questionEn: string;
@@ -44,7 +45,7 @@ const CATEGORY_FAQS: Record<string, FAQItem[]> = {
       answerBn: "হ্যাঁ! সাধারণ প্রিন্টারের জন্য A4 ফরম্যাট অথবা রেস্টুরেন্ট ও খুচরা দোকানের জন্য POS ৮০মিমি থার্মাল স্লিপ ফরম্যাট বেছে নিয়ে প্রিন্ট করতে পারেন।",
     },
     {
-      questionEn: "How does the Bengali Voice Typing (ভয়েস টাইপিং) feature work?",
+      questionEn: "How does the Bengali Voice Typing feature work?",
       questionBn: "বাংলা ভয়েস টাইপিং ফিচারটি কীভাবে কাজ করে?",
       answerEn: "Click on the microphone icon next to any input field and speak naturally in Bengali or English. Our speech engine automatically recognizes item names, amounts, and converts Bengali numbers into standardized figures.",
       answerBn: "যেকোনো ইনপুট বক্সের পাশের মাইক আইকনে ক্লিক করে বাংলায় কথা বলুন। আমাদের স্মার্ট ভয়েস ইঞ্জিন স্বয়ংক্রিয়ভাবে পণ্য ও টাকার পরিমাণ বাংলায় টাইপ করে দেবে।",
@@ -101,6 +102,7 @@ export default function TemplateEditorialGuide({
   description,
   paperSize = "A4",
 }: TemplateEditorialGuideProps) {
+  const { lang } = useGlobalSettings();
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
 
   const faqs = CATEGORY_FAQS[category] || CATEGORY_FAQS["Business"];
@@ -111,10 +113,10 @@ export default function TemplateEditorialGuide({
     "@type": "FAQPage",
     mainEntity: faqs.map((faq) => ({
       "@type": "Question",
-      name: faq.questionEn,
+      name: lang === "bn" ? faq.questionBn : faq.questionEn,
       acceptedAnswer: {
         "@type": "Answer",
-        text: faq.answerEn,
+        text: lang === "bn" ? faq.answerBn : faq.answerEn,
       },
     })),
   };
@@ -151,13 +153,17 @@ export default function TemplateEditorialGuide({
         <div className="max-w-3xl">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 text-xs font-bold mb-4">
             <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-            <span>Complete Usage & Printing Guide / নির্দেশিকা</span>
+            <span>{lang === "bn" ? "ব্যবহার ও প্রিন্টিং নির্দেশিকা" : "Complete Usage & Printing Guide"}</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-            How to Create, Customize, and Print Your {title}
+            {lang === "bn"
+              ? `${title} তৈরি, কাস্টমাইজ ও প্রিন্ট করার নিয়মাবলী`
+              : `How to Create, Customize, and Print Your ${title}`}
           </h2>
           <p className="mt-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-            Whether you run a Facebook clothing shop, grocery store, private clinic, or school, having a clean, standardized printable document builds instant customer confidence. Follow these 4 simple steps to generate your document in seconds:
+            {lang === "bn"
+              ? "আপনার ফেসবুক পেজ, দোকান, ক্লিনিক বা স্কুলের জন্য পরিষ্কার ও আকর্ষণীয় ডকুমেন্ট তৈরি করুন খুব সহজেই। নিচের ৪টি সহজ ধাপ অনুসরণ করে মুহূর্তেই প্রিন্ট বা ডাউনলোড করুন:"
+              : "Whether you run a Facebook clothing shop, grocery store, private clinic, or school, having a clean, standardized printable document builds instant customer confidence. Follow these 4 simple steps to generate your document in seconds:"}
           </p>
         </div>
 
@@ -169,15 +175,14 @@ export default function TemplateEditorialGuide({
                 1
               </span>
               <h3 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white">
-                Customize Letterhead
+                {lang === "bn" ? "লেটারহেড কাস্টমাইজ করুন" : "Customize Letterhead"}
               </h3>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                Add your business name, logo, contact phone, and address. Or load your saved preset in 1 click.
+                {lang === "bn"
+                  ? "আপনার শপ বা প্রতিষ্ঠানের নাম, লোগো, ফোন এবং ঠিকানা বসান। অথবা ১ ক্লিকে আপনার সংরক্ষিত প্রিসেট লোড করুন।"
+                  : "Add your business name, logo, contact phone, and address. Or load your saved preset in 1 click."}
               </p>
             </div>
-            <span className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold mt-3 block">
-              লোগো ও শপের নাম বসান
-            </span>
           </div>
 
           <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 flex flex-col justify-between">
@@ -186,15 +191,14 @@ export default function TemplateEditorialGuide({
                 2
               </span>
               <h3 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white">
-                Input Items via Voice
+                {lang === "bn" ? "ভয়েস টাইপিং দিয়ে আইটেম যোগ" : "Input Items via Voice"}
               </h3>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                Type or speak product descriptions and prices in Bengali or English. Auto-calculates totals and due amounts.
+                {lang === "bn"
+                  ? "পণ্য বা সেবার বিবরণ ও মূল্য মুখে বলুন বা লিখুন। স্বয়ংক্রিয়ভাবে মোট ও বকেয়া হিসাব হয়ে যাবে।"
+                  : "Type or speak product descriptions and prices in Bengali or English. Auto-calculates totals and due amounts."}
               </p>
             </div>
-            <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold mt-3 block">
-              ভয়েস টাইপিং দিয়ে আইটেম যোগ
-            </span>
           </div>
 
           <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 flex flex-col justify-between">
@@ -203,15 +207,14 @@ export default function TemplateEditorialGuide({
                 3
               </span>
               <h3 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white">
-                Terms & Digital Seal
+                {lang === "bn" ? "শর্তাবলী ও ডিজিটাল সিল" : "Terms & Digital Seal"}
               </h3>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                Specify courier notes, return policies, warranty terms, and upload your authorized signature seal.
+                {lang === "bn"
+                  ? "কুরিয়ার নোট, রিটার্ন পলিসি এবং ডিজিটাল সিল বা স্বাক্ষর যুক্ত করুন।"
+                  : "Specify courier notes, return policies, warranty terms, and upload your authorized signature seal."}
               </p>
             </div>
-            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold mt-3 block">
-              শর্তাবলী ও ডিজিটাল স্বাক্ষর
-            </span>
           </div>
 
           <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 flex flex-col justify-between">
@@ -220,15 +223,14 @@ export default function TemplateEditorialGuide({
                 4
               </span>
               <h3 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white">
-                Print or Save PDF
+                {lang === "bn" ? "প্রিন্ট বা PDF সংরক্ষণ" : "Print or Save PDF"}
               </h3>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                Print directly to laser or POS thermal printers, or download clean PDF without any watermarks.
+                {lang === "bn"
+                  ? "লেজার বা POS থার্মাল প্রিন্টারে সরাসরি প্রিন্ট করুন অথবা ওয়াটারমার্ক ছাড়া PDF ডাউনলোড করুন।"
+                  : "Print directly to laser or POS thermal printers, or download clean PDF without any watermarks."}
               </p>
             </div>
-            <span className="text-[10px] text-rose-600 dark:text-rose-400 font-semibold mt-3 block">
-              ফ্রি প্রিন্ট বা PDF ডাউনলোড
-            </span>
           </div>
         </div>
 
@@ -240,10 +242,12 @@ export default function TemplateEditorialGuide({
             </div>
             <div>
               <h4 className="font-bold text-xs text-slate-900 dark:text-white">
-                Reduces Courier & COD Returns
+                {lang === "bn" ? "কুরিয়ার রিটার্ন ও ভুল দূর করে" : "Reduces Courier & COD Returns"}
               </h4>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                Clearly printed customer addresses and COD due amounts prevent delivery mix-ups with courier partners.
+                {lang === "bn"
+                  ? "গ্রাহকের স্পষ্ট ঠিকানা ও বকেয়া টাকার উল্লেখ থাকায় কুরিয়ার ডেলিভারিতে ভুল হয় না।"
+                  : "Clearly printed customer addresses and COD due amounts prevent delivery mix-ups with courier partners."}
               </p>
             </div>
           </div>
@@ -254,10 +258,12 @@ export default function TemplateEditorialGuide({
             </div>
             <div>
               <h4 className="font-bold text-xs text-slate-900 dark:text-white">
-                Bilingual Compliance (EN & BN)
+                {lang === "bn" ? "বাংলা ও ইংরেজি উভয়ে প্রিন্ট সাপোর্ট" : "Bilingual Compliance (EN & BN)"}
               </h4>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                Fully separates document language from website UI. Print Bengali numerals and terms effortlessly.
+                {lang === "bn"
+                  ? "ওয়েবসাইট ও ডকুমেন্টের ভাষা সম্পূর্ণ স্বাধীন। বাংলায় অংক ও বিবরণ সহজে প্রিন্ট করতে পারেন।"
+                  : "Fully separates document language from website UI. Print Bengali numerals and terms effortlessly."}
               </p>
             </div>
           </div>
@@ -268,10 +274,12 @@ export default function TemplateEditorialGuide({
             </div>
             <div>
               <h4 className="font-bold text-xs text-slate-900 dark:text-white">
-                Zero Watermarks & No Fees
+                {lang === "bn" ? "সম্পূর্ণ ফ্রি ও ওয়াটারমার্কহীন" : "Zero Watermarks & No Fees"}
               </h4>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                Unlike other tools that charge after 3 invoices, FreeDocForge is 100% free with unlimited generation.
+                {lang === "bn"
+                  ? "অন্যান্য টুলের মতো টাকা দাবি না করে, FreeDocForge আজীবন ১০০% ফ্রি ও আনলিমিটেড।"
+                  : "Unlike other tools that charge after 3 invoices, FreeDocForge is 100% free with unlimited generation."}
               </p>
             </div>
           </div>
@@ -282,15 +290,17 @@ export default function TemplateEditorialGuide({
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-10 shadow-xs">
         <div className="flex items-center gap-2 mb-2 text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
           <HelpCircle className="w-4 h-4" />
-          <span>Frequently Asked Questions / সাধারণ প্রশ্নোত্তর</span>
+          <span>{lang === "bn" ? "সাধারণ প্রশ্নোত্তর" : "Frequently Asked Questions"}</span>
         </div>
         <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-          Common Questions About {title}
+          {lang === "bn" ? `${title} সম্পর্কিত সাধারণ প্রশ্নোত্তর` : `Common Questions About ${title}`}
         </h2>
 
         <div className="mt-6 divide-y divide-slate-100 dark:divide-slate-800">
           {faqs.map((faq, index) => {
             const isOpen = openFaqIndex === index;
+            const q = lang === "bn" ? faq.questionBn : faq.questionEn;
+            const a = lang === "bn" ? faq.answerBn : faq.answerEn;
             return (
               <div key={index} className="py-4">
                 <button
@@ -298,23 +308,15 @@ export default function TemplateEditorialGuide({
                   onClick={() => setOpenFaqIndex(isOpen ? null : index)}
                   className="w-full flex items-center justify-between text-left gap-4 font-bold text-xs sm:text-sm text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition cursor-pointer"
                 >
-                  <div>
-                    <div>{faq.questionEn}</div>
-                    <div className="text-[11px] font-normal text-slate-500 dark:text-slate-400 mt-0.5">
-                      {faq.questionBn}
-                    </div>
-                  </div>
+                  <span className="font-bold">{q}</span>
                   <div className="shrink-0 p-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500">
                     {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                   </div>
                 </button>
 
                 {isOpen && (
-                  <div className="mt-3 text-xs text-slate-600 dark:text-slate-300 space-y-2 leading-relaxed animate-in fade-in duration-200">
-                    <p>{faq.answerEn}</p>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 border-l-2 border-blue-500 pl-3 italic">
-                      {faq.answerBn}
-                    </p>
+                  <div className="mt-3 text-xs text-slate-600 dark:text-slate-300 leading-relaxed animate-in fade-in duration-200">
+                    <p>{a}</p>
                   </div>
                 )}
               </div>

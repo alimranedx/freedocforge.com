@@ -199,7 +199,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             <button
               onClick={toggleLang}
               className="flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100/70 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer"
-              title="Change Language / ভাষা পরিবর্তন"
+              title={lang === "en" ? "বাংলা ভাষায় পরিবর্তন করুন" : "Switch to English"}
             >
               <Globe className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
               <span>{lang === "en" ? "বাংলা" : "EN"}</span>

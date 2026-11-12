@@ -20,36 +20,63 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // 1. Dedicated Admin Auth Routes (/admin/login, /admin/registration)
-  if (pathname === "/admin/login" || pathname === "/admin/registration") {
-    if (session && session.role === "ADMIN") {
+  const isAdmin = session?.role === "ADMIN";
+  const isUser = !!session && !isAdmin;
+
+  // 1. Admin Root Route (/admin)
+  if (pathname === "/admin") {
+    if (isAdmin) {
       return NextResponse.redirect(new URL("/admin/dashboard", req.url));
+    }
+    if (isUser) {
+      return NextResponse.redirect(new URL("/dashboard", req.url));
+    }
+    return NextResponse.redirect(new URL("/admin/login", req.url));
+  }
+
+  // 2. Dedicated Admin Auth Routes (/admin/login, /admin/registration)
+  if (pathname === "/admin/login" || pathname === "/admin/registration") {
+    if (isAdmin) {
+      return NextResponse.redirect(new URL("/admin/dashboard", req.url));
+    }
+    if (isUser) {
+      return NextResponse.redirect(new URL("/dashboard", req.url));
     }
     return NextResponse.next();
   }
 
-  // 2. Protected Admin Routes (/admin, /admin/dashboard, /admin/templates, etc.)
+  // 3. Protected Admin Routes (/admin/dashboard, /admin/templates, /admin/users, /admin/ads, etc.)
   if (pathname.startsWith("/admin")) {
-    if (!session || session.role !== "ADMIN") {
+    if (!session) {
       const loginUrl = new URL("/admin/login", req.url);
       loginUrl.searchParams.set("redirect", pathname);
       return NextResponse.redirect(loginUrl);
     }
+    if (!isAdmin) {
+      // Ordinary user is forbidden from admin panel -> isolate strictly to user dashboard
+      return NextResponse.redirect(new URL("/dashboard", req.url));
+    }
+    return NextResponse.next();
   }
 
-  // 3. Protected User Dashboard Routes (/dashboard, /dashboard/shop-profile, etc.)
+  // 4. Protected User Dashboard Routes (/dashboard, /dashboard/shop-profile, /dashboard/history, etc.)
   if (pathname.startsWith("/dashboard")) {
     if (!session) {
       const loginUrl = new URL("/login", req.url);
       loginUrl.searchParams.set("redirect", pathname);
       return NextResponse.redirect(loginUrl);
     }
+    if (isAdmin) {
+      // Admin session is forbidden from user panel -> isolate strictly to admin console
+      return NextResponse.redirect(new URL("/admin/dashboard", req.url));
+    }
+    return NextResponse.next();
   }
 
-  // 4. Regular User Auth Routes (/login, /register)
+  // 5. Regular User Auth Routes (/login, /register)
   if (pathname === "/login" || pathname === "/register") {
     if (session) {
-      if (session.role === "ADMIN") {
+      if (isAdmin) {
         return NextResponse.redirect(new URL("/admin/dashboard", req.url));
       }
       return NextResponse.redirect(new URL("/dashboard", req.url));
@@ -61,6 +88,7 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
+    "/admin",
     "/admin/:path*",
     "/dashboard/:path*",
     "/login",

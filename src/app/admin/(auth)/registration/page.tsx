@@ -23,7 +23,12 @@ export default function AdminRegistrationPage() {
       const res = await fetch("/api/auth/admin-register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password, secretKey }),
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim(),
+          password,
+          secretKey: secretKey.trim(),
+        }),
       });
 
       const data = await res.json();
@@ -144,12 +149,10 @@ export default function AdminRegistrationPage() {
           </form>
 
           <div className="mt-6 text-center text-xs text-zinc-500 border-t border-zinc-800 pt-4 flex items-center justify-between">
-            <Link href="/" className="hover:text-zinc-300 transition">
-              ← Return to Site
+            <Link href="/admin/login" className="text-zinc-400 hover:text-zinc-200 transition font-mono flex items-center gap-1">
+              ← Back to Admin Login
             </Link>
-            <Link href="/admin/login" className="text-red-400 hover:text-red-300 font-mono transition">
-              Already Admin? Log In →
-            </Link>
+            <span className="text-[11px] font-mono text-zinc-600">Restricted Console</span>
           </div>
         </div>
       </div>

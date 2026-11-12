@@ -2,6 +2,8 @@
 > **Free Printable & Smart Document Studio**  
 > Generate, customize, and print high-quality cash memos, invoices, school marksheets, prescriptions, and planners in seconds with dual-language support (English & বাংলা) and voice typing.
 
+> 📖 **Full System & Credential User Guide:** See [SYSTEM_GUIDE.md](SYSTEM_GUIDE.md) for instant test login credentials (Super Admin, F-Commerce, Doctor, School), provisioning instructions, and user workflows.
+
 ---
 
 ## 🚀 Key Features
@@ -101,16 +103,23 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-### 5. Authentication & First-Time Setup
+### 5. Authentication, Test Credentials & First-Time Setup
 
-* **User Accounts:** Users can sign up directly at `/register` and log in at `/login`. Passwords are encrypted with `bcryptjs` and session tokens are stored in secure, `HttpOnly` JWT cookies.
+For comprehensive instructions and pre-configured test credentials, see **[SYSTEM_GUIDE.md](SYSTEM_GUIDE.md)**.
+
+* **Seeding Default Demo Users:**
+  Run the automated seeder to populate test accounts for Admin, F-Commerce, Doctor, and School roles:
+  ```bash
+  npm run db:seed
+  ```
+* **User Accounts:** Users can sign up directly at `/register` or log in at `/login` with Email or Phone. Passwords are encrypted with `bcryptjs` and session tokens are stored in secure, `HttpOnly` JWT cookies.
 * **Admin Accounts:**
-  1. Set a strong secret key in `.env` for `ADMIN_PROVISION_KEY`:
+  1. Default Admin Provisioning Key in local `.env`:
      ```env
-     ADMIN_PROVISION_KEY="your-strong-provision-secret"
+     ADMIN_PROVISION_KEY="admin2026"
      ```
-  2. Navigate to `/admin/register` (or send a POST to `/api/auth/admin-register`) providing your name, email, password, and the `ADMIN_PROVISION_KEY`.
-  3. Log in at `/admin/login` to access the admin dashboard (`/admin/dashboard`).
+  2. Navigate to [`/admin/registration`](http://localhost:3000/admin/registration) providing your name, email, password, and the key `admin2026`.
+  3. Log in at [`/admin/login`](http://localhost:3000/admin/login) to access the administrative CMS and dashboard (`/admin/dashboard`).
 
 ---
 

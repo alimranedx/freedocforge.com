@@ -32,6 +32,7 @@ import {
   DESIGN_THEMES,
   DesignThemeId,
 } from "@/lib/designThemes";
+import { exportElementToPdf, exportElementToJpg } from "@/lib/pdfExport";
 
 interface InvoiceItem {
   name: string;
@@ -67,6 +68,7 @@ export default function InvoiceEditor({
     return detectDefaultThemeForTemplate("Business", templateSlug);
   });
   const activeTheme = DESIGN_THEMES[activeThemeId] || DESIGN_THEMES["modern-blue"];
+  const isPos = templateSlug.includes("pos") || activeThemeId === "thermal-pos";
 
   // Initialize data with safe fallbacks (ensuring currency and items are never undefined)
   const [data, setData] = useState({
@@ -95,6 +97,7 @@ export default function InvoiceEditor({
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [mobileView, setMobileView] = useState<"form" | "preview">("form");
   const [isExportingJpg, setIsExportingJpg] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
   const [docSaveLoading, setDocSaveLoading] = useState(false);
@@ -294,22 +297,38 @@ export default function InvoiceEditor({
     }
   };
 
+  const handleDownloadPdf = async () => {
+    if (!printRef.current || isExportingPdf) return;
+    try {
+      setIsExportingPdf(true);
+      await exportElementToPdf({
+        element: printRef.current,
+        filename: `${data.invoiceNumber || "cash-memo"}.pdf`,
+        paperSize: isPos ? "POS_80MM" : "A4",
+        scale: 2,
+      });
+
+      trackEvent({
+        name: "pdf_download_completed",
+        properties: { template_slug: templateSlug, paper_size: isPos ? "POS_80MM" : "A4" },
+      });
+    } catch (e) {
+      console.error("Direct PDF export error:", e);
+      alert(
+        docLang === "bn"
+          ? "PDF ডাউনলোড করা যায়নি। প্রিন্ট অপশনটি ব্যবহার করুন।"
+          : "Failed to download PDF. Please use the Print option instead."
+      );
+    } finally {
+      setIsExportingPdf(false);
+    }
+  };
+
   const handleSaveAsJpg = async () => {
     if (!printRef.current || isExportingJpg) return;
     try {
       setIsExportingJpg(true);
-      const html2canvas = (await import("html2canvas")).default;
-      const canvas = await html2canvas(printRef.current, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: "#ffffff",
-      });
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
-      const link = document.createElement("a");
-      link.download = `${data.invoiceNumber || "cash-memo"}.jpg`;
-      link.href = dataUrl;
-      link.click();
+      await exportElementToJpg(printRef.current, `${data.invoiceNumber || "cash-memo"}.jpg`, 2);
 
       trackEvent({
         name: "pdf_download_completed",
@@ -317,7 +336,11 @@ export default function InvoiceEditor({
       });
     } catch (e) {
       console.error("JPG export error:", e);
-      alert("Failed to export JPG. Please use Print / PDF instead.");
+      alert(
+        docLang === "bn"
+          ? "JPG এক্সপোর্ট ব্যর্থ হয়েছে। প্রিন্ট অপশনটি ব্যবহার করুন।"
+          : "Failed to export JPG. Please use Print / PDF instead."
+      );
     } finally {
       setIsExportingJpg(false);
     }
@@ -1204,13 +1227,34 @@ export default function InvoiceEditor({
 
           {/* Action Buttons */}
           <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
-            {/* 1. Print / Save as PDF */}
+            {/* 1. Direct 1-Click Vector/Raster PDF Download */}
             <button
-              onClick={handlePrint}
-              className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-xs transition text-xs sm:text-sm cursor-pointer"
+              type="button"
+              onClick={handleDownloadPdf}
+              disabled={isExportingPdf}
+              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-3 rounded-xl shadow-md hover:shadow-lg transition text-xs sm:text-sm cursor-pointer disabled:opacity-50"
             >
-              <Printer className="w-4 h-4" />
-              {docLang === "bn" ? "প্রিন্ট করুন / PDF ডাউনলোড" : "Print / Save as PDF"}
+              {isExportingPdf ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>{docLang === "bn" ? "PDF প্রস্তুত হচ্ছে..." : "Generating PDF File..."}</span>
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4" />
+                  <span>{docLang === "bn" ? "১-ক্লিক সরাসরি PDF ডাউনলোড" : "1-Click Direct PDF Download"}</span>
+                </>
+              )}
+            </button>
+
+            {/* 2. Print (Hardware / System Spooler) */}
+            <button
+              type="button"
+              onClick={handlePrint}
+              className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 dark:bg-slate-750 dark:hover:bg-slate-700 text-white font-semibold py-2.5 rounded-xl shadow-xs transition text-xs cursor-pointer"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>{docLang === "bn" ? "প্রিন্টার দিয়ে প্রিন্ট করুন" : "Print via System Spooler"}</span>
             </button>
 
             {/* 1-Click WhatsApp & JPG Direct Export */}
@@ -1328,11 +1372,18 @@ export default function InvoiceEditor({
               {docLang === "bn" ? "A4 লাইভ প্রিন্ট প্রিভিউ (বাংলা)" : "A4 Pixel-Perfect Live Preview (English)"}
             </div>
             <button
-              onClick={handlePrint}
-              className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline font-semibold cursor-pointer"
+              onClick={handleDownloadPdf}
+              disabled={isExportingPdf}
+              className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline font-semibold cursor-pointer disabled:opacity-50"
             >
               <Download className="w-3.5 h-3.5" />
-              {docLang === "bn" ? "সরাসরি প্রিন্ট" : "Direct Download"}
+              {isExportingPdf
+                ? docLang === "bn"
+                  ? "ডাউনলোড হচ্ছে..."
+                  : "Downloading..."
+                : docLang === "bn"
+                ? "১-ক্লিক PDF ডাউনলোড"
+                : "1-Click PDF"}
             </button>
           </div>
 

@@ -17,12 +17,17 @@ import {
   CheckCircle2,
   Eye,
   EyeOff,
+  Globe,
+  Moon,
+  Sun,
   Info,
   X,
 } from "lucide-react";
+import { useGlobalSettings } from "@/context/GlobalSettingsContext";
 
 function RegisterForm() {
   const router = useRouter();
+  const { lang, toggleLang, theme, toggleTheme, t } = useGlobalSettings();
 
   const [authMethod, setAuthMethod] = useState<"email" | "phone">("email");
   const [name, setName] = useState("");
@@ -49,11 +54,11 @@ function RegisterForm() {
       };
 
       if (authMethod === "email") {
-        if (!email) throw new Error("Email is required");
+        if (!email) throw new Error(lang === "bn" ? "ইমেইল প্রদান করা আবশ্যক" : "Email is required");
         payload.email = email;
         if (phone) payload.phone = phone;
       } else {
-        if (!phone) throw new Error("Phone number is required");
+        if (!phone) throw new Error(lang === "bn" ? "মোবাইল নম্বর প্রদান করা আবশ্যক" : "Phone number is required");
         payload.phone = phone;
         if (email) payload.email = email;
       }
@@ -66,7 +71,7 @@ function RegisterForm() {
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || "Failed to create account");
+        throw new Error(data.error || (lang === "bn" ? "অ্যাকাউন্ট তৈরি করতে সমস্যা হয়েছে" : "Failed to create account"));
       }
 
       router.push(data.redirect || "/dashboard");
@@ -98,15 +103,42 @@ function RegisterForm() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8 transition-colors">
-      {/* Top Floating Back Button */}
-      <div className="max-w-md mx-auto w-full px-4 mb-4">
+      {/* Top Floating Controls: Back to Home & Language / Theme Switcher */}
+      <div className="max-w-md mx-auto w-full px-4 mb-4 flex items-center justify-between">
         <Link
           href="/"
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Back to Home / হোমপেজে ফিরে যান</span>
+          <span>{t("backToHome")}</span>
         </Link>
+
+        <div className="flex items-center gap-2">
+          {/* Language Switcher */}
+          <button
+            type="button"
+            onClick={toggleLang}
+            className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-750 bg-white dark:bg-slate-850 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition cursor-pointer shadow-2xs"
+            title={lang === "en" ? "বাংলা ভাষায় পরিবর্তন করুন" : "Switch to English"}
+          >
+            <Globe className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+            <span>{lang === "en" ? "বাংলা" : "EN"}</span>
+          </button>
+
+          {/* Theme Switcher */}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-750 bg-white dark:bg-slate-850 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition cursor-pointer shadow-2xs"
+            title={theme === "light" ? "Switch to Dark Mode" : "Switch to Light Mode"}
+          >
+            {theme === "light" ? (
+              <Moon className="w-3.5 h-3.5 text-slate-700" />
+            ) : (
+              <Sun className="w-3.5 h-3.5 text-amber-400" />
+            )}
+          </button>
+        </div>
       </div>
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center px-4">
@@ -119,10 +151,10 @@ function RegisterForm() {
           </span>
         </Link>
         <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-          Create Free Organization Profile
+          {t("registerOrgTitle")}
         </h2>
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-          Save your shop logo, phone, address, and signature for 1-click document printing.
+          {t("registerOrgSubtitle")}
         </p>
       </div>
 
@@ -160,7 +192,13 @@ function RegisterForm() {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
               />
             </svg>
-            <span>{googleLoading ? "Connecting to Google..." : "Sign up with Google / গুগল দিয়ে শুরু"}</span>
+            <span>
+              {googleLoading
+                ? lang === "bn"
+                  ? "গুগলের সাথে সংযুক্ত হচ্ছে..."
+                  : "Connecting to Google..."
+                : t("signUpWithGoogle")}
+            </span>
           </button>
 
           {/* DIVIDER */}
@@ -170,7 +208,7 @@ function RegisterForm() {
             </div>
             <div className="relative flex justify-center text-[11px] uppercase tracking-wider">
               <span className="bg-white dark:bg-slate-900 px-3 text-slate-400 dark:text-slate-500 font-semibold">
-                Or create account with / অথবা
+                {t("orSignUpWith")}
               </span>
             </div>
           </div>
@@ -190,7 +228,7 @@ function RegisterForm() {
               }`}
             >
               <Mail className="w-3.5 h-3.5" />
-              <span>Email / ইমেইল</span>
+              <span>{t("emailTab")}</span>
             </button>
             <button
               type="button"
@@ -205,21 +243,21 @@ function RegisterForm() {
               }`}
             >
               <Phone className="w-3.5 h-3.5" />
-              <span>Phone / মোবাইল নম্বর</span>
+              <span>{t("phoneTab")}</span>
             </button>
           </div>
 
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-                Full Name / Business Name / শপের নাম
+                {t("fullNameLabel")}
               </label>
               <div className="relative">
                 <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Tanvir Fashion or Ideal Pharmacy"
+                  placeholder={lang === "bn" ? "যেমন: তানভীর ফ্যাশন অথবা আদর্শ ফার্মেসি" : "e.g. Tanvir Fashion or Ideal Pharmacy"}
                   className="w-full text-xs pl-10 pr-3.5 py-3 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none transition shadow-2xs"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -231,7 +269,7 @@ function RegisterForm() {
               <>
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-                    Email Address / ইমেইল ঠিকানা
+                    {t("emailAddressLabel")}
                   </label>
                   <div className="relative">
                     <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -248,7 +286,7 @@ function RegisterForm() {
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
-                    Phone Number (Optional) / মোবাইল নম্বর (ঐচ্ছিক)
+                    {t("phoneNumberOptional")}
                   </label>
                   <div className="relative">
                     <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -266,7 +304,7 @@ function RegisterForm() {
               <>
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-                    Phone Number / মোবাইল নম্বর
+                    {t("phoneNumberLabel")}
                   </label>
                   <div className="relative">
                     <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -283,7 +321,7 @@ function RegisterForm() {
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
-                    Email Address (Optional) / ইমেইল ঠিকানা (ঐচ্ছিক)
+                    {lang === "bn" ? "ইমেইল ঠিকানা (ঐচ্ছিক)" : "Email Address (Optional)"}
                   </label>
                   <div className="relative">
                     <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -301,7 +339,7 @@ function RegisterForm() {
 
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-                Password / পাসওয়ার্ড (কমপক্ষে ৬ অক্ষর)
+                {t("passwordMinChars")}
               </label>
               <div className="relative">
                 <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -334,7 +372,7 @@ function RegisterForm() {
                   className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
                 />
                 <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
-                  Keep me logged in / লগইন বজায় রাখুন (30 Days)
+                  {t("keepMeLoggedIn")}
                 </span>
               </label>
             </div>
@@ -345,15 +383,15 @@ function RegisterForm() {
               className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-3.5 rounded-xl transition text-xs sm:text-sm shadow-md hover:shadow-lg cursor-pointer disabled:opacity-50 mt-2"
             >
               <Sparkles className="w-4 h-4 text-amber-300" />
-              <span>{loading ? "Creating Profile..." : "Create Free Account / অ্যাকাউন্ট তৈরি করুন"}</span>
+              <span>{loading ? t("creatingAccount") : t("createAccountBtn")}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
 
           <div className="mt-6 text-center text-xs text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800 pt-4">
-            Already have an account?{" "}
+            {t("haveAccountPrompt")}{" "}
             <Link href="/login" className="font-bold text-blue-600 dark:text-blue-400 hover:underline">
-              Sign In here / সাইন ইন করুন
+              {t("signInHere")}
             </Link>
           </div>
         </div>
@@ -362,11 +400,19 @@ function RegisterForm() {
         <div className="mt-5 space-y-1.5 text-center text-[11px] text-slate-400 dark:text-slate-500 font-medium">
           <div className="flex items-center justify-center gap-1.5">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-            <span>Never rewrite your phone number, logo, and terms manually</span>
+            <span>
+              {lang === "bn"
+                ? "দোকানের ফোন, ঠিকানা ও লোগো বারবার টাইপ করার ঝামেলা নেই"
+                : "Never rewrite your phone number, logo, and terms manually"}
+            </span>
           </div>
           <div className="flex items-center justify-center gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5 text-blue-500" />
-            <span>100% Free Forever • No Credit Card Required</span>
+            <span>
+              {lang === "bn"
+                ? "আজীবন ১০০% সম্পূর্ণ ফ্রি • কোনো কার্ড লাগবে না"
+                : "100% Free Forever • No Credit Card Required"}
+            </span>
           </div>
         </div>
       </div>
@@ -378,7 +424,7 @@ function RegisterForm() {
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2 text-slate-900 dark:text-white font-bold text-sm">
                 <Info className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                <span>Google Console Setup Required</span>
+                <span>{t("googleSetupRequired")}</span>
               </div>
               <button
                 onClick={() => setShowGoogleModal(false)}
@@ -390,7 +436,9 @@ function RegisterForm() {
 
             <div className="mt-4 text-xs text-slate-600 dark:text-slate-300 space-y-3 leading-relaxed">
               <p>
-                To enable 1-click Google Sign-Up, add your Google OAuth credentials to the project's <code className="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-blue-600 dark:text-blue-400 font-mono">.env</code> file:
+                {lang === "bn"
+                  ? "১-ক্লিক গুগল সাইন আপ সক্রিয় করতে আপনার প্রজেক্টের .env ফাইলে গুগল OAuth ক্রিডেনশিয়াল যোগ করতে হবে:"
+                  : "To enable 1-click Google Sign-Up, add your Google OAuth credentials to the project's .env file:"}
               </p>
 
               <div className="bg-slate-950 text-slate-200 p-3 rounded-xl font-mono text-[11px] space-y-1">
@@ -399,14 +447,20 @@ function RegisterForm() {
               </div>
 
               <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 p-3 rounded-xl text-blue-800 dark:text-blue-300 text-[11px] space-y-1">
-                <div className="font-bold">Authorized Redirect URI to add in Google Console:</div>
+                <div className="font-bold">
+                  {lang === "bn"
+                    ? "গুগল কনসোলে অনুমোদিত রিডাইরেক্ট URI:"
+                    : "Authorized Redirect URI to add in Google Console:"}
+                </div>
                 <div className="font-mono break-all bg-white/70 dark:bg-slate-900/70 p-1.5 rounded border border-blue-100 dark:border-blue-900/50">
                   http://localhost:3000/api/auth/callback/google
                 </div>
               </div>
 
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                In the meantime, you can register using <strong>Email</strong> or <strong>Phone Number</strong>.
+                {lang === "bn"
+                  ? "এর মধ্যে আপনি সরাসরি ইমেইল বা মোবাইল নম্বর দিয়ে অ্যাকাউন্ট খুলতে পারবেন।"
+                  : "In the meantime, you can register using Email or Phone Number."}
               </p>
             </div>
 
@@ -416,7 +470,7 @@ function RegisterForm() {
                 onClick={() => setShowGoogleModal(false)}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition cursor-pointer"
               >
-                Got It / বুঝেছি
+                {t("gotItBtn")}
               </button>
             </div>
           </div>

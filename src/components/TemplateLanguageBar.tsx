@@ -24,6 +24,19 @@ export default function TemplateLanguageBar({
   const displayTitle = lang === "bn" && locales?.bn?.title ? locales.bn.title : title;
   const displayDescription = lang === "bn" && locales?.bn?.description ? locales.bn.description : description;
 
+  const categoryName =
+    lang === "bn"
+      ? category === "Shop & Business"
+        ? "দোকান ও ব্যবসা"
+        : category === "School & Education"
+        ? "স্কুল ও শিক্ষা"
+        : category === "Medical & Healthcare"
+        ? "চিকিৎসা ও ক্লিনিক"
+        : category === "Personal & Daily"
+        ? "ব্যক্তিগত ও দৈনন্দিন"
+        : category
+      : category;
+
   return (
     <div className="mb-6 print:hidden">
       {/* Clean Breadcrumb */}
@@ -32,7 +45,7 @@ export default function TemplateLanguageBar({
           {lang === "bn" ? "টেমপ্লেটসমূহ" : "Templates"}
         </Link>
         <ChevronRight className="w-3.5 h-3.5" />
-        <span className="font-semibold text-blue-600 dark:text-blue-400">{category}</span>
+        <span className="font-semibold text-blue-600 dark:text-blue-400">{categoryName}</span>
       </div>
 
       {/* Dynamic Title & Description responsive to System Language */}

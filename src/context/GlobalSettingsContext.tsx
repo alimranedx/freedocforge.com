@@ -34,10 +34,20 @@ export function GlobalSettingsProvider({ children }: { children: React.ReactNode
       applyTheme("light");
     }
 
-    // 2. Language sync
+    // 2. Language sync (Check localStorage first, otherwise detect system/browser language)
     const savedLang = localStorage.getItem("app_lang") as Language | null;
     if (savedLang && (savedLang === "en" || savedLang === "bn")) {
       setLangState(savedLang);
+      document.documentElement.lang = savedLang;
+    } else if (typeof navigator !== "undefined") {
+      const browserLang = (
+        navigator.language ||
+        (navigator.languages && navigator.languages[0]) ||
+        ""
+      ).toLowerCase();
+      const detectedLang: Language = browserLang.startsWith("bn") ? "bn" : "en";
+      setLangState(detectedLang);
+      document.documentElement.lang = detectedLang;
     }
     setMounted(true);
   }, []);
@@ -63,12 +73,18 @@ export function GlobalSettingsProvider({ children }: { children: React.ReactNode
     setLangState(nextLang);
     localStorage.setItem("app_lang", nextLang);
     localStorage.setItem("user_lang", nextLang);
+    if (typeof document !== "undefined") {
+      document.documentElement.lang = nextLang;
+    }
   };
 
   const setLang = (newLang: Language) => {
     setLangState(newLang);
     localStorage.setItem("app_lang", newLang);
     localStorage.setItem("user_lang", newLang);
+    if (typeof document !== "undefined") {
+      document.documentElement.lang = newLang;
+    }
   };
 
   const t = (key: TranslationKey): string => {
