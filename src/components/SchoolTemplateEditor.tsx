@@ -15,10 +15,19 @@ import {
   Calendar,
   Clock,
   BookOpen,
+  UserCheck,
+  FileText,
+  ShieldCheck,
 } from "lucide-react";
 import AdSenseSlot from "@/components/AdSenseSlot";
 import VoiceInputButton from "@/components/VoiceInputButton";
 import { useGlobalSettings } from "@/context/GlobalSettingsContext";
+import ThemeSelectorBar from "@/components/ThemeSelectorBar";
+import {
+  detectDefaultThemeForTemplate,
+  DESIGN_THEMES,
+  DesignThemeId,
+} from "@/lib/designThemes";
 
 interface SubjectItem {
   name: string;
@@ -42,6 +51,12 @@ export default function SchoolTemplateEditor({
   const { lang: sysLang } = useGlobalSettings();
   const [docLang, setDocLang] = useState<"en" | "bn">("en");
   const [voiceLang, setVoiceLang] = useState<"bn" | "en">("bn");
+
+  // Document Design Theme Archetype
+  const [activeThemeId, setActiveThemeId] = useState<DesignThemeId>(() => {
+    return detectDefaultThemeForTemplate("Education", templateSlug);
+  });
+  const activeTheme = DESIGN_THEMES[activeThemeId] || DESIGN_THEMES["royal-academic"];
   const [data, setData] = useState({ ...initialData });
   const [signaturePreview, setSignaturePreview] = useState<string | null>(null);
   const [savedSuccess, setSavedSuccess] = useState(false);
@@ -124,10 +139,33 @@ export default function SchoolTemplateEditor({
   const percentage = totalFullMarks > 0 ? ((totalMarks / totalFullMarks) * 100).toFixed(1) : "0";
 
   // Template Type Determination
-  const isMarksheet = templateSlug === "school-result-sheet";
-  const isClassRoutine = templateSlug === "school-class-routine";
-  const isExamRoutine = templateSlug === "school-exam-routine";
-  const isAdmitCard = templateSlug === "school-admit-card";
+  const isMarksheet =
+    templateSlug === "school-result-sheet" ||
+    templateSlug === "coaching-monthly-progress" ||
+    templateSlug === "madrasah-progress-report" ||
+    templateSlug === "school-fee-slip" ||
+    (Array.isArray(data.subjects) && data.subjects.length > 0);
+
+  const isClassRoutine =
+    templateSlug === "school-class-routine" ||
+    Array.isArray(data.routine);
+
+  const isExamRoutine =
+    templateSlug === "school-exam-routine" ||
+    Array.isArray(data.exams);
+
+  const isAdmitCard =
+    templateSlug === "school-admit-card" ||
+    !!data.rules ||
+    !!data.examCenter;
+
+  const isIdCard =
+    templateSlug === "student-id-card-layout";
+
+  const isCertificate =
+    templateSlug === "student-transfer-certificate" ||
+    templateSlug === "school-character-certificate" ||
+    (!isMarksheet && !isClassRoutine && !isExamRoutine && !isAdmitCard && !isIdCard);
 
   return (
     <div className="space-y-6">
@@ -182,6 +220,13 @@ export default function SchoolTemplateEditor({
           </button>
         </div>
       </div>
+
+      {/* INTERACTIVE 1-CLICK THEME SELECTOR BAR */}
+      <ThemeSelectorBar
+        activeThemeId={activeThemeId}
+        onSelectTheme={setActiveThemeId}
+        lang={docLang}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* LEFT COLUMN: Input Form Controls (Hidden during printing) */}
@@ -391,6 +436,104 @@ export default function SchoolTemplateEditor({
                   onChange={(e) => setData({ ...data, date: e.target.value })}
                 />
               </div>
+
+              {/* Admit Card Specific Inputs */}
+              {isAdmitCard && (
+                <>
+                  <div className="relative flex items-center">
+                    <input
+                      type="text"
+                      placeholder={docLang === "bn" ? "রেজিস্ট্রেশন নম্বর (যেমন: REG-2024-98432)" : "Registration No"}
+                      className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      value={data.regNo || ""}
+                      onChange={(e) => setData({ ...data, regNo: e.target.value })}
+                    />
+                    <div className="absolute right-1">
+                      <VoiceInputButton
+                        lang={voiceLang}
+                        title="Speak Reg No"
+                        onTranscript={(txt) => setData({ ...data, regNo: txt })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="relative flex items-center">
+                    <input
+                      type="text"
+                      placeholder={docLang === "bn" ? "পরীক্ষা কেন্দ্র ও হল নম্বর" : "Exam Center & Hall"}
+                      className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      value={data.examCenter || ""}
+                      onChange={(e) => setData({ ...data, examCenter: e.target.value })}
+                    />
+                    <div className="absolute right-1">
+                      <VoiceInputButton
+                        lang={voiceLang}
+                        title="Speak Exam Center"
+                        onTranscript={(txt) => setData({ ...data, examCenter: txt })}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Certificate Specific Session Input */}
+              {isCertificate && (
+                <div className="col-span-2 relative flex items-center">
+                  <input
+                    type="text"
+                    placeholder={docLang === "bn" ? "শিক্ষা সেশন / পাসের সাল (যেমন: ২০২৬)" : "Academic Session / Passing Year"}
+                    className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    value={data.academicYear || ""}
+                    onChange={(e) => setData({ ...data, academicYear: e.target.value })}
+                  />
+                  <div className="absolute right-1">
+                    <VoiceInputButton
+                      lang={voiceLang}
+                      title="Speak Session"
+                      onTranscript={(txt) => setData({ ...data, academicYear: txt })}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Student ID Card Specific Inputs */}
+              {isIdCard && (
+                <>
+                  <div className="relative flex items-center">
+                    <input
+                      type="text"
+                      placeholder={docLang === "bn" ? "রক্তের গ্রুপ (যেমন: O+)" : "Blood Group (e.g. O+)"}
+                      className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      value={data.bloodGroup || ""}
+                      onChange={(e) => setData({ ...data, bloodGroup: e.target.value })}
+                    />
+                    <div className="absolute right-1">
+                      <VoiceInputButton
+                        lang={voiceLang}
+                        title="Speak Blood Group"
+                        onTranscript={(txt) => setData({ ...data, bloodGroup: txt })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="relative flex items-center">
+                    <input
+                      type="text"
+                      placeholder={docLang === "bn" ? "জরুরি মোবাইল নং" : "Emergency Contact Phone"}
+                      className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      value={data.phone || ""}
+                      onChange={(e) => setData({ ...data, phone: e.target.value })}
+                    />
+                    <div className="absolute right-1">
+                      <VoiceInputButton
+                        lang={voiceLang}
+                        title="Speak Emergency Contact"
+                        onTranscript={(txt) => setData({ ...data, phone: txt })}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
@@ -546,7 +689,7 @@ export default function SchoolTemplateEditor({
           <div
             ref={printRef}
             id="printable-document"
-            className="w-full max-w-[210mm] min-h-[297mm] bg-white text-gray-900 p-8 sm:p-10 rounded-2xl shadow-xl border border-gray-200 print:border-none print:shadow-none print:p-0 print:m-0 print:w-full print:max-w-none text-xs flex flex-col justify-between"
+            className={`w-full max-w-[210mm] min-h-[297mm] p-8 sm:p-10 print:border-none print:shadow-none print:p-0 print:m-0 print:w-full print:max-w-none text-xs flex flex-col justify-between transition-colors ${activeTheme.fontFamily} ${activeTheme.containerClass}`}
           >
             <div>
               {/* Institution Header */}
@@ -568,66 +711,66 @@ export default function SchoolTemplateEditor({
                 </div>
               </div>
 
-              {/* Student Demographics Bar */}
-              <div className="grid grid-cols-4 gap-3 my-5 bg-gray-50 p-4 rounded-lg border border-gray-200 text-xs">
+              {/* Student Demographics Bento Card */}
+              <div className="grid grid-cols-4 gap-3 my-5 bg-slate-50/80 border border-slate-200/90 rounded-2xl p-4 sm:p-5 text-xs shadow-2xs">
                 <div>
-                  <span className="text-[10px] uppercase font-bold text-gray-400 block">
-                    {docLang === "bn" ? "শিক্ষার্থীর নাম:" : "Student Name:"}
+                  <span className="text-[9.5px] uppercase font-bold text-slate-400 tracking-wider block mb-0.5">
+                    {docLang === "bn" ? "শিক্ষার্থীর নাম:" : "STUDENT NAME:"}
                   </span>
-                  <span className="font-bold text-gray-900 text-sm">{data.studentName}</span>
+                  <span className="font-extrabold text-slate-900 text-sm block truncate">{data.studentName}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] uppercase font-bold text-gray-400 block">
-                    {docLang === "bn" ? "রোল নম্বর:" : "Roll No:"}
+                  <span className="text-[9.5px] uppercase font-bold text-slate-400 tracking-wider block mb-0.5">
+                    {docLang === "bn" ? "রোল নম্বর:" : "ROLL NUMBER:"}
                   </span>
-                  <span className="font-bold text-gray-900">{data.rollNo}</span>
+                  <span className="font-bold text-blue-900 tabular-nums block">{data.rollNo}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] uppercase font-bold text-gray-400 block">
-                    {docLang === "bn" ? "শ্রেণি / বিভাগ:" : "Class / Grade:"}
+                  <span className="text-[9.5px] uppercase font-bold text-slate-400 tracking-wider block mb-0.5">
+                    {docLang === "bn" ? "শ্রেণি ও বিভাগ:" : "CLASS / GRADE:"}
                   </span>
-                  <span className="font-semibold text-gray-800">{data.classGrade}</span>
+                  <span className="font-semibold text-slate-800 block truncate">{data.classGrade}</span>
                 </div>
                 <div className="text-right">
-                  <span className="text-[10px] uppercase font-bold text-gray-400 block">
-                    {docLang === "bn" ? "ইস্যু তারিখ:" : "Date of Issue:"}
+                  <span className="text-[9.5px] uppercase font-bold text-slate-400 tracking-wider block mb-0.5">
+                    {docLang === "bn" ? "ইস্যু তারিখ:" : "DATE OF ISSUE:"}
                   </span>
-                  <span className="font-semibold text-gray-800">{data.date}</span>
+                  <span className="font-semibold text-slate-800 tabular-nums block">{data.date}</span>
                 </div>
               </div>
 
-              {/* Subjects & Marks Table */}
+              {/* Subjects & Marks Table with Tabular Numbers */}
               {isMarksheet && (
                 <table className="w-full text-left border-collapse my-6">
                   <thead>
-                    <tr className="border-b-2 border-gray-900 text-gray-900 uppercase text-[10px] font-bold">
-                      <th className="py-2.5 w-10">{docLang === "bn" ? "নং" : "#"}</th>
-                      <th className="py-2.5">{docLang === "bn" ? "বিষয়ের নাম" : "Subject Description"}</th>
-                      <th className="py-2.5 text-center w-28">{docLang === "bn" ? "পূর্ণমান" : "Full Marks"}</th>
-                      <th className="py-2.5 text-center w-28">{docLang === "bn" ? "প্রাপ্ত নম্বর" : "Marks Obtained"}</th>
-                      <th className="py-2.5 text-right w-24">{docLang === "bn" ? "লেটার গ্রেড" : "Letter Grade"}</th>
+                    <tr className={`border-b-2 border-slate-900 uppercase text-[9.5px] font-black tracking-wider ${activeTheme.tableHeaderClass}`}>
+                      <th className="py-2.5 px-3 w-10 rounded-l-lg">{docLang === "bn" ? "নং" : "#"}</th>
+                      <th className="py-2.5 px-3">{docLang === "bn" ? "বিষয়ের নাম" : "Subject Description"}</th>
+                      <th className="py-2.5 px-3 text-center w-28">{docLang === "bn" ? "পূর্ণমান" : "Full Marks"}</th>
+                      <th className="py-2.5 px-3 text-center w-28">{docLang === "bn" ? "প্রাপ্ত নম্বর" : "Marks Obtained"}</th>
+                      <th className="py-2.5 px-3 text-right w-24 rounded-r-lg">{docLang === "bn" ? "লেটার গ্রেড" : "Letter Grade"}</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody className="divide-y divide-slate-100 text-xs">
                     {subjectsList.map((sub: any, idx: number) => (
-                      <tr key={idx} className="hover:bg-gray-50/50">
-                        <td className="py-3 text-gray-400 font-medium">{idx + 1}</td>
-                        <td className="py-3 font-semibold text-gray-900">{sub.name}</td>
-                        <td className="py-3 text-center text-gray-600">{sub.fullMarks || 100}</td>
-                        <td className="py-3 text-center font-bold text-gray-900">{sub.marks}</td>
-                        <td className="py-3 text-right font-black text-blue-700">{sub.grade || "A+"}</td>
+                      <tr key={idx} className={`hover:bg-slate-50/60 transition-colors ${activeTheme.tableRowClass}`}>
+                        <td className="py-3 px-3 text-slate-400 font-medium tabular-nums">{idx + 1}</td>
+                        <td className="py-3 px-3 font-semibold text-slate-800">{sub.name}</td>
+                        <td className="py-3 px-3 text-center text-slate-600 tabular-nums">{sub.fullMarks || 100}</td>
+                        <td className="py-3 px-3 text-center font-bold text-slate-900 tabular-nums">{sub.marks}</td>
+                        <td className="py-3 px-3 text-right font-black text-blue-700">{sub.grade || "A+"}</td>
                       </tr>
                     ))}
                   </tbody>
                   <tfoot>
-                    <tr className="border-t-2 border-gray-900 font-black text-gray-900 text-xs bg-gray-50">
-                      <td colSpan={2} className="py-3 pl-2">
+                    <tr className="border-t-2 border-slate-900 font-black text-slate-900 text-xs bg-slate-50/80 avoid-break">
+                      <td colSpan={2} className="py-3.5 px-3">
                         {docLang === "bn" ? "সর্বমোট প্রাপ্ত ফলাফল:" : "Cumulative Performance:"}
                       </td>
-                      <td className="py-3 text-center">{totalFullMarks}</td>
-                      <td className="py-3 text-center text-blue-700">{totalMarks}</td>
-                      <td className="py-3 text-right pr-2">
-                        <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">
+                      <td className="py-3.5 px-3 text-center tabular-nums">{totalFullMarks}</td>
+                      <td className="py-3.5 px-3 text-center text-blue-700 tabular-nums">{totalMarks}</td>
+                      <td className="py-3.5 px-3 text-right">
+                        <span className={`${activeTheme.duePillClass} tabular-nums text-xs inline-block`}>
                           {percentage}%
                         </span>
                       </td>
@@ -694,8 +837,178 @@ export default function SchoolTemplateEditor({
                 </div>
               )}
 
-              {/* Remarks Box */}
-              {data.remarks && (
+              {/* Admit Card Canvas */}
+              {isAdmitCard && (
+                <div className="my-6 space-y-5">
+                  <div className="grid grid-cols-12 gap-4 items-center bg-blue-50/60 p-4 rounded-xl border border-blue-200">
+                    <div className="col-span-8 space-y-2 text-xs">
+                      <div>
+                        <span className="text-[10px] font-bold text-gray-400 uppercase block">
+                          {docLang === "bn" ? "পরীক্ষার্থীর নাম:" : "Examinee Name:"}
+                        </span>
+                        <span className="font-black text-gray-900 text-sm">{data.studentName}</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <span className="text-[10px] font-bold text-gray-400 uppercase block">
+                            {docLang === "bn" ? "রোল নম্বর:" : "Roll No:"}
+                          </span>
+                          <span className="font-bold text-blue-900">{data.rollNo}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-bold text-gray-400 uppercase block">
+                            {docLang === "bn" ? "রেজিস্ট্রেশন নং:" : "Registration No:"}
+                          </span>
+                          <span className="font-bold text-gray-800">{data.regNo || "REG-2024-98432"}</span>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <span className="text-[10px] font-bold text-gray-400 uppercase block">
+                            {docLang === "bn" ? "শ্রেণি ও শাখা:" : "Class / Group:"}
+                          </span>
+                          <span className="font-semibold text-gray-800">{data.classGrade}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-bold text-gray-400 uppercase block">
+                            {docLang === "bn" ? "পরীক্ষা কেন্দ্র:" : "Exam Center:"}
+                          </span>
+                          <span className="font-semibold text-gray-800">{data.examCenter || "Main Campus Examination Hall"}</span>
+                        </div>
+                      </div>
+                    </div>
+                    {/* Passport Photo Box */}
+                    <div className="col-span-4 flex flex-col items-center justify-center">
+                      <div className="w-24 h-28 border-2 border-dashed border-gray-400 rounded-lg bg-white flex flex-col items-center justify-center text-center p-2 text-gray-400 shadow-2xs">
+                        <UserCheck className="w-7 h-7 mb-1 text-gray-300" />
+                        <span className="text-[8px] font-semibold leading-tight">
+                          {docLang === "bn" ? "পাসপোর্ট ছবি সংযুক্ত করুন" : "Affix Passport Photo"}
+                        </span>
+                        <span className="text-[7px] text-gray-400 mt-0.5">(35mm x 45mm)</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Candidate Rules */}
+                  <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 text-xs">
+                    <h4 className="font-bold uppercase text-[10px] text-gray-700 tracking-wider mb-2 border-b border-gray-200 pb-1">
+                      {docLang === "bn" ? "পরীক্ষার্থীদের জন্য বিশেষ নির্দেশনাবলী:" : "General Instructions for Candidates:"}
+                    </h4>
+                    <ul className="space-y-1.5 text-gray-700 list-disc list-inside text-[11px] leading-relaxed">
+                      {Array.isArray(data.rules) ? (
+                        data.rules.map((rule: string, rIdx: number) => (
+                          <li key={rIdx}>{rule}</li>
+                        ))
+                      ) : (
+                        <>
+                          <li>Examinees must bring this admit card to the examination hall every day.</li>
+                          <li>Candidates must take their seats at least 15 minutes before the exam starts.</li>
+                          <li>Mobile phones, programmable calculators, or any unfair means are strictly prohibited.</li>
+                        </>
+                      )}
+                    </ul>
+                  </div>
+                </div>
+              )}
+
+              {/* Certificate & Testimonial Canvas */}
+              {isCertificate && (
+                <div className="my-8 py-8 px-6 border-4 border-double border-blue-900/40 rounded-2xl bg-amber-50/20 text-center space-y-6">
+                  <div className="inline-block border-y-2 border-blue-900 py-1 px-8">
+                    <h2 className="text-lg font-black uppercase tracking-widest text-blue-950">
+                      {data.examTitle || (docLang === "bn" ? "প্রশংসাপত্র / সনদপত্র" : "CERTIFICATE OF MERIT & CHARACTER")}
+                    </h2>
+                  </div>
+
+                  <p className="text-sm sm:text-base font-serif leading-loose text-gray-800 text-justify px-4 sm:px-8">
+                    {docLang === "bn" ? (
+                      <>
+                        এই মর্মে প্রত্যয়ন করা যাচ্ছে যে, <strong className="font-bold text-gray-950 underline decoration-blue-900 underline-offset-4">{data.studentName}</strong>, 
+                        রোল নম্বর <strong className="font-bold text-gray-950">{data.rollNo}</strong>, 
+                        এই প্রতিষ্ঠানের <strong className="font-bold text-gray-950">{data.classGrade}</strong>-এর একজন নিয়মিত শিক্ষার্থী ছিলেন। 
+                        শিক্ষা সেশন <strong className="font-bold text-gray-950">{data.academicYear || "২০২৬"}</strong>। 
+                        <span className="block mt-3">
+                          {data.remarks || "তিনি অত্র প্রতিষ্ঠানে অধ্যয়নকালে সৎ ও উন্নত চরিত্রের পরিচয় দিয়েছেন। রাষ্ট্র কিংবা শৃঙ্খলা পরিপন্থী কোনো কার্যকলাপে কখনো লিপ্ত ছিলেন না। আমি তার জীবনের সার্বিক সাফল্য ও উজ্জ্বল ভবিষ্যৎ কামনা করি।"}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        This is to officially certify that <strong className="font-bold text-gray-950 underline decoration-blue-900 underline-offset-4">{data.studentName}</strong>, 
+                        bearing Roll No <strong className="font-bold text-gray-950">{data.rollNo}</strong>, 
+                        was a bona fide student of this institution in <strong className="font-bold text-gray-950">{data.classGrade}</strong> 
+                        during the academic session <strong className="font-bold text-gray-950">{data.academicYear || "2026"}</strong>.
+                        <br />
+                        <span className="italic block mt-3 text-gray-700">
+                          &ldquo;{data.remarks || "To the best of our knowledge and records, the student bears an exemplary moral character and did not participate in any subversive activities. All institutional fees and dues have been cleared."}&rdquo;
+                        </span>
+                      </>
+                    )}
+                  </p>
+
+                  <div className="pt-4 flex justify-between items-center text-xs text-gray-600 px-8 border-t border-blue-900/20">
+                    <span>{docLang === "bn" ? "ইস্যু তারিখ:" : "Issue Date:"} <strong>{data.date}</strong></span>
+                    <span className="font-serif italic text-blue-900">
+                      {docLang === "bn" ? "অফিসিয়াল প্রাতিষ্ঠানিক সনদ" : "Official Institutional Document"}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Student ID Card Canvas */}
+              {isIdCard && (
+                <div className="my-8 flex justify-center">
+                  <div className="w-[85mm] min-h-[125mm] bg-white border-2 border-blue-900 rounded-2xl shadow-lg p-5 flex flex-col justify-between text-center relative overflow-hidden font-sans">
+                    <div className="absolute top-0 left-0 right-0 h-3.5 bg-gradient-to-r from-blue-900 via-indigo-800 to-blue-900"></div>
+                    <div className="pt-2 border-b border-gray-200 pb-2">
+                      <h3 className="font-black text-xs uppercase text-blue-950">{data.instituteName}</h3>
+                      <p className="text-[8px] text-gray-500 font-medium">{data.tagline}</p>
+                      <span className="inline-block bg-blue-900 text-white text-[8px] font-bold px-2 py-0.5 rounded-full mt-1">
+                        STUDENT IDENTITY CARD
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col items-center my-3 space-y-2">
+                      <div className="w-20 h-24 border-2 border-blue-900 rounded-lg bg-gray-50 flex items-center justify-center shadow-xs">
+                        <GraduationCap className="w-10 h-10 text-blue-400" />
+                      </div>
+                      <h4 className="font-black text-sm text-gray-900">{data.studentName}</h4>
+                      <p className="text-[10px] font-bold text-blue-800">{data.rollNo}</p>
+                      <div className="w-full text-[10px] space-y-1 text-left bg-gray-50 p-2.5 rounded-lg border border-gray-200">
+                        <div className="flex justify-between">
+                          <span className="text-gray-500 font-semibold">Class / Group:</span>
+                          <span className="font-bold text-gray-800">{data.classGrade}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500 font-semibold">Blood Group:</span>
+                          <span className="font-black text-red-600">{data.bloodGroup || "O+ (Pos)"}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500 font-semibold">Valid Upto:</span>
+                          <span className="font-bold text-gray-800">{data.academicYear || "2026-2028"}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500 font-semibold">Emergency:</span>
+                          <span className="font-bold text-gray-800">{data.phone || "+880 1711-234567"}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="border-t border-gray-200 pt-2 flex justify-between items-end">
+                      <div className="text-left font-mono text-[8px] text-gray-600">
+                        <span>||||||||||||||||||||||||||</span>
+                        <p className="text-[7px] text-gray-400 mt-0.5">freedocforge.com</p>
+                      </div>
+                      <div className="text-center">
+                        <div className="w-16 border-b border-gray-900 mb-0.5"></div>
+                        <span className="text-[8px] font-bold text-gray-900 block">Principal</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Remarks Box (For Marksheets and Routines only) */}
+              {!isCertificate && data.remarks && (
                 <div className="my-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
                   <span className="text-[10px] uppercase font-bold text-gray-400 block mb-1">
                     {docLang === "bn" ? "শিক্ষকের মন্তব্য / প্রাতিষ্ঠানিক মূল্যায়ন:" : "Teacher's Evaluation & Remarks:"}
@@ -723,6 +1036,13 @@ export default function SchoolTemplateEditor({
               </div>
 
               <div className="text-center">
+                <div className="mb-2">
+                  <div className={activeTheme.sealClass}>
+                    <span>★</span>
+                    <span>{docLang === "bn" ? "অফিসিয়াল সিলমোহর" : "OFFICIAL SEAL"}</span>
+                    <span>★</span>
+                  </div>
+                </div>
                 {signaturePreview ? (
                   <img src={signaturePreview} alt="Signature" className="h-10 mx-auto mb-1 object-contain" />
                 ) : (
@@ -732,7 +1052,7 @@ export default function SchoolTemplateEditor({
                   {data.signatory2 || (docLang === "bn" ? "প্রধান শিক্ষক / অধ্যক্ষ" : "Headmaster / Principal")}
                 </span>
                 <span className="text-[10px] text-gray-500 block">
-                  {docLang === "bn" ? "স্বাক্ষর ও সিলমোহর" : "Official Seal"}
+                  {docLang === "bn" ? "অনুমোদিত স্বাক্ষর" : "Authorized Signature"}
                 </span>
               </div>
             </div>

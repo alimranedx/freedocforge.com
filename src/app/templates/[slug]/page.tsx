@@ -25,14 +25,38 @@ async function TemplateContent({
     notFound();
   }
 
-  // Domain-Specific Specialized Editor Dispatcher
-  const isMedical =
-    template.category === "Healthcare" ||
-    slug.startsWith("doctor-") ||
-    slug.startsWith("medical-");
+  // Production-Grade Specialized Editor Dispatcher:
+  // 1. Any template with itemized line items (products, services, diagnostic tests, goods) MUST use InvoiceEditor
+  const isInvoiceBill =
+    Array.isArray(template.defaultData?.items) ||
+    slug === "medical-money-receipt" ||
+    template.subCategory === "invoice" ||
+    template.subCategory === "receipt" ||
+    template.subCategory === "chalan" ||
+    template.subCategory === "quotation" ||
+    template.subCategory === "bill";
 
-  const isSchool =
-    template.category === "Education" || slug.startsWith("school-");
+  // 2. Specialized Medical Prescriptions, Clinical Tokens & Discharge Records
+  const isMedicalClinical =
+    !isInvoiceBill &&
+    (template.category === "Healthcare" ||
+      slug.startsWith("doctor-") ||
+      slug.startsWith("medical-") ||
+      slug.startsWith("dental-") ||
+      slug.startsWith("pediatric-") ||
+      slug.startsWith("eye-") ||
+      slug.startsWith("radiology-") ||
+      slug.startsWith("hospital-") ||
+      slug.startsWith("physiotherapy-"));
+
+  // 3. Specialized Education & Academic Documents (Marksheets, Routines, Admit Cards, Certificates)
+  const isSchoolAcademic =
+    !isInvoiceBill &&
+    (template.category === "Education" ||
+      slug.startsWith("school-") ||
+      slug.startsWith("coaching-") ||
+      slug.startsWith("madrasah-") ||
+      slug.startsWith("student-"));
 
   return (
     <>
@@ -48,13 +72,19 @@ async function TemplateContent({
       <AdSenseSlot slotId="template-top-ad" format="horizontal" className="print:hidden" />
 
       {/* Core Interactive Editor Component */}
-      {isMedical ? (
+      {isInvoiceBill ? (
+        <InvoiceEditor
+          initialData={template.defaultData}
+          locales={template.locales}
+          templateSlug={template.slug}
+        />
+      ) : isMedicalClinical ? (
         <MedicalPrescriptionEditor
           initialData={template.defaultData}
           locales={template.locales}
           templateSlug={template.slug}
         />
-      ) : isSchool ? (
+      ) : isSchoolAcademic ? (
         <SchoolTemplateEditor
           initialData={template.defaultData}
           locales={template.locales}

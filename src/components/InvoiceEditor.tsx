@@ -12,11 +12,24 @@ import {
   Mic,
   Globe,
   FileText,
+  Share2,
+  Image as ImageIcon,
+  MessageCircle,
+  Eye,
+  Edit3,
+  Loader2,
 } from "lucide-react";
 import { numberToWordsEnglish, numberToWordsBengali } from "@/lib/numberToWords";
 import AdSenseSlot from "@/components/AdSenseSlot";
 import VoiceInputButton, { parseBanglaDigits } from "@/components/VoiceInputButton";
 import { useGlobalSettings } from "@/context/GlobalSettingsContext";
+import { trackEvent } from "@/lib/analytics";
+import ThemeSelectorBar from "@/components/ThemeSelectorBar";
+import {
+  detectDefaultThemeForTemplate,
+  DESIGN_THEMES,
+  DesignThemeId,
+} from "@/lib/designThemes";
 
 interface InvoiceItem {
   name: string;
@@ -47,6 +60,12 @@ export default function InvoiceEditor({
   // 3. VOICE INPUT LANGUAGE (Allows speaking in Bangla or English on ALL inputs)
   const [voiceLang, setVoiceLang] = useState<"bn" | "en">("bn");
 
+  // 4. DOCUMENT DESIGN THEME ARCHETYPE (Real-time styling for canvas & print)
+  const [activeThemeId, setActiveThemeId] = useState<DesignThemeId>(() => {
+    return detectDefaultThemeForTemplate("Business", templateSlug);
+  });
+  const activeTheme = DESIGN_THEMES[activeThemeId] || DESIGN_THEMES["modern-blue"];
+
   // Initialize data with safe fallbacks (ensuring currency and items are never undefined)
   const [data, setData] = useState({
     businessName: "",
@@ -72,6 +91,8 @@ export default function InvoiceEditor({
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [signaturePreview, setSignaturePreview] = useState<string | null>(null);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [mobileView, setMobileView] = useState<"form" | "preview">("form");
+  const [isExportingJpg, setIsExportingJpg] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
   // Auto-fill from user's active preset if available
@@ -167,13 +188,100 @@ export default function InvoiceEditor({
   };
 
   const handlePrint = () => {
+    trackEvent({
+      name: "print_initiated",
+      properties: {
+        template_slug: templateSlug,
+        paper_size: "A4",
+        has_logo: !!logoPreview,
+        amount_bucket:
+          grandTotal < 1000
+            ? "0-1000"
+            : grandTotal <= 5000
+            ? "1000-5000"
+            : grandTotal <= 20000
+            ? "5000-20000"
+            : "20000+",
+      },
+    });
     window.print();
+  };
+
+  const handleWhatsAppShare = () => {
+    try {
+      const shopTitle = data.businessName || "Cash Memo";
+      const invNumber = data.invoiceNumber || "INV-001";
+      const customer = data.customerName || "Valued Customer";
+      const totalStr = `${currency} ${grandTotal.toLocaleString()}`;
+      const dueStr =
+        due > 0 ? `${currency} ${due.toLocaleString()}` : docLang === "bn" ? "পরিশোধিত" : "Paid";
+
+      const message =
+        docLang === "bn"
+          ? `*${shopTitle}*\nমেমো নং: ${invNumber}\nক্রেতা: ${customer}\nডেলিভারি ঠিকানা: ${
+              data.customerAddress || "N/A"
+            }\nকুরিয়ার: ${data.courierPartner || "Standard"}\n\n*সর্বমোট বিল:* ${totalStr}\n*ক্যাশ অন ডেলিভারি (বাকি):* ${dueStr}\n\nধন্যবাদ আমাদের সাথে কেনাকাটা করার জন্য!`
+          : `*${shopTitle}*\nInvoice: ${invNumber}\nCustomer: ${customer}\nDelivery Address: ${
+              data.customerAddress || "N/A"
+            }\nCourier: ${data.courierPartner || "Standard"}\n\n*Grand Total:* ${totalStr}\n*Net COD Due:* ${dueStr}\n\nThank you for shopping with us!`;
+
+      trackEvent({
+        name: "whatsapp_share_clicked",
+        properties: { template_slug: templateSlug },
+      });
+
+      const cleanPhone = (data.customerPhone || "").replace(/[^0-9]/g, "");
+      const targetUrl =
+        cleanPhone.length >= 10
+          ? `https://wa.me/${cleanPhone.startsWith("88") ? cleanPhone : `88${cleanPhone}`}?text=${encodeURIComponent(
+              message
+            )}`
+          : `https://wa.me/?text=${encodeURIComponent(message)}`;
+
+      window.open(targetUrl, "_blank");
+    } catch (e) {
+      console.error("WhatsApp share error:", e);
+    }
+  };
+
+  const handleSaveAsJpg = async () => {
+    if (!printRef.current || isExportingJpg) return;
+    try {
+      setIsExportingJpg(true);
+      const html2canvas = (await import("html2canvas")).default;
+      const canvas = await html2canvas(printRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+      });
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
+      const link = document.createElement("a");
+      link.download = `${data.invoiceNumber || "cash-memo"}.jpg`;
+      link.href = dataUrl;
+      link.click();
+
+      trackEvent({
+        name: "pdf_download_completed",
+        properties: { template_slug: templateSlug, paper_size: "A4_JPG" },
+      });
+    } catch (e) {
+      console.error("JPG export error:", e);
+      alert("Failed to export JPG. Please use Print / PDF instead.");
+    } finally {
+      setIsExportingJpg(false);
+    }
   };
 
   const handleSaveToProfile = async () => {
     setSavedSuccess(true);
     setTimeout(() => setSavedSuccess(false), 3000);
   };
+
+  const isMedicalReceipt =
+    templateSlug.includes("medical") ||
+    templateSlug.includes("diagnostic") ||
+    templateSlug.includes("money-receipt");
 
   return (
     <div className="space-y-6">
@@ -213,7 +321,7 @@ export default function InvoiceEditor({
                 : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
             }`}
           >
-            English Invoice
+            {isMedicalReceipt ? "English Receipt" : "English Invoice"}
           </button>
           <button
             type="button"
@@ -224,14 +332,53 @@ export default function InvoiceEditor({
                 : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
             }`}
           >
-            বাংলা ক্যাশ মেমো
+            {isMedicalReceipt ? "বাংলা মানি রিসিট" : "বাংলা ক্যাশ মেমো"}
           </button>
         </div>
       </div>
 
+      {/* INTERACTIVE 1-CLICK THEME SELECTOR BAR */}
+      <ThemeSelectorBar
+        activeThemeId={activeThemeId}
+        onSelectTheme={setActiveThemeId}
+        lang={docLang}
+      />
+
+      {/* MOBILE VIEWPORT SEGMENTED SWITCHER (<1024px) */}
+      <div className="flex lg:hidden items-center justify-between bg-slate-100 dark:bg-slate-800 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-700 print:hidden">
+        <button
+          type="button"
+          onClick={() => setMobileView("form")}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+            mobileView === "form"
+              ? "bg-white dark:bg-blue-600 text-blue-700 dark:text-white shadow-xs"
+              : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+          }`}
+        >
+          <Edit3 className="w-3.5 h-3.5" />
+          {docLang === "bn" ? "ফর্ম এডিট" : "Edit Form"}
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileView("preview")}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+            mobileView === "preview"
+              ? "bg-white dark:bg-blue-600 text-blue-700 dark:text-white shadow-xs"
+              : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+          }`}
+        >
+          <Eye className="w-3.5 h-3.5" />
+          {docLang === "bn" ? "লাইভ প্রিভিউ দেখুন" : "Live Preview"}
+        </button>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* LEFT COLUMN: Input Form Controls (Hidden during printing) */}
-        <div className="lg:col-span-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs print:hidden space-y-6 transition-colors">
+        <div
+          className={`lg:col-span-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs print:hidden space-y-6 transition-colors ${
+            mobileView === "form" ? "block" : "hidden lg:block"
+          }`}
+        >
           {/* Header & Voice Input Language Controls */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 gap-3">
             <div>
@@ -281,14 +428,28 @@ export default function InvoiceEditor({
           {/* 1. Business Details */}
           <div className="space-y-3">
             <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
-              {docLang === "bn" ? "১. আপনার দোকান / প্রতিষ্ঠানের তথ্য" : "1. Your Business / Shop Details"}
+              {isMedicalReceipt
+                ? docLang === "bn"
+                  ? "১. ডায়াগনস্টিক সেন্টার বা প্রতিষ্ঠানের তথ্য"
+                  : "1. Diagnostic Center / Hospital Details"
+                : docLang === "bn"
+                ? "১. আপনার দোকান / প্রতিষ্ঠানের তথ্য"
+                : "1. Your Business / Shop Details"}
             </label>
             <div className="grid grid-cols-2 gap-3">
               {/* Business Name */}
               <div className="col-span-2 relative flex items-center">
                 <input
                   type="text"
-                  placeholder={docLang === "bn" ? "দোকান বা পেজের নাম" : "Shop / Company Name"}
+                  placeholder={
+                    isMedicalReceipt
+                      ? docLang === "bn"
+                        ? "ডায়াগনস্টিক সেন্টারের নাম"
+                        : "Diagnostic Center / Hospital Name"
+                      : docLang === "bn"
+                      ? "দোকান বা পেজের নাম"
+                      : "Shop / Company Name"
+                  }
                   className="w-full text-xs sm:text-sm border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-9 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"
                   value={data.businessName || ""}
                   onChange={(e) => setData({ ...data, businessName: e.target.value })}
@@ -296,7 +457,7 @@ export default function InvoiceEditor({
                 <div className="absolute right-2">
                   <VoiceInputButton
                     lang={voiceLang}
-                    title={voiceLang === "bn" ? "দোকানের নাম বাংলায় মুখে বলুন" : "Speak Shop Name"}
+                    title={voiceLang === "bn" ? "দোকান বা সেন্টারের নাম মুখে বলুন" : "Speak Name"}
                     onTranscript={(txt) => setData({ ...data, businessName: txt })}
                   />
                 </div>
@@ -306,7 +467,15 @@ export default function InvoiceEditor({
               <div className="col-span-2 relative flex items-center">
                 <input
                   type="text"
-                  placeholder={docLang === "bn" ? "স্লোগান / ট্যাগলাইন (যেমন: সেরা মানের পণ্য)" : "Tagline / Slogan"}
+                  placeholder={
+                    isMedicalReceipt
+                      ? docLang === "bn"
+                        ? "স্লোগান / আদর্শ (যেমন: নির্ভুল টেস্ট রিপোর্ট, সেবাই লক্ষ্য)"
+                        : "Tagline / Mission"
+                      : docLang === "bn"
+                      ? "স্লোগান / ট্যাগলাইন (যেমন: সেরা মানের পণ্য)"
+                      : "Tagline / Slogan"
+                  }
                   className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-9 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"
                   value={data.tagline || ""}
                   onChange={(e) => setData({ ...data, tagline: e.target.value })}
@@ -346,7 +515,15 @@ export default function InvoiceEditor({
               <div className="relative flex items-center">
                 <input
                   type="text"
-                  placeholder={docLang === "bn" ? "মেমো নং" : "Invoice #"}
+                  placeholder={
+                    isMedicalReceipt
+                      ? docLang === "bn"
+                        ? "বিল বা মানি রিসিট নং"
+                        : "Receipt / Bill #"
+                      : docLang === "bn"
+                      ? "মেমো নং"
+                      : "Invoice #"
+                  }
                   className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"
                   value={data.invoiceNumber || ""}
                   onChange={(e) => setData({ ...data, invoiceNumber: e.target.value })}
@@ -364,7 +541,15 @@ export default function InvoiceEditor({
               <div className="col-span-2 relative flex items-center">
                 <input
                   type="text"
-                  placeholder={docLang === "bn" ? "দোকানের ঠিকানা / লোকেশন" : "Shop Address / Location"}
+                  placeholder={
+                    isMedicalReceipt
+                      ? docLang === "bn"
+                        ? "ডায়াগনস্টিক সেন্টারের ঠিকানা"
+                        : "Center Address"
+                      : docLang === "bn"
+                      ? "দোকানের ঠিকানা / লোকেশন"
+                      : "Shop Address / Location"
+                  }
                   className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-9 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"
                   value={data.address || ""}
                   onChange={(e) => setData({ ...data, address: e.target.value })}
@@ -381,7 +566,13 @@ export default function InvoiceEditor({
               <div className="col-span-2 flex flex-wrap items-center gap-2">
                 <label className="cursor-pointer flex items-center gap-1.5 text-xs bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 transition">
                   <Upload className="w-3.5 h-3.5" />
-                  {docLang === "bn" ? "লোগো আপলোড" : "Upload Shop Logo"}
+                  {isMedicalReceipt
+                    ? docLang === "bn"
+                      ? "সেন্টার লোগো আপলোড"
+                      : "Upload Center Logo"
+                    : docLang === "bn"
+                    ? "লোগো আপলোড"
+                    : "Upload Shop Logo"}
                   <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
                 </label>
                 <label className="cursor-pointer flex items-center gap-1.5 text-xs bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 transition">
@@ -398,17 +589,31 @@ export default function InvoiceEditor({
             </div>
           </div>
 
-          {/* 2. Customer / Client Details */}
+          {/* 2. Customer / Client / Patient Details */}
           <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800">
             <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
-              {docLang === "bn" ? "২. কাস্টমার / ক্রেতার বিবরণ" : "2. Customer / Client Details"}
+              {isMedicalReceipt
+                ? docLang === "bn"
+                  ? "২. রোগীর বিবরণ ও রেফারেন্স ডাক্তার"
+                  : "2. Patient & Referring Doctor Details"
+                : docLang === "bn"
+                ? "২. কাস্টমার / ক্রেতার বিবরণ"
+                : "2. Customer / Client Details"}
             </label>
             <div className="grid grid-cols-2 gap-3">
               {/* Customer Name */}
               <div className="relative flex items-center">
                 <input
                   type="text"
-                  placeholder={docLang === "bn" ? "কাস্টমারের নাম" : "Customer Name"}
+                  placeholder={
+                    isMedicalReceipt
+                      ? docLang === "bn"
+                        ? "রোগীর নাম"
+                        : "Patient Name"
+                      : docLang === "bn"
+                      ? "কাস্টমারের নাম"
+                      : "Customer Name"
+                  }
                   className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"
                   value={data.customerName || ""}
                   onChange={(e) => setData({ ...data, customerName: e.target.value })}
@@ -416,7 +621,7 @@ export default function InvoiceEditor({
                 <div className="absolute right-1">
                   <VoiceInputButton
                     lang={voiceLang}
-                    title={voiceLang === "bn" ? "কাস্টমারের নাম মুখে বলুন" : "Speak Customer Name"}
+                    title={voiceLang === "bn" ? "নাম মুখে বলুন" : "Speak Name"}
                     onTranscript={(txt) => setData({ ...data, customerName: txt })}
                   />
                 </div>
@@ -426,7 +631,15 @@ export default function InvoiceEditor({
               <div className="relative flex items-center">
                 <input
                   type="text"
-                  placeholder={docLang === "bn" ? "কাস্টমারের ফোন" : "Customer Phone"}
+                  placeholder={
+                    isMedicalReceipt
+                      ? docLang === "bn"
+                        ? "রোগীর ফোন"
+                        : "Patient Phone"
+                      : docLang === "bn"
+                      ? "কাস্টমারের ফোন"
+                      : "Customer Phone"
+                  }
                   className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"
                   value={data.customerPhone || ""}
                   onChange={(e) => setData({ ...data, customerPhone: e.target.value })}
@@ -435,7 +648,7 @@ export default function InvoiceEditor({
                   <VoiceInputButton
                     lang={voiceLang}
                     isNumeric={false}
-                    title={voiceLang === "bn" ? "কাস্টমারের মোবাইল নম্বর মুখে বলুন" : "Speak Customer Phone"}
+                    title={voiceLang === "bn" ? "মোবাইল নম্বর মুখে বলুন" : "Speak Phone"}
                     onTranscript={(txt) => {
                       const normalized = parseBanglaDigits(txt);
                       setData({ ...data, customerPhone: normalized });
@@ -444,11 +657,19 @@ export default function InvoiceEditor({
                 </div>
               </div>
 
-              {/* Customer Address */}
+              {/* Customer Address / Ref Doctor */}
               <div className="col-span-2 relative flex items-center">
                 <input
                   type="text"
-                  placeholder={docLang === "bn" ? "ডেলিভারি ঠিকানা (জেলা, থানা, বাসা)" : "Delivery Address"}
+                  placeholder={
+                    isMedicalReceipt
+                      ? docLang === "bn"
+                        ? "রেফারেন্স ডাক্তারের নাম ও পদবী (Ref. Doctor)"
+                        : "Referring Doctor (e.g. Prof. Dr. S. K. Roy)"
+                      : docLang === "bn"
+                      ? "ডেলিভারি ঠিকানা (জেলা, থানা, বাসা)"
+                      : "Delivery Address"
+                  }
                   className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-9 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"
                   value={data.customerAddress || ""}
                   onChange={(e) => setData({ ...data, customerAddress: e.target.value })}
@@ -456,18 +677,24 @@ export default function InvoiceEditor({
                 <div className="absolute right-2">
                   <VoiceInputButton
                     lang={voiceLang}
-                    title={voiceLang === "bn" ? "কাস্টমারের ঠিকানা মুখে বলুন" : "Speak Customer Address"}
+                    title={voiceLang === "bn" ? "ঠিকানা বা রেফারেন্স মুখে বলুন" : "Speak Ref"}
                     onTranscript={(txt) => setData({ ...data, customerAddress: txt })}
                   />
                 </div>
               </div>
 
-              {/* Courier Partner */}
+              {/* Courier Partner / Delivery Schedule */}
               <div className="relative flex items-center">
                 <input
                   type="text"
                   placeholder={
-                    docLang === "bn" ? "কুরিয়ার (যেমন: Steadfast/Pathao)" : "Courier Partner"
+                    isMedicalReceipt
+                      ? docLang === "bn"
+                        ? "রিপোর্ট ডেলিভারির সময় (যেমন: ১২/১১/২৬ বিকাল ৫টা)"
+                        : "Report Delivery Time (e.g. 12/11/26 5:00 PM)"
+                      : docLang === "bn"
+                      ? "কুরিয়ার (যেমন: Steadfast/Pathao)"
+                      : "Courier Partner"
                   }
                   className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"
                   value={data.courierPartner || ""}
@@ -476,7 +703,7 @@ export default function InvoiceEditor({
                 <div className="absolute right-1">
                   <VoiceInputButton
                     lang={voiceLang}
-                    title={voiceLang === "bn" ? "কুরিয়ারের নাম মুখে বলুন" : "Speak Courier Partner"}
+                    title={voiceLang === "bn" ? "ডেলিভারি সময় মুখে বলুন" : "Speak Delivery Time"}
                     onTranscript={(txt) => setData({ ...data, courierPartner: txt })}
                   />
                 </div>
@@ -492,6 +719,42 @@ export default function InvoiceEditor({
                   onChange={(e) => setData({ ...data, date: e.target.value })}
                 />
               </div>
+
+              {/* Quick Bangladeshi Courier Chips */}
+              <div className="col-span-2 flex flex-wrap items-center gap-1.5 pt-0.5">
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                  {docLang === "bn" ? "জনপ্রিয় কুরিয়ার:" : "Couriers:"}
+                </span>
+                {[
+                  { name: "Steadfast Courier", label: "Steadfast" },
+                  { name: "Pathao Courier", label: "Pathao" },
+                  { name: "RedX Delivery", label: "RedX" },
+                  { name: "Paperfly", label: "Paperfly" },
+                  { name: "Sundarban Courier", label: "Sundarban" },
+                ].map((c) => (
+                  <button
+                    key={c.name}
+                    type="button"
+                    onClick={() => {
+                      setData({ ...data, courierPartner: c.name });
+                      trackEvent({
+                        name: "courier_affiliate_clicked",
+                        properties: {
+                          courier_name: c.label.toLowerCase() as any,
+                          placement: "editor_sidebar",
+                        },
+                      });
+                    }}
+                    className={`text-[10px] px-2 py-0.5 rounded-md border transition font-medium cursor-pointer ${
+                      data.courierPartner === c.name
+                        ? "bg-blue-50 dark:bg-blue-950 border-blue-500 text-blue-700 dark:text-blue-300 font-bold"
+                        : "bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-slate-400"
+                    }`}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -499,13 +762,26 @@ export default function InvoiceEditor({
           <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800">
             <div className="flex items-center justify-between">
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                {docLang === "bn" ? "৩. পণ্যের বিবরণ ও মূল্য তালিকা" : "3. Items & Pricing"}
+                {isMedicalReceipt
+                  ? docLang === "bn"
+                    ? "৩. প্যাথলজি ও ডায়াগনস্টিক টেস্টের তালিকা"
+                    : "3. Diagnostic Tests & Charges"
+                  : docLang === "bn"
+                  ? "৩. পণ্যের বিবরণ ও মূল্য তালিকা"
+                  : "3. Items & Pricing"}
               </label>
               <button
                 onClick={handleAddItem}
                 className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline font-semibold cursor-pointer"
               >
-                <Plus className="w-3.5 h-3.5" /> {docLang === "bn" ? "+ পণ্য যোগ করুন" : "+ Add Item"}
+                <Plus className="w-3.5 h-3.5" />{" "}
+                {isMedicalReceipt
+                  ? docLang === "bn"
+                    ? "+ টেস্ট যোগ করুন"
+                    : "+ Add Test"
+                  : docLang === "bn"
+                  ? "+ পণ্য যোগ করুন"
+                  : "+ Add Item"}
               </button>
             </div>
 
@@ -519,7 +795,15 @@ export default function InvoiceEditor({
                   <div className="flex-1 relative flex items-center min-w-0">
                     <input
                       type="text"
-                      placeholder={docLang === "bn" ? "পণ্যের নাম" : "Item name"}
+                      placeholder={
+                        isMedicalReceipt
+                          ? docLang === "bn"
+                            ? "টেস্টের নাম (যেমন: CBC, FBS, USG)"
+                            : "Test Name (e.g. CBC, FBS, USG)"
+                          : docLang === "bn"
+                          ? "পণ্যের নাম"
+                          : "Item name"
+                      }
                       className="w-full text-xs bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-2 py-1.5 pr-7 text-slate-900 dark:text-white focus:outline-none"
                       value={item.name}
                       onChange={(e) => handleItemChange(idx, "name", e.target.value)}
@@ -681,6 +965,32 @@ export default function InvoiceEditor({
                 </div>
               </div>
             </div>
+
+            {/* Quick Delivery Rate Chips */}
+            <div className="flex flex-wrap items-center gap-1.5 pt-2">
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                {docLang === "bn" ? "ডেলিভারি রেট:" : "Delivery Rates:"}
+              </span>
+              {[
+                { fee: 70, bnLabel: "ঢাকা সিটি (৳৭০)", enLabel: "Inside Dhaka (৳70)" },
+                { fee: 100, bnLabel: "সাব-ঢাকা (৳১০০)", enLabel: "Sub-Dhaka (৳100)" },
+                { fee: 130, bnLabel: "ঢাকার বাইরে (৳১৩০)", enLabel: "Outside Dhaka (৳130)" },
+                { fee: 0, bnLabel: "ফ্রি (৳০)", enLabel: "Free (৳0)" },
+              ].map((rate) => (
+                <button
+                  key={rate.fee}
+                  type="button"
+                  onClick={() => setData({ ...data, deliveryCharge: rate.fee })}
+                  className={`text-[10px] px-2 py-0.5 rounded-md border transition cursor-pointer font-medium ${
+                    Number(data.deliveryCharge) === rate.fee
+                      ? "bg-emerald-50 dark:bg-emerald-950 border-emerald-500 text-emerald-700 dark:text-emerald-300 font-bold"
+                      : "bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-slate-400"
+                  }`}
+                >
+                  {docLang === "bn" ? rate.bnLabel : rate.enLabel}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* 4. Terms, Notes & Signatory with Voice Inputs */}
@@ -750,9 +1060,40 @@ export default function InvoiceEditor({
               {docLang === "bn" ? "প্রিন্ট করুন / PDF ডাউনলোড" : "Print / Save as PDF"}
             </button>
 
+            {/* 1-Click WhatsApp & JPG Direct Export */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={handleWhatsAppShare}
+                className="flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-3 rounded-xl shadow-xs transition text-xs cursor-pointer"
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+                {docLang === "bn" ? "হোয়াটসঅ্যাপ শেয়ার" : "WhatsApp Share"}
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveAsJpg}
+                disabled={isExportingJpg}
+                className="flex items-center justify-center gap-1.5 bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 px-3 rounded-xl shadow-xs transition text-xs cursor-pointer disabled:opacity-50"
+              >
+                {isExportingJpg ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <ImageIcon className="w-3.5 h-3.5" />
+                )}
+                {isExportingJpg
+                  ? docLang === "bn"
+                    ? "সেভ হচ্ছে..."
+                    : "Saving..."
+                  : docLang === "bn"
+                  ? "ছবি সেভ (JPG)"
+                  : "Save as JPG"}
+              </button>
+            </div>
+
             <button
               onClick={handleSaveToProfile}
-              className="w-full flex items-center justify-center gap-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-medium py-2.5 rounded-xl transition text-xs cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-medium py-2 rounded-xl transition text-xs cursor-pointer"
             >
               {savedSuccess ? (
                 <>
@@ -775,7 +1116,27 @@ export default function InvoiceEditor({
         </div>
 
         {/* RIGHT COLUMN: Live Printable A4 Canvas */}
-        <div className="lg:col-span-7 flex flex-col items-center">
+        <div
+          className={`lg:col-span-7 flex flex-col items-center ${
+            mobileView === "preview" ? "flex" : "hidden lg:flex"
+          }`}
+        >
+          {/* Mobile Back-to-Form Header (<1024px) */}
+          <div className="w-full flex lg:hidden items-center justify-between mb-4 bg-blue-50 dark:bg-blue-950/60 p-3 rounded-2xl border border-blue-200 dark:border-blue-800 print:hidden">
+            <span className="text-xs font-bold text-blue-900 dark:text-blue-200 flex items-center gap-1.5">
+              <Eye className="w-4 h-4 text-blue-600" />
+              {docLang === "bn" ? "লাইভ প্রিন্ট প্রিভিউ" : "Live Print Preview"}
+            </span>
+            <button
+              type="button"
+              onClick={() => setMobileView("form")}
+              className="flex items-center gap-1.5 text-xs font-bold bg-blue-600 text-white px-3 py-1.5 rounded-xl shadow-xs cursor-pointer"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              {docLang === "bn" ? "ফর্মে ফিরুন" : "Back to Form"}
+            </button>
+          </div>
+
           <div className="w-full flex items-center justify-between mb-3 print:hidden">
             <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-medium">
               <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -794,16 +1155,16 @@ export default function InvoiceEditor({
           <div
             ref={printRef}
             id="printable-document"
-            className="w-full max-w-[210mm] min-h-[297mm] bg-white text-gray-900 p-8 sm:p-10 rounded-2xl shadow-xl border border-gray-200 print:border-none print:shadow-none print:p-0 print:m-0 print:w-full print:max-w-none text-xs flex flex-col justify-between"
+            className={`w-full max-w-[210mm] min-h-[297mm] p-8 sm:p-10 print:border-none print:shadow-none print:p-0 print:m-0 print:w-full print:max-w-none text-xs flex flex-col justify-between transition-colors ${activeTheme.fontFamily} ${activeTheme.containerClass}`}
           >
             <div>
               {/* Header: Brand & Document Number */}
-              <div className="flex justify-between items-start border-b-2 border-gray-900 pb-6">
+              <div className={`flex justify-between items-start pb-6 ${activeTheme.headerBorderClass}`}>
                 <div className="space-y-1">
                   {logoPreview ? (
                     <img src={logoPreview} alt="Logo" className="h-14 object-contain mb-2" />
                   ) : (
-                    <h1 className="text-xl sm:text-2xl font-black tracking-tight text-gray-900 uppercase">
+                    <h1 className={`text-xl sm:text-2xl tracking-tight uppercase ${activeTheme.titleClass}`}>
                       {data.businessName || (docLang === "bn" ? "আপনার দোকানের নাম" : "Your Shop Name")}
                     </h1>
                   )}
@@ -847,59 +1208,91 @@ export default function InvoiceEditor({
                 </div>
               </div>
 
-              {/* Bill To / Recipient Info */}
-              <div className="grid grid-cols-2 gap-4 my-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider block mb-1">
-                    {docLang === "bn" ? "ক্রেতার বিবরণ / কাস্টমার:" : "Billed To / Customer:"}
+              {/* Bill To / Recipient Info - Bento Card */}
+              <div className="grid grid-cols-12 gap-4 my-6 bg-slate-50/80 border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-2xs">
+                <div className="col-span-8 space-y-1">
+                  <span className="text-[9.5px] uppercase font-bold text-slate-400 tracking-widest block mb-1">
+                    {isMedicalReceipt
+                      ? docLang === "bn"
+                        ? "রোগীর বিবরণ / পেশেন্ট:"
+                        : "PATIENT DEMOGRAPHICS:"
+                      : docLang === "bn"
+                      ? "ক্রেতার বিবরণ / কাস্টমার:"
+                      : "BILLED TO / CUSTOMER:"}
                   </span>
-                  <h3 className="text-sm font-bold text-gray-900">
-                    {data.customerName || (docLang === "bn" ? "ক্রেতার নাম" : "Customer Name")}
+                  <h3 className="text-sm sm:text-base font-extrabold text-slate-900">
+                    {data.customerName ||
+                      (docLang === "bn"
+                        ? isMedicalReceipt
+                          ? "রোগীর নাম"
+                          : "ক্রেতার নাম"
+                        : isMedicalReceipt
+                        ? "Patient Name"
+                        : "Customer Name")}
                   </h3>
-                  <p className="text-xs text-gray-600">{data.customerPhone}</p>
-                  <p className="text-xs text-gray-600 mt-1">{data.customerAddress}</p>
+                  <p className="text-xs text-slate-600 font-medium">{data.customerPhone}</p>
+                  <p className="text-xs text-slate-500 leading-tight mt-0.5">{data.customerAddress}</p>
                 </div>
-                <div className="text-right">
-                  <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider block mb-1">
-                    {docLang === "bn" ? "পেমেন্ট অবস্থা:" : "Payment Status:"}
+                <div className="col-span-4 flex flex-col justify-between items-end text-right">
+                  <span className="text-[9.5px] uppercase font-bold text-slate-400 tracking-widest block mb-1">
+                    {docLang === "bn" ? "পেমেন্ট অবস্থা:" : "PAYMENT STATUS:"}
                   </span>
                   <span
-                    className={`inline-block text-xs font-bold px-3 py-1 rounded-full ${
-                      due <= 0 ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"
+                    className={`inline-block text-xs font-black px-3.5 py-1.5 rounded-full shadow-2xs tracking-wider uppercase ${
+                      due <= 0
+                        ? "bg-emerald-100 text-emerald-900 border border-emerald-300"
+                        : "bg-amber-100 text-amber-900 border border-amber-300"
                     }`}
                   >
                     {due <= 0
                       ? docLang === "bn"
-                        ? "সম্পূর্ণ পরিশোধিত"
+                        ? "সম্পূর্ণ পরিশোধিত (PAID)"
                         : "PAID IN FULL"
                       : docLang === "bn"
-                      ? `বাকি (COD): ${currency} ${due.toLocaleString()}`
-                      : `COD DUE: ${currency} ${due.toLocaleString()}`}
+                      ? `${isMedicalReceipt ? "বকেয়া ফি:" : "বাকি (COD):"} ${currency} ${due.toLocaleString()}`
+                      : `${isMedicalReceipt ? "DUE:" : "COD DUE:"} ${currency} ${due.toLocaleString()}`}
                   </span>
+                  {data.courierPartner && (
+                    <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200 mt-1 inline-block">
+                      🚚 {data.courierPartner}
+                    </span>
+                  )}
                 </div>
               </div>
 
-              {/* Items Table */}
+              {/* Items Table with Tabular Numbers */}
               <table className="w-full text-left border-collapse my-6">
                 <thead>
-                  <tr className="border-b border-gray-900 text-gray-900 uppercase text-[10px] font-bold">
-                    <th className="py-2.5 w-10">{docLang === "bn" ? "নং" : "#"}</th>
-                    <th className="py-2.5">{docLang === "bn" ? "পণ্যের বিবরণ" : "Item Description"}</th>
-                    <th className="py-2.5 text-center w-20">{docLang === "bn" ? "পরিমাণ" : "Qty"}</th>
-                    <th className="py-2.5 text-right w-28">{docLang === "bn" ? "দর (টাকা)" : "Unit Price"}</th>
-                    <th className="py-2.5 text-right w-32">{docLang === "bn" ? "মোট টাকা" : "Total"}</th>
+                  <tr className={`border-b border-slate-900 uppercase text-[9.5px] font-black tracking-wider ${activeTheme.tableHeaderClass}`}>
+                    <th className="py-2.5 px-3 w-10 rounded-l-lg">{docLang === "bn" ? "নং" : "#"}</th>
+                    <th className="py-2.5 px-3">
+                      {isMedicalReceipt
+                        ? docLang === "bn"
+                          ? "প্যাথলজি / ডায়াগনস্টিক টেস্টের বিবরণ"
+                          : "Investigation / Test Description"
+                        : docLang === "bn"
+                        ? "পণ্যের বিবরণ"
+                        : "Item Description"}
+                    </th>
+                    <th className="py-2.5 px-3 text-center w-20">
+                      {isMedicalReceipt ? (docLang === "bn" ? "সংখ্যা" : "Qty") : docLang === "bn" ? "পরিমাণ" : "Qty"}
+                    </th>
+                    <th className="py-2.5 px-3 text-right w-28">
+                      {isMedicalReceipt ? (docLang === "bn" ? "ফি (টাকা)" : "Test Fee") : docLang === "bn" ? "দর (টাকা)" : "Unit Price"}
+                    </th>
+                    <th className="py-2.5 px-3 text-right w-32 rounded-r-lg">{docLang === "bn" ? "মোট টাকা" : "Total"}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody className="divide-y divide-slate-100 text-xs">
                   {itemsList.map((item: InvoiceItem, idx: number) => (
-                    <tr key={idx} className="hover:bg-gray-50/50">
-                      <td className="py-3 text-gray-400 font-medium">{idx + 1}</td>
-                      <td className="py-3 font-semibold text-gray-800">{item.name}</td>
-                      <td className="py-3 text-center text-gray-700">{item.quantity}</td>
-                      <td className="py-3 text-right text-gray-700">
+                    <tr key={idx} className={`hover:bg-slate-50/60 transition-colors ${activeTheme.tableRowClass}`}>
+                      <td className="py-3 px-3 text-slate-400 font-medium tabular-nums">{idx + 1}</td>
+                      <td className="py-3 px-3 font-semibold text-slate-800">{item.name}</td>
+                      <td className="py-3 px-3 text-center text-slate-700 tabular-nums">{item.quantity}</td>
+                      <td className="py-3 px-3 text-right text-slate-700 tabular-nums">
                         {currency} {Number(item.price).toLocaleString()}
                       </td>
-                      <td className="py-3 text-right font-bold text-gray-900">
+                      <td className="py-3 px-3 text-right font-black text-slate-900 tabular-nums">
                         {currency} {(item.quantity * item.price).toLocaleString()}
                       </td>
                     </tr>
@@ -908,59 +1301,69 @@ export default function InvoiceEditor({
               </table>
 
               {/* Calculations & Words Breakdown */}
-              <div className="grid grid-cols-12 gap-6 pt-4 border-t border-gray-300">
-                <div className="col-span-7 space-y-2">
-                  <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                    <span className="text-[10px] uppercase font-bold text-gray-400 block mb-0.5">
-                      {docLang === "bn" ? "কথায়:" : "In Words:"}
+              <div className="grid grid-cols-12 gap-6 pt-4 border-t border-slate-200 avoid-break">
+                <div className="col-span-7 space-y-3">
+                  <div className="bg-slate-50/90 p-3.5 rounded-xl border border-slate-200">
+                    <span className="text-[9.5px] uppercase font-bold text-slate-400 tracking-wider block mb-0.5">
+                      {docLang === "bn" ? "কথায়:" : "IN WORDS:"}
                     </span>
-                    <p className="text-xs font-semibold text-gray-800 italic">
+                    <p className="text-xs font-bold text-slate-800 italic leading-relaxed">
                       {docLang === "bn" ? numberToWordsBengali(grandTotal) : numberToWordsEnglish(grandTotal, currencyName)}
                     </p>
                   </div>
                   {data.notes && (
-                    <p className="text-[11px] text-gray-500 leading-relaxed mt-2">
-                      <strong className="text-gray-700">
-                        {docLang === "bn" ? "শর্তাবলী:" : "Terms & Notes:"}
-                      </strong>{" "}
-                      {data.notes}
-                    </p>
+                    <div className="bg-slate-50/50 p-3 rounded-xl border border-slate-100">
+                      <span className="text-[9.5px] uppercase font-bold text-slate-400 tracking-wider block mb-0.5">
+                        {docLang === "bn" ? "শর্তাবলী ও নোটস:" : "TERMS & CONDITIONS:"}
+                      </span>
+                      <p className="text-[11px] text-slate-600 leading-relaxed">{data.notes}</p>
+                    </div>
                   )}
+                  {/* Simulated Barcode */}
+                  <div className="pt-1">
+                    <span className="font-mono text-[9px] text-slate-500 tracking-widest block">
+                      ||| |||| || |||||| | |||| ||| |||||||
+                    </span>
+                    <span className="text-[8px] font-mono text-slate-400">
+                      {data.invoiceNumber} • SECURE VERIFIED
+                    </span>
+                  </div>
                 </div>
 
                 <div className="col-span-5 space-y-2 text-right">
-                  <div className="flex justify-between text-xs text-gray-600">
+                  <div className="flex justify-between text-xs text-slate-600 font-medium">
                     <span>{docLang === "bn" ? "উপমোট:" : "Subtotal:"}</span>
-                    <span className="font-semibold">
+                    <span className="font-semibold tabular-nums text-slate-800">
                       {currency} {subtotal.toLocaleString()}
                     </span>
                   </div>
                   {delivery > 0 && (
-                    <div className="flex justify-between text-xs text-gray-600">
-                      <span>{docLang === "bn" ? "ডেলিভারি চার্জ:" : "Delivery Charge:"}</span>
-                      <span>
+                    <div className="flex justify-between text-xs text-slate-600">
+                      <span>{docLang === "bn" ? "ডেলিভারি চার্জ:" : "Delivery Fee:"}</span>
+                      <span className="tabular-nums">
                         +{currency} {delivery.toLocaleString()}
                       </span>
                     </div>
                   )}
                   {discount > 0 && (
-                    <div className="flex justify-between text-xs text-emerald-600">
+                    <div className="flex justify-between text-xs text-emerald-600 font-medium">
                       <span>{docLang === "bn" ? "বিশেষ ছাড়:" : "Special Discount:"}</span>
-                      <span>
+                      <span className="tabular-nums">
                         -{currency} {discount.toLocaleString()}
                       </span>
                     </div>
                   )}
-                  <div className="flex justify-between text-sm font-black border-t-2 border-gray-900 pt-2 text-gray-900">
-                    <span>{docLang === "bn" ? "সর্বমোট বিল:" : "Grand Total:"}</span>
-                    <span>
+                  {/* Grand Total Box */}
+                  <div className={`flex justify-between text-sm font-black pt-3 pb-3 px-3.5 my-2 rounded-xl text-slate-900 border ${activeTheme.totalBoxClass}`}>
+                    <span className="uppercase tracking-wider">{docLang === "bn" ? "সর্বমোট বিল:" : "Grand Total:"}</span>
+                    <span className="tabular-nums text-base">
                       {currency} {grandTotal.toLocaleString()}
                     </span>
                   </div>
                   {paid > 0 && (
-                    <div className="flex justify-between text-xs text-gray-600 pt-1">
-                      <span>{docLang === "bn" ? "অগ্রিম জমা:" : "Advance Received:"}</span>
-                      <span>
+                    <div className="flex justify-between text-xs text-slate-600 pt-1">
+                      <span>{docLang === "bn" ? "অগ্রিম জমা:" : "Advance Paid:"}</span>
+                      <span className="tabular-nums">
                         {currency} {paid.toLocaleString()}
                       </span>
                     </div>
