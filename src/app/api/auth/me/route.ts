@@ -22,6 +22,9 @@ export async function GET() {
       id: true,
       name: true,
       email: true,
+      phone: true,
+      avatarUrl: true,
+      googleId: true,
       role: true,
       aiQuota: true,
       profiles: {
@@ -36,5 +39,16 @@ export async function GET() {
     },
   });
 
-  return NextResponse.json({ authenticated: true, user });
+  if (!user) {
+    return NextResponse.json({ authenticated: false, user: null }, { status: 401 });
+  }
+
+  return NextResponse.json({
+    authenticated: true,
+    user: {
+      ...user,
+      isGoogleLinked: !!user.googleId,
+      googleId: undefined, // Never expose raw google internal id
+    },
+  });
 }

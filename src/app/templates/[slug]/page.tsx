@@ -1,5 +1,6 @@
 import React, { Suspense } from "react";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import InvoiceEditor from "@/components/InvoiceEditor";
@@ -7,10 +8,46 @@ import MedicalPrescriptionEditor from "@/components/MedicalPrescriptionEditor";
 import SchoolTemplateEditor from "@/components/SchoolTemplateEditor";
 import AdSenseSlot from "@/components/AdSenseSlot";
 import TemplateLanguageBar from "@/components/TemplateLanguageBar";
+import TemplateEditorialGuide from "@/components/TemplateEditorialGuide";
 import { INITIAL_TEMPLATES } from "@/lib/templates";
 
 export function generateStaticParams() {
   return INITIAL_TEMPLATES.map((t) => ({ slug: t.slug }));
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const template = INITIAL_TEMPLATES.find((t) => t.slug === slug);
+
+  if (!template) {
+    return {
+      title: "Template Not Found - FreeDocForge",
+    };
+  }
+
+  const bnTitle = template.locales?.bn?.title || template.title;
+
+  return {
+    title: `${template.title} | ${bnTitle} (Free Printable)`,
+    description: `${template.description} 100% Free instant customization, Bengali voice typing, and A4/POS 80mm print without watermarks.`,
+    keywords: [
+      template.title,
+      bnTitle,
+      `${template.category} template`,
+      "free printable memo",
+      "bangla bill maker",
+      "freedocforge",
+    ],
+    openGraph: {
+      title: `${template.title} - FreeDocForge Printable Studio`,
+      description: template.description,
+      type: "article",
+    },
+  };
 }
 
 async function TemplateContent({
@@ -97,6 +134,18 @@ async function TemplateContent({
           templateSlug={template.slug}
         />
       )}
+
+      {/* Mid-Content AdSense Banner */}
+      <AdSenseSlot slotId="template-guide-top-ad" format="horizontal" className="print:hidden my-6" />
+
+      {/* 400+ Words Editorial Guide, FAQs & Schema.org Structured Data */}
+      <TemplateEditorialGuide
+        slug={template.slug}
+        category={template.category}
+        title={template.title}
+        description={template.description}
+        paperSize={template.paperSize}
+      />
     </>
   );
 }

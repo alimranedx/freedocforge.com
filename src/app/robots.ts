@@ -1,6 +1,8 @@
 import { MetadataRoute } from "next";
 
 export default function robots(): MetadataRoute.Robots {
+  const baseUrl = process.env.NEXTAUTH_URL || "https://freedocforge.com";
+
   return {
     rules: [
       {
@@ -8,16 +10,33 @@ export default function robots(): MetadataRoute.Robots {
         allow: "/",
         disallow: [
           "/admin",
-          "/admin/*",
+          "/admin/",
+          "/api/",
           "/dashboard",
-          "/dashboard/*",
-          "/api",
-          "/api/*",
-          "/login",
-          "/register",
+          "/dashboard/",
+        ],
+      },
+      {
+        userAgent: "Googlebot",
+        allow: "/",
+        disallow: [
+          "/admin",
+          "/admin/",
+          "/api/",
+          "/dashboard",
+          "/dashboard/",
+        ],
+      },
+      {
+        userAgent: "Mediapartners-Google", // AdSense crawler
+        allow: "/",
+        disallow: [
+          "/admin",
+          "/admin/",
+          "/api/",
         ],
       },
     ],
-    sitemap: "https://freedocforge.com/sitemap.xml",
+    sitemap: `${baseUrl}/sitemap.xml`,
   };
 }

@@ -7,7 +7,8 @@ const JWT_SECRET = new TextEncoder().encode(
 
 export interface SessionPayload {
   userId: string;
-  email: string;
+  email?: string | null;
+  phone?: string | null;
   name: string;
   role: "USER" | "ADMIN";
 }
@@ -20,11 +21,12 @@ export async function comparePassword(plain: string, hashed: string): Promise<bo
   return bcrypt.compare(plain, hashed);
 }
 
-export async function signToken(payload: SessionPayload): Promise<string> {
+export async function signToken(payload: SessionPayload, rememberMe: boolean = true): Promise<string> {
+  const expiration = rememberMe ? "30d" : "1d";
   return new SignJWT({ ...payload })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime("7d")
+    .setExpirationTime(expiration)
     .sign(JWT_SECRET);
 }
 

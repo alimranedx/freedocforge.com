@@ -31,8 +31,8 @@
 ## 📦 Getting Started
 
 ### 1. Prerequisites
-- Node.js 18+ or 20+
-- MySQL Database (Local, cPanel, or Cloud)
+- **Node.js:** 18.x or 20.x+
+- **MySQL Database Server:** Local (Laragon, XAMPP, Docker, or native MySQL 8.0+) or remote (cPanel, Cloud MySQL).
 
 ### 2. Installation
 ```bash
@@ -41,18 +41,57 @@ cd freedocforge.com
 npm install
 ```
 
-### 3. Environment Setup
-Copy the example environment file and configure your credentials:
-```bash
-cp .env.example .env
-```
+### 3. Environment & Database Configuration
 
-Generate Prisma client:
-```bash
-npx prisma generate
-```
+1. **Copy the environment template:**
+   ```bash
+   cp .env.example .env
+   ```
+   *(On Windows PowerShell: `Copy-Item .env.example .env`)*
+
+2. **Configure `DATABASE_URL` in `.env`:**
+   The connection URL follows the standard format:
+   `mysql://<USERNAME>:<PASSWORD>@<HOST>:<PORT>/<DATABASE_NAME>`
+
+   * **Laragon (Default: user `root`, no password):**
+     ```env
+     DATABASE_URL="mysql://root:@localhost:3306/freedocforge_db"
+     ```
+   * **XAMPP (Default: user `root`, no password):**
+     ```env
+     DATABASE_URL="mysql://root:@localhost:3306/freedocforge_db"
+     ```
+   * **Local MySQL with password:**
+     ```env
+     DATABASE_URL="mysql://root:yourpassword@localhost:3306/freedocforge_db"
+     ```
+
+3. **Start your MySQL server:**
+   * In Laragon / XAMPP: Click **Start All** or start the MySQL service.
+   * If running as a Windows service: Ensure `MySQL` service is active in Task Manager or Services.
+
+4. **Initialize the Database & Tables:**
+   Run Prisma's schema push command:
+   ```bash
+   npx prisma db push
+   ```
+   *Prisma will automatically connect to MySQL, create the `freedocforge_db` database if it does not exist, and generate all required tables (`User`, `OrganizationProfile`, `SavedDocument`, `Template`, `AdminSetting`).*
+
+5. **Generate the Prisma Client:**
+   ```bash
+   npx prisma generate
+   ```
+
+6. *(Optional)* **Inspect Database Records via GUI:**
+   ```bash
+   npx prisma studio
+   ```
+   This opens a visual browser interface at `http://localhost:5555` to view and manage database tables.
+
+---
 
 ### 4. Running the Development Server
+
 ```bash
 npm run dev
 # or watch mode
@@ -60,7 +99,23 @@ npm run watch
 ```
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### 5. Production Build
+---
+
+### 5. Authentication & First-Time Setup
+
+* **User Accounts:** Users can sign up directly at `/register` and log in at `/login`. Passwords are encrypted with `bcryptjs` and session tokens are stored in secure, `HttpOnly` JWT cookies.
+* **Admin Accounts:**
+  1. Set a strong secret key in `.env` for `ADMIN_PROVISION_KEY`:
+     ```env
+     ADMIN_PROVISION_KEY="your-strong-provision-secret"
+     ```
+  2. Navigate to `/admin/register` (or send a POST to `/api/auth/admin-register`) providing your name, email, password, and the `ADMIN_PROVISION_KEY`.
+  3. Log in at `/admin/login` to access the admin dashboard (`/admin/dashboard`).
+
+---
+
+### 6. Production Build
+
 ```bash
 npm run build
 npm start
