@@ -9,7 +9,64 @@ import SchoolTemplateEditor from "@/components/SchoolTemplateEditor";
 import AdSenseSlot from "@/components/AdSenseSlot";
 import TemplateLanguageBar from "@/components/TemplateLanguageBar";
 import TemplateEditorialGuide from "@/components/TemplateEditorialGuide";
-import { INITIAL_TEMPLATES } from "@/lib/templates";
+import { INITIAL_TEMPLATES, TemplateDefinition } from "@/lib/templates";
+import { prisma } from "@/lib/prisma";
+
+async function getTemplateBySlug(slug: string): Promise<TemplateDefinition | null> {
+  const systemTemplate = INITIAL_TEMPLATES.find((t) => t.slug === slug);
+  if (systemTemplate) return systemTemplate;
+
+  try {
+    const dbTemplate = await prisma.template.findUnique({
+      where: { slug },
+      include: { category: true },
+    });
+
+    if (dbTemplate) {
+      const fieldSchema = (dbTemplate.fieldSchema as any) || {};
+      return {
+        id: dbTemplate.id,
+        slug: dbTemplate.slug,
+        title: dbTemplate.title,
+        description: dbTemplate.description || "",
+        category: (dbTemplate.category?.name as any) || "Business",
+        paperSize: (dbTemplate.paperSize as any) || "A4",
+        badge: dbTemplate.isFeatured ? "Featured" : "Custom Template",
+        defaultData: fieldSchema.locales?.en?.defaultData || fieldSchema.defaultData || {
+          businessName: dbTemplate.title,
+          currency: "৳",
+          items: [{ name: "Sample Service or Product", quantity: 1, price: 100 }],
+        },
+        locales: {
+          en: fieldSchema.locales?.en || {
+            title: dbTemplate.title,
+            description: dbTemplate.description || "",
+            badge: "English Edition",
+            defaultData: {
+              businessName: dbTemplate.title,
+              currency: "৳",
+              items: [{ name: "Sample Service or Product", quantity: 1, price: 100 }],
+            },
+          },
+          bn: fieldSchema.locales?.bn || {
+            title: dbTemplate.title,
+            description: dbTemplate.description || "",
+            badge: "বাংলা সংস্করণ",
+            defaultData: {
+              businessName: dbTemplate.title,
+              currency: "৳",
+              items: [{ name: "নমুনা পণ্য বা সেবা", quantity: 1, price: 100 }],
+            },
+          },
+        },
+      };
+    }
+  } catch (err) {
+    // Database offline fallback during static pre-rendering
+  }
+
+  return null;
+}
 
 export function generateStaticParams() {
   return INITIAL_TEMPLATES.map((t) => ({ slug: t.slug }));
@@ -21,7 +78,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const template = INITIAL_TEMPLATES.find((t) => t.slug === slug);
+  const template = await getTemplateBySlug(slug);
 
   if (!template) {
     return {
@@ -56,7 +113,7 @@ async function TemplateContent({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const template = INITIAL_TEMPLATES.find((t) => t.slug === slug);
+  const template = await getTemplateBySlug(slug);
 
   if (!template) {
     notFound();

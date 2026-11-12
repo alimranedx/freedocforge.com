@@ -113,6 +113,32 @@
   4. **IDOR & Tenant Isolation Verification (SEC-IDOR-01 & SEC-TENANT-01 Verified):** Confirmed every document and profile mutation strictly scopes by `where: { id, userId: payload.userId }`.
   5. **Checklist Updated:** Marked `SEC-AUTH-02`, `SEC-RBAC-02`, `SEC-IDOR-01`, `SEC-TENANT-01`, and `SEC-HDR-01` as verified in `SECURITY_CHECKLIST.md`.
 
+### L. Category-Separated Template Studio & Visual Drag-and-Drop Layout Organizer
+* **Resolved User Request:** "templates be separate as category then admin find them easily. Add a new template from admin . Admin can dark drop eidt box for organized template."
+* **Architectural Modules Built:**
+  1. **Category Separation & Instant Discovery (`src/app/admin/(dashboard)/templates/page.tsx`):**
+     * Categorized templates with dedicated interactive filter pills and counts: `All Templates`, `Business & Commerce`, `Healthcare & Clinics`, `Education & Coaching`, `Restaurant & Food POS`, `Printables & Legal`, and `Custom Templates`.
+     * Live search filtering simultaneously across English titles, Bangla titles (`বাংলা`), slugs, and descriptions.
+     * Paper format filtering (`All Sizes`, `A4 Standard Sheet`, `80mm POS Thermal Roll`).
+     * Multi-view mode toggling: **Dense Table Mode**, **Collapsible Category Sections Mode**, and **Visual Grid Card Mode**.
+     * Real-time category KPI summary cards with 1-click filter activation.
+  2. **Visual Drag-and-Drop Layout Organizer ("Dark Drop Edit Box"):**
+     * Advanced dark-themed template builder modal (`max-w-4xl`) featuring dual-locale configuration and visual modular block layout organization.
+     * Modular document blocks: `header` (Brand Identity), `meta` (Document Numbers & Dates), `recipient` (Customer/Patient Info), `table` (Dynamic Line Items), `summary` (Financial Totals & Dues), `signatory` (Official Stamp & Authority), `terms` (Policy Notes), and custom sections.
+     * Interactive HTML5 drag-and-drop reordering with visual drag-over feedback, plus 1-click `▲` / `▼` reorder controls.
+     * Block visibility toggles (Active / Inactive) and custom block additions.
+     * Live split-screen visual preview canvas supporting dynamic switching between English and Bangla (`বাংলা`) previews in ISO A4 or POS 80mm format.
+  3. **Dedicated Admin Template API (`src/app/api/admin/templates/route.ts`):**
+     * `GET`: Merges core system templates with custom templates created in MySQL via Prisma ORM (`prisma.template.findMany({ include: { category: true } })`).
+     * `POST`: Enforces strict bilingual parity (both English and Bangla titles and descriptions required), validates unique slugs, auto-upserts `Category`, and persists custom templates into MySQL.
+     * `PUT` & `DELETE`: Updates and deletes custom admin templates with system template protection.
+     * Guarded with cryptographic admin session authentication (`getAdminSession`).
+  4. **Public Template Dispatcher Hydration (`src/app/templates/[slug]/page.tsx`):**
+     * Hydrates dynamically from MySQL `Template` table if a custom slug is requested, allowing custom templates created in the Admin Studio to be immediately usable and printable on the public site.
+  5. **Verification & Build:**
+     * `npx tsc --noEmit` verified with 0 errors.
+     * `npm run build` verified: All 74 routes compiled cleanly (Exit code 0).
+
 ---
 
 ## 3. Where You Should Start Next (Actionable Roadmap)
