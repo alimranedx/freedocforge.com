@@ -19,7 +19,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 ## 1. Operating Rules
 
 ### Before Starting EVERY New Task:
-1. **Read the root `SECURITY_CHECKLIST.md`** file completely.
+1. **Read `MEMORY.md` and `SECURITY_CHECKLIST.md` at the project root completely.** Review where previous work stopped, current architectural state, and where to resume.
 2. Review the specific security requirements relevant to the requested task (e.g., auth, routing, database, tenant isolation, or input validation).
 3. Identify security risks, boundary crossings, and potential attack vectors before writing any code.
 4. Follow the security checklist while writing or modifying code.

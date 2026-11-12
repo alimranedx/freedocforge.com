@@ -6,7 +6,7 @@
 ## Mandatory Security Rules for All Tasks
 
 Before starting EVERY new task:
-1. **Read `SECURITY_CHECKLIST.md`:** Review the security requirements relevant to the requested task.
+1. **Read `MEMORY.md` & `SECURITY_CHECKLIST.md`:** Review where work stopped, current architecture, and the security requirements relevant to the requested task.
 2. **Review Risks:** Identify security risks, boundary crossings, and potential attack vectors before writing code.
 3. **Checklist Compliance:** Adhere strictly to the security checklist while implementing or refactoring.
 4. **Never Bypass Controls:** Never bypass existing authentication, authorization, validation, or security controls.
