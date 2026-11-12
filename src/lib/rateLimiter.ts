@@ -26,6 +26,13 @@ export function checkRateLimit(
   maxAttempts: number = 5,
   windowSeconds: number = 900 // 15 minutes default
 ): { success: boolean; remaining: number; resetInSeconds: number } {
+  // In local development, relax rate limits for localhost to facilitate active testing
+  const effectiveMax =
+    process.env.NODE_ENV !== "production" &&
+    (key.includes("127.0.0.1") || key.includes("::1") || key.includes("localhost"))
+      ? Math.max(maxAttempts * 20, 100)
+      : maxAttempts;
+
   const now = Date.now();
   const record = rateLimitStore.get(key);
 
@@ -34,10 +41,10 @@ export function checkRateLimit(
       count: 1,
       resetAt: now + windowSeconds * 1000,
     });
-    return { success: true, remaining: maxAttempts - 1, resetInSeconds: windowSeconds };
+    return { success: true, remaining: effectiveMax - 1, resetInSeconds: windowSeconds };
   }
 
-  if (record.count >= maxAttempts) {
+  if (record.count >= effectiveMax) {
     const resetInSeconds = Math.ceil((record.resetAt - now) / 1000);
     return { success: false, remaining: 0, resetInSeconds };
   }
@@ -45,7 +52,7 @@ export function checkRateLimit(
   record.count += 1;
   return {
     success: true,
-    remaining: maxAttempts - record.count,
+    remaining: effectiveMax - record.count,
     resetInSeconds: Math.ceil((record.resetAt - now) / 1000),
   };
 }
