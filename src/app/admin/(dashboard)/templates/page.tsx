@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import {
   Layers,
   Plus,
@@ -25,14 +25,12 @@ import {
   GraduationCap,
   UtensilsCrossed,
   FileText,
+  FileSpreadsheet,
   LayoutGrid,
   List,
   FolderTree,
   RotateCw,
   ExternalLink,
-  ChevronRight,
-  Printer,
-  FileSpreadsheet,
   QrCode,
   Copy,
   Maximize2,
@@ -45,13 +43,19 @@ import {
   Sliders,
   Palette,
   Undo2,
-  CheckSquare,
-  BadgeAlert,
+  Redo2,
+  ClipboardPaste,
   Building2,
   Calendar,
   UserCheck,
   Receipt,
   FileSignature,
+  FileCode2,
+  Sparkle,
+  Phone,
+  MapPin,
+  Mail,
+  Hash,
 } from "lucide-react";
 import { INITIAL_TEMPLATES, TemplateDefinition } from "@/lib/templates";
 
@@ -67,163 +71,32 @@ export interface TemplateBlock {
   options?: Record<string, any>;
 }
 
-// Available Smart CMS Components in the Block Palette
-const COMPONENT_PALETTE = [
-  {
-    category: "Identity & Header",
-    icon: Building2,
-    items: [
-      {
-        type: "header",
-        titleEn: "Brand & Company Header",
-        titleBn: "প্রতিষ্ঠান ও ব্র্যান্ড হেডার",
-        descriptionEn: "Business title, logo, contact phone, address, and BIN/Tax ID",
-        descriptionBn: "প্রতিষ্ঠানের নাম, লোগো, ফোন, ঠিকানা ও ট্রেড লাইসেন্স",
-        options: { showLogo: true, showTagline: true, showContact: true, showTaxId: false, theme: "modern" },
-      },
-      {
-        type: "header",
-        titleEn: "Clinical Doctor Rx Header",
-        titleBn: "চিকিৎসক ও ক্লিনিক্যাল হেডার",
-        descriptionEn: "Doctor name, MBBS/FCPS degrees, BMDC reg no, chamber timings",
-        descriptionBn: "চিকিৎসকের নাম, ডিগ্রি, বিএমডিসি রেজিঃ নং ও চেম্বার সময়সূচি",
-        options: { showLogo: true, showTagline: true, showContact: true, showTaxId: true, theme: "clinical" },
-      },
-      {
-        type: "header",
-        titleEn: "Academic School Crest Header",
-        titleBn: "বিদ্যালয় বা শিক্ষা প্রতিষ্ঠান হেডার",
-        descriptionEn: "Institute name, EIIN code, establishment year, board affiliation",
-        descriptionBn: "শিক্ষা প্রতিষ্ঠানের নাম, ইআইআইএন কোড ও বোর্ড স্বীকৃতি",
-        options: { showLogo: true, showTagline: true, showContact: true, showTaxId: false, theme: "academic" },
-      },
-    ],
-  },
-  {
-    category: "Metadata & Tracking",
-    icon: Calendar,
-    items: [
-      {
-        type: "meta",
-        titleEn: "Invoice & Document Serial Meta",
-        titleBn: "নথির তথ্য ও স্মারক তারিখ",
-        descriptionEn: "Invoice / Bill / Rx serial number, issue date, due date",
-        descriptionBn: "বিল বা প্রেসক্রিপশন নম্বর, তারিখ ও কুরিয়ার ডেলিভারি",
-        options: { showDate: true, showDueDate: false, showCourier: true },
-      },
-      {
-        type: "qrcode",
-        titleEn: "Anti-Counterfeit QR Code Token",
-        titleBn: "নিরাপত্তা কিউআর কোড ভেরিফিকেশন",
-        descriptionEn: "Scannable digital QR token for document authenticity verification",
-        descriptionBn: "নথির সত্যতা যাচাইকরণ স্ক্যান কোড ও সুরক্ষা বারকোড",
-        options: { qrLabel: "VERIFIED AUTHENTIC DOCUMENT", showSerial: true },
-      },
-    ],
-  },
-  {
-    category: "Recipient & Client",
-    icon: UserCheck,
-    items: [
-      {
-        type: "recipient",
-        titleEn: "Customer Profile Card",
-        titleBn: "ক্রেতার নাম ও ডেলিভারি বিবরণ",
-        descriptionEn: "Customer name, mobile number, shipping address, note",
-        descriptionBn: "গ্রাহকের নাম, মোবাইল নম্বর ও ডেলিভারি ঠিকানা",
-        options: { showPhone: true, showAddress: true, showCustomId: false },
-      },
-      {
-        type: "recipient",
-        titleEn: "Clinical Patient Record",
-        titleBn: "রোগীর নাম ও শারীরিক তথ্য",
-        descriptionEn: "Patient name, age, sex, blood pressure, weight",
-        descriptionBn: "রোগীর বয়স, লিঙ্গ, ওজন এবং রক্তচাপ বিবরণ",
-        options: { showPhone: true, showAddress: true, showCustomId: true, isPatient: true },
-      },
-    ],
-  },
-  {
-    category: "Tables & Grids",
-    icon: FileSpreadsheet,
-    items: [
-      {
-        type: "table",
-        titleEn: "Product Sales & Services Table",
-        titleBn: "পণ্য বা সেবার বিবরণী ছক",
-        descriptionEn: "Line items table with quantity, unit rate, and total price",
-        descriptionBn: "পণ্যের নাম, পরিমাণ, একক দর ও মোট টাকার হিসাব",
-        options: { showQuantity: true, showUnitPrice: true, showItemCode: false, theme: "bordered" },
-      },
-      {
-        type: "table",
-        titleEn: "Clinical Diagnostic Pathology Tests",
-        titleBn: "ডায়াগনস্টিক টেস্ট ও প্যাথলজি তালিকা",
-        descriptionEn: "Diagnostic investigations list, sample collection time, room no",
-        descriptionBn: "প্যাথলজিক্যাল পরীক্ষা তালিকা, স্যাম্পল সংগ্রহ সময়",
-        options: { showQuantity: false, showUnitPrice: true, showItemCode: true, theme: "clinical" },
-      },
-    ],
-  },
-  {
-    category: "Totals & Calculation",
-    icon: Receipt,
-    items: [
-      {
-        type: "summary",
-        titleEn: "Financial Totals & Due Balance",
-        titleBn: "মোট হিসাব, ছাড় ও বকেয়া",
-        descriptionEn: "Subtotal, VAT %, delivery fee, special discount, and net due",
-        descriptionBn: "সাবটোটাল, ভ্যাট, ডেলিভারি চার্জ, ছাড় ও মোট বকেয়া টাকা",
-        options: { showTax: false, showDiscount: true, showDelivery: true, showPaidDue: true },
-      },
-    ],
-  },
-  {
-    category: "Signatures & Seals",
-    icon: FileSignature,
-    items: [
-      {
-        type: "signatory",
-        titleEn: "Authorized Signatory Authority",
-        titleBn: "অনুমোদিত স্বাক্ষর ও সিলমোহর",
-        descriptionEn: "Executive authorized signature, official company stamp line",
-        descriptionBn: "কর্মকর্তার স্বাক্ষর ও প্রাতিষ্ঠানিক সিলমোহর",
-        options: { showSeal: true, titleEn: "Authorized Signature", titleBn: "অনুমোদিত স্বাক্ষর" },
-      },
-      {
-        type: "signatory",
-        titleEn: "BMDC Doctor Stamp & Registration",
-        titleBn: "বিএমডিসি চিকিৎসকের সিল ও স্বাক্ষর",
-        descriptionEn: "Physician stamp line with official medical council reg number",
-        descriptionBn: "চিকিৎসকের অফিসিয়াল সিলমোহর ও রেজিস্ট্রেশন স্বাক্ষর",
-        options: { showSeal: true, titleEn: "Registered Physician Seal", titleBn: "চিকিৎসকের স্বাক্ষর ও সিল" },
-      },
-    ],
-  },
-  {
-    category: "Terms & Policies",
-    icon: ShieldCheck,
-    items: [
-      {
-        type: "terms",
-        titleEn: "Return Warranty & Payment Policy",
-        titleBn: "পণ্য ফেরত শর্ত ও পেমেন্ট বিবরণ",
-        descriptionEn: "7-day return conditions, bKash/Nagad merchant payment instructions",
-        descriptionBn: "ওয়ারেন্টি নীতিমালা, বিকাশ বা ব্যাংক পেমেন্ট ও ফুটনোট",
-        options: { showFooterNote: true, showPaymentQR: true },
-      },
-      {
-        type: "callout",
-        titleEn: "Important Notice / Warning Banner",
-        titleBn: "জরুরি নোটিশ বা সতর্কবার্তা বক্স",
-        descriptionEn: "High-contrast highlighted note for customers or patients",
-        descriptionBn: "জরুরি নোটিশ বা বিশেষ নির্দেশনা সম্বলিত হাইলাইট বক্স",
-        options: { calloutTheme: "alert" },
-      },
-    ],
-  },
-];
+export interface TableRowItem {
+  id: string;
+  nameEn: string;
+  nameBn: string;
+  quantity: number;
+  price: number;
+  unit?: string;
+}
+
+export interface MetaItem {
+  id: string;
+  key: string;
+  labelEn: string;
+  labelBn: string;
+  valueEn: string;
+  valueBn: string;
+}
+
+export interface ContactItem {
+  id: string;
+  type: "phone" | "address" | "email" | "tax" | "custom";
+  labelEn: string;
+  labelBn: string;
+  valueEn: string;
+  valueBn: string;
+}
 
 const DEFAULT_BLOCKS: TemplateBlock[] = [
   {
@@ -334,21 +207,27 @@ export default function AdminTemplatesManagerPage() {
   const [editingTemplate, setEditingTemplate] = useState<any>(null);
   const [validationError, setValidationError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+  const [clipboardToast, setClipboardToast] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Viewport & Live Locale in Studio
+  // Viewport, Live Locale & Zoom
   const [previewViewport, setPreviewViewport] = useState<"A4" | "POS_80MM">("A4");
   const [previewLocale, setPreviewLocale] = useState<"en" | "bn">("en");
   const [zoomScale, setZoomScale] = useState<number>(100);
 
-  // Active Block Selection in Studio
-  const [selectedBlockIndex, setSelectedBlockIndex] = useState<number>(0);
-  const [inspectorTab, setInspectorTab] = useState<"block" | "meta">("block");
-  const [paletteSearch, setPaletteSearch] = useState("");
+  // Selection & Inspector
+  const [selectedElement, setSelectedElement] = useState<{
+    type: "block" | "row" | "meta" | "contact" | "header" | "recipient" | "summary" | "signatory" | "terms" | "table";
+    id: string;
+    index?: number;
+  }>({ type: "block", id: "header", index: 0 });
+  const [inspectorTab, setInspectorTab] = useState<"content" | "style" | "meta">("content");
 
-  // Drag and Drop State
-  const [draggedBlockIndex, setDraggedBlockIndex] = useState<number | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  // Elementor CMS Internal Clipboard (Copy & Paste Support)
+  const [clipboard, setClipboard] = useState<{
+    type: "row" | "meta" | "contact" | "block";
+    data: any;
+  } | null>(null);
 
   // Master Template Form Data
   const [formData, setFormData] = useState({
@@ -367,8 +246,152 @@ export default function AdminTemplatesManagerPage() {
     bn_currency: "৳",
   });
 
-  // Template Blocks on Canvas
+  // Dynamic Blocks on Canvas
   const [templateBlocks, setTemplateBlocks] = useState<TemplateBlock[]>(DEFAULT_BLOCKS);
+
+  // Dynamic Child Elements for Elementor Editing
+  const [businessNameEn, setBusinessNameEn] = useState("Sample Business / Clinic Name");
+  const [businessNameBn, setBusinessNameBn] = useState("নমুনা প্রতিষ্ঠান বা ক্লিনিকের নাম");
+  const [taglineEn, setTaglineEn] = useState("Quality Products & Diagnostic Services");
+  const [taglineBn, setTaglineBn] = useState("গুণগত মানসম্পন্ন সেবা ও দ্রুততম ডেলিভারি");
+
+  const [headerContacts, setHeaderContacts] = useState<ContactItem[]>([
+    {
+      id: "cnt_1",
+      type: "phone",
+      labelEn: "Phone",
+      labelBn: "ফোন",
+      valueEn: "+880 1712-000000",
+      valueBn: "০১৭১২-০০০০০০",
+    },
+    {
+      id: "cnt_2",
+      type: "address",
+      labelEn: "Address",
+      labelBn: "ঠিকানা",
+      valueEn: "Dhaka - 1205, Bangladesh",
+      valueBn: "ঢাকা - ১২০৫, বাংলাদেশ",
+    },
+  ]);
+
+  const [metaItems, setMetaItems] = useState<MetaItem[]>([
+    {
+      id: "meta_1",
+      key: "docNo",
+      labelEn: "Doc / Memo No",
+      labelBn: "নথি / মেমো নং",
+      valueEn: "#DOC-2026-089",
+      valueBn: "#মেমো-২০২৬-০৮৯",
+    },
+    {
+      id: "meta_2",
+      key: "date",
+      labelEn: "Issue Date",
+      labelBn: "ইস্যু তারিখ",
+      valueEn: "2026-11-12",
+      valueBn: "১২/১১/২০২৬",
+    },
+    {
+      id: "meta_3",
+      key: "courier",
+      labelEn: "Courier",
+      labelBn: "কুরিয়ার",
+      valueEn: "Steadfast BD",
+      valueBn: "স্টেডফাস্ট কুরিয়ার",
+    },
+  ]);
+
+  const [tableRows, setTableRows] = useState<TableRowItem[]>([
+    {
+      id: "row_1",
+      nameEn: "Premium Formal Cotton Shirt",
+      nameBn: "প্রিমিয়াম সুতি ফরমাল শার্ট",
+      quantity: 2,
+      price: 1250,
+      unit: "Pcs",
+    },
+    {
+      id: "row_2",
+      nameEn: "Standard Service / Consultation Fee",
+      nameBn: "সার্ভিস বা কনসাল্টেশন ফি",
+      quantity: 1,
+      price: 500,
+      unit: "Session",
+    },
+  ]);
+
+  const [deliveryCharge, setDeliveryCharge] = useState<number>(120);
+  const [discountAmount, setDiscountAmount] = useState<number>(100);
+  const [paidAmount, setPaidAmount] = useState<number>(0);
+
+  // Undo / Redo History Stack
+  const [historyStack, setHistoryStack] = useState<any[]>([]);
+  const [historyIndex, setHistoryIndex] = useState<number>(-1);
+
+  // Push to history
+  const pushHistory = useCallback(
+    (snapshot: any) => {
+      setHistoryStack((prev) => {
+        const sliced = prev.slice(0, historyIndex + 1);
+        return [...sliced, snapshot].slice(-25); // retain last 25 states
+      });
+      setHistoryIndex((prev) => Math.min(prev + 1, 24));
+    },
+    [historyIndex]
+  );
+
+  const handleUndo = () => {
+    if (historyIndex > 0) {
+      const targetState = historyStack[historyIndex - 1];
+      if (targetState) {
+        setTemplateBlocks(targetState.templateBlocks);
+        setTableRows(targetState.tableRows);
+        setMetaItems(targetState.metaItems);
+        setHeaderContacts(targetState.headerContacts);
+        setBusinessNameEn(targetState.businessNameEn);
+        setBusinessNameBn(targetState.businessNameBn);
+        setTaglineEn(targetState.taglineEn);
+        setTaglineBn(targetState.taglineBn);
+        setHistoryIndex(historyIndex - 1);
+      }
+    }
+  };
+
+  const handleRedo = () => {
+    if (historyIndex < historyStack.length - 1) {
+      const targetState = historyStack[historyIndex + 1];
+      if (targetState) {
+        setTemplateBlocks(targetState.templateBlocks);
+        setTableRows(targetState.tableRows);
+        setMetaItems(targetState.metaItems);
+        setHeaderContacts(targetState.headerContacts);
+        setBusinessNameEn(targetState.businessNameEn);
+        setBusinessNameBn(targetState.businessNameBn);
+        setTaglineEn(targetState.taglineEn);
+        setTaglineBn(targetState.taglineBn);
+        setHistoryIndex(historyIndex + 1);
+      }
+    }
+  };
+
+  // Calculated Totals
+  const subtotal = useMemo(() => {
+    return tableRows.reduce((acc, row) => acc + (Number(row.quantity) || 0) * (Number(row.price) || 0), 0);
+  }, [tableRows]);
+
+  const netTotal = useMemo(() => {
+    return Math.max(0, subtotal + (Number(deliveryCharge) || 0) - (Number(discountAmount) || 0));
+  }, [subtotal, deliveryCharge, discountAmount]);
+
+  const dueAmount = useMemo(() => {
+    return Math.max(0, netTotal - (Number(paidAmount) || 0));
+  }, [netTotal, paidAmount]);
+
+  // Toast feedback helper
+  const showToast = (msg: string) => {
+    setClipboardToast(msg);
+    setTimeout(() => setClipboardToast(""), 3000);
+  };
 
   // Fetch templates from API
   const fetchTemplates = async () => {
@@ -471,7 +494,7 @@ export default function AdminTemplatesManagerPage() {
     return groups;
   }, [filteredTemplates]);
 
-  // Open Smart CMS Studio for Adding a New Template
+  // Open Studio for Adding
   const handleOpenAddStudio = () => {
     setEditingTemplate(null);
     setValidationError("");
@@ -491,14 +514,30 @@ export default function AdminTemplatesManagerPage() {
       bn_signatory: "অনুমোদিত স্বাক্ষর",
       bn_currency: "৳",
     });
+    setBusinessNameEn("Sample Business / Clinic Name");
+    setBusinessNameBn("নমুনা প্রতিষ্ঠান বা ক্লিনিকের নাম");
+    setTaglineEn("Quality Products & Diagnostic Services");
+    setTaglineBn("গুণগত মানসম্পন্ন সেবা ও দ্রুততম ডেলিভারি");
+    setTableRows([
+      { id: "row_1", nameEn: "Premium Formal Cotton Shirt", nameBn: "প্রিমিয়াম সুতি ফরমাল শার্ট", quantity: 2, price: 1250, unit: "Pcs" },
+      { id: "row_2", nameEn: "Standard Service / Consultation Fee", nameBn: "সার্ভিস বা কনসাল্টেশন ফি", quantity: 1, price: 500, unit: "Session" },
+    ]);
+    setMetaItems([
+      { id: "meta_1", key: "docNo", labelEn: "Doc / Memo No", labelBn: "নথি / মেমো নং", valueEn: "#DOC-2026-089", valueBn: "#মেমো-২০২৬-০৮৯" },
+      { id: "meta_2", key: "date", labelEn: "Issue Date", labelBn: "ইস্যু তারিখ", valueEn: "2026-11-12", valueBn: "১২/১১/২০২৬" },
+      { id: "meta_3", key: "courier", labelEn: "Courier", labelBn: "কুরিয়ার", valueEn: "Steadfast BD", valueBn: "স্টেডফাস্ট কুরিয়ার" },
+    ]);
+    setDeliveryCharge(120);
+    setDiscountAmount(100);
+    setPaidAmount(0);
     setPreviewViewport("A4");
     setPreviewLocale("en");
-    setSelectedBlockIndex(0);
-    setInspectorTab("meta");
+    setSelectedElement({ type: "header", id: "header" });
+    setInspectorTab("content");
     setIsStudioOpen(true);
   };
 
-  // Open Smart CMS Studio for Modifying Existing Template
+  // Open Studio for Modifying
   const handleOpenEditStudio = (t: any) => {
     setEditingTemplate(t);
     setValidationError("");
@@ -507,6 +546,10 @@ export default function AdminTemplatesManagerPage() {
         ? t.blocks
         : DEFAULT_BLOCKS.map((b, i) => ({ ...b, order: i }));
     setTemplateBlocks(blocks);
+
+    const defaultDataEn = t.locales?.en?.defaultData || t.defaultData || {};
+    const defaultDataBn = t.locales?.bn?.defaultData || {};
+
     setFormData({
       id: t.id,
       slug: t.slug,
@@ -515,127 +558,245 @@ export default function AdminTemplatesManagerPage() {
       isFeatured: Boolean(t.isFeatured),
       en_title: t.locales?.en?.title || t.title,
       en_description: t.locales?.en?.description || t.description,
-      en_signatory: t.locales?.en?.defaultData?.signatoryTitle || "Authorized Signature",
-      en_currency: t.locales?.en?.defaultData?.currency || "৳",
+      en_signatory: defaultDataEn.signatoryTitle || "Authorized Signature",
+      en_currency: defaultDataEn.currency || "৳",
       bn_title: t.locales?.bn?.title || "",
       bn_description: t.locales?.bn?.description || "",
-      bn_signatory: t.locales?.bn?.defaultData?.signatoryTitle || "অনুমোদিত স্বাক্ষর",
-      bn_currency: t.locales?.bn?.defaultData?.currency || "৳",
+      bn_signatory: defaultDataBn.signatoryTitle || "অনুমোদিত স্বাক্ষর",
+      bn_currency: defaultDataBn.currency || "৳",
     });
+
+    setBusinessNameEn(defaultDataEn.businessName || t.title);
+    setBusinessNameBn(defaultDataBn.businessName || t.locales?.bn?.title || "নমুনা প্রতিষ্ঠান");
+    setTaglineEn(defaultDataEn.tagline || "Quality Products & Diagnostic Services");
+    setTaglineBn(defaultDataBn.tagline || "গুণগত মানসম্পন্ন সেবা ও দ্রুততম ডেলিভারি");
+
+    // Populate rows
+    if (Array.isArray(defaultDataEn.items) && defaultDataEn.items.length > 0) {
+      setTableRows(
+        defaultDataEn.items.map((it: any, idx: number) => ({
+          id: `row_${Date.now()}_${idx}`,
+          nameEn: it.name || `Item ${idx + 1}`,
+          nameBn: defaultDataBn.items?.[idx]?.name || it.name || `পণ্য ${idx + 1}`,
+          quantity: Number(it.quantity) || 1,
+          price: Number(it.price) || 0,
+          unit: it.unit || "Pcs",
+        }))
+      );
+    }
+
+    setDeliveryCharge(Number(defaultDataEn.deliveryCharge) || 0);
+    setDiscountAmount(Number(defaultDataEn.discount) || 0);
+    setPaidAmount(Number(defaultDataEn.paidAmount) || 0);
+
     setPreviewViewport(t.paperSize === "POS_80MM" ? "POS_80MM" : "A4");
     setPreviewLocale("en");
-    setSelectedBlockIndex(0);
-    setInspectorTab("block");
+    setSelectedElement({ type: "header", id: "header" });
+    setInspectorTab("content");
     setIsStudioOpen(true);
   };
 
-  // Drag and Drop Block Movement
-  const handleDragStart = (index: number) => {
-    setDraggedBlockIndex(index);
-  };
+  // ==============================================================
+  // ELEMENTOR ACTION HANDLERS (EDIT, COPY, PASTE, DUPLICATE, DELETE)
+  // ==============================================================
 
-  const handleDragOver = (e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    setDragOverIndex(index);
-  };
-
-  const handleDrop = (index: number) => {
-    if (draggedBlockIndex === null || draggedBlockIndex === index) {
-      setDragOverIndex(null);
-      setDraggedBlockIndex(null);
-      return;
-    }
-    const reordered = [...templateBlocks];
-    const [movedItem] = reordered.splice(draggedBlockIndex, 1);
-    reordered.splice(index, 0, movedItem);
-    const updated = reordered.map((b, idx) => ({ ...b, order: idx }));
-    setTemplateBlocks(updated);
-    setSelectedBlockIndex(index);
-    setDraggedBlockIndex(null);
-    setDragOverIndex(null);
-  };
-
-  // Reorder via arrow buttons
-  const moveBlock = (index: number, direction: "up" | "down", e?: React.MouseEvent) => {
+  // 1. Table Row Actions
+  const handleCopyRow = (row: TableRowItem, e?: React.MouseEvent) => {
     e?.stopPropagation();
-    const targetIndex = direction === "up" ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= templateBlocks.length) return;
-    const reordered = [...templateBlocks];
-    const [movedItem] = reordered.splice(index, 1);
-    reordered.splice(targetIndex, 0, movedItem);
-    const updated = reordered.map((b, idx) => ({ ...b, order: idx }));
-    setTemplateBlocks(updated);
-    setSelectedBlockIndex(targetIndex);
+    setClipboard({ type: "row", data: { ...row } });
+    showToast(`Copied row "${row.nameEn}" to clipboard!`);
   };
 
-  // Add Block from Palette
-  const handleAddPaletteItem = (item: any) => {
-    const newId = `${item.type}_${Date.now()}`;
-    const newBlock: TemplateBlock = {
-      id: newId,
-      type: item.type,
-      titleEn: item.titleEn,
-      titleBn: item.titleBn,
-      enabled: true,
-      order: templateBlocks.length,
-      descriptionEn: item.descriptionEn,
-      descriptionBn: item.descriptionBn,
-      options: { ...item.options },
-    };
-    setTemplateBlocks([...templateBlocks, newBlock]);
-    setSelectedBlockIndex(templateBlocks.length);
-    setInspectorTab("block");
-  };
-
-  // Duplicate Block
-  const handleDuplicateBlock = (index: number, e?: React.MouseEvent) => {
+  const handlePasteRow = (targetIndex: number, e?: React.MouseEvent) => {
     e?.stopPropagation();
-    const target = templateBlocks[index];
-    const duplicated: TemplateBlock = {
-      ...target,
-      id: `${target.type}_${Date.now()}`,
-      titleEn: `${target.titleEn} (Copy)`,
-      titleBn: `${target.titleBn} (কপি)`,
-      order: index + 1,
+    if (!clipboard || clipboard.type !== "row") return;
+    const newRow: TableRowItem = {
+      ...clipboard.data,
+      id: `row_${Date.now()}`,
+      nameEn: `${clipboard.data.nameEn} (Pasted)`,
+      nameBn: `${clipboard.data.nameBn} (কপি)`,
     };
-    const updated = [...templateBlocks];
+    const updated = [...tableRows];
+    updated.splice(targetIndex + 1, 0, newRow);
+    setTableRows(updated);
+    setSelectedElement({ type: "row", id: newRow.id, index: targetIndex + 1 });
+    showToast(`Pasted row "${newRow.nameEn}"!`);
+  };
+
+  const handleDuplicateRow = (index: number, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    const source = tableRows[index];
+    const duplicated: TableRowItem = {
+      ...source,
+      id: `row_${Date.now()}`,
+      nameEn: `${source.nameEn} (Copy)`,
+      nameBn: `${source.nameBn} (কপি)`,
+    };
+    const updated = [...tableRows];
     updated.splice(index + 1, 0, duplicated);
-    setTemplateBlocks(updated.map((b, i) => ({ ...b, order: i })));
-    setSelectedBlockIndex(index + 1);
+    setTableRows(updated);
+    setSelectedElement({ type: "row", id: duplicated.id, index: index + 1 });
+    showToast(`Duplicated row "${source.nameEn}"!`);
   };
 
-  // Delete Block
-  const handleDeleteBlock = (index: number, e?: React.MouseEvent) => {
+  const handleDeleteRow = (index: number, e?: React.MouseEvent) => {
     e?.stopPropagation();
-    if (templateBlocks.length <= 1) {
-      alert("A template must contain at least 1 layout block.");
+    if (tableRows.length <= 1) {
+      alert("At least one line item row is required in the document table.");
       return;
     }
-    const updated = templateBlocks.filter((_, i) => i !== index).map((b, idx) => ({ ...b, order: idx }));
-    setTemplateBlocks(updated);
-    setSelectedBlockIndex(Math.max(0, index - 1));
+    const updated = tableRows.filter((_, i) => i !== index);
+    setTableRows(updated);
+    setSelectedElement({ type: "table", id: "table" });
+    showToast("Deleted item row.");
   };
 
-  // Toggle Block Visibility
-  const toggleBlockEnabled = (index: number, e?: React.MouseEvent) => {
+  const handleAddRow = () => {
+    const newRow: TableRowItem = {
+      id: `row_${Date.now()}`,
+      nameEn: `New Service or Product ${tableRows.length + 1}`,
+      nameBn: `নতুন পণ্য বা সেবা ${tableRows.length + 1}`,
+      quantity: 1,
+      price: 1000,
+      unit: "Pcs",
+    };
+    setTableRows([...tableRows, newRow]);
+    setSelectedElement({ type: "row", id: newRow.id, index: tableRows.length });
+    showToast("Added new line item row.");
+  };
+
+  // 2. Meta Item Actions
+  const handleCopyMeta = (meta: MetaItem, e?: React.MouseEvent) => {
     e?.stopPropagation();
-    setTemplateBlocks((prev) =>
-      prev.map((b, i) => (i === index ? { ...b, enabled: !b.enabled } : b))
-    );
+    setClipboard({ type: "meta", data: { ...meta } });
+    showToast(`Copied meta badge "${meta.labelEn}" to clipboard!`);
   };
 
-  // Save Template with strict EN + BN validation
+  const handlePasteMeta = (targetIndex: number, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (!clipboard || clipboard.type !== "meta") return;
+    const newMeta: MetaItem = {
+      ...clipboard.data,
+      id: `meta_${Date.now()}`,
+      labelEn: `${clipboard.data.labelEn} (Copy)`,
+      labelBn: `${clipboard.data.labelBn} (কপি)`,
+    };
+    const updated = [...metaItems];
+    updated.splice(targetIndex + 1, 0, newMeta);
+    setMetaItems(updated);
+    setSelectedElement({ type: "meta", id: newMeta.id, index: targetIndex + 1 });
+    showToast(`Pasted meta badge "${newMeta.labelEn}"!`);
+  };
+
+  const handleDuplicateMeta = (index: number, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    const source = metaItems[index];
+    const duplicated: MetaItem = {
+      ...source,
+      id: `meta_${Date.now()}`,
+      labelEn: `${source.labelEn} 2`,
+      labelBn: `${source.labelBn} ২`,
+    };
+    const updated = [...metaItems];
+    updated.splice(index + 1, 0, duplicated);
+    setMetaItems(updated);
+    setSelectedElement({ type: "meta", id: duplicated.id, index: index + 1 });
+    showToast(`Duplicated meta badge "${source.labelEn}"!`);
+  };
+
+  const handleDeleteMeta = (index: number, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (metaItems.length <= 1) {
+      alert("At least one document meta tag is required.");
+      return;
+    }
+    const updated = metaItems.filter((_, i) => i !== index);
+    setMetaItems(updated);
+    showToast("Deleted meta field.");
+  };
+
+  const handleAddMeta = () => {
+    const newMeta: MetaItem = {
+      id: `meta_${Date.now()}`,
+      key: `custom_${Date.now()}`,
+      labelEn: "Payment Status",
+      labelBn: "পরিশোধের অবস্থা",
+      valueEn: "Full Paid (Cash)",
+      valueBn: "পরিশোধিত (নগদ)",
+    };
+    setMetaItems([...metaItems, newMeta]);
+    setSelectedElement({ type: "meta", id: newMeta.id, index: metaItems.length });
+    showToast("Added new document meta badge.");
+  };
+
+  // 3. Header Contact Actions
+  const handleCopyContact = (cnt: ContactItem, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setClipboard({ type: "contact", data: { ...cnt } });
+    showToast(`Copied contact "${cnt.valueEn}" to clipboard!`);
+  };
+
+  const handlePasteContact = (targetIndex: number, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (!clipboard || clipboard.type !== "contact") return;
+    const newCnt: ContactItem = {
+      ...clipboard.data,
+      id: `cnt_${Date.now()}`,
+    };
+    const updated = [...headerContacts];
+    updated.splice(targetIndex + 1, 0, newCnt);
+    setHeaderContacts(updated);
+    setSelectedElement({ type: "contact", id: newCnt.id, index: targetIndex + 1 });
+    showToast("Pasted contact info badge!");
+  };
+
+  const handleDuplicateContact = (index: number, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    const source = headerContacts[index];
+    const duplicated: ContactItem = {
+      ...source,
+      id: `cnt_${Date.now()}`,
+      valueEn: `${source.valueEn} (2)`,
+      valueBn: `${source.valueBn} (২)`,
+    };
+    const updated = [...headerContacts];
+    updated.splice(index + 1, 0, duplicated);
+    setHeaderContacts(updated);
+    setSelectedElement({ type: "contact", id: duplicated.id, index: index + 1 });
+    showToast("Duplicated contact badge.");
+  };
+
+  const handleDeleteContact = (index: number, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    const updated = headerContacts.filter((_, i) => i !== index);
+    setHeaderContacts(updated);
+    showToast("Removed contact info.");
+  };
+
+  const handleAddContact = () => {
+    const newCnt: ContactItem = {
+      id: `cnt_${Date.now()}`,
+      type: "phone",
+      labelEn: "Hotline",
+      labelBn: "হটলাইন",
+      valueEn: "+880 1912-345678",
+      valueBn: "০১৯১২-৩৪৫৬৭৮",
+    };
+    setHeaderContacts([...headerContacts, newCnt]);
+    setSelectedElement({ type: "contact", id: newCnt.id, index: headerContacts.length });
+    showToast("Added new contact badge.");
+  };
+
+  // Save Template to Database
   const handleSaveTemplate = async () => {
     setValidationError("");
 
-    // 1. Strict English Validation
     if (!formData.slug || !formData.en_title || !formData.en_description) {
       setInspectorTab("meta");
       setValidationError("Mandatory Requirement: English Title, URL Slug, and Description must be provided.");
       return;
     }
 
-    // 2. Strict Bangla Validation
     if (!formData.bn_title || !formData.bn_description) {
       setInspectorTab("meta");
       setValidationError(
@@ -647,6 +808,52 @@ export default function AdminTemplatesManagerPage() {
     setIsSubmitting(true);
 
     try {
+      const defaultDataEn = {
+        businessName: businessNameEn,
+        tagline: taglineEn,
+        phone: headerContacts.find((c) => c.type === "phone")?.valueEn || "+880 1712-000000",
+        address: headerContacts.find((c) => c.type === "address")?.valueEn || "Dhaka - 1205, Bangladesh",
+        invoiceNumber: metaItems.find((m) => m.key === "docNo")?.valueEn || "INV-001",
+        date: metaItems.find((m) => m.key === "date")?.valueEn || new Date().toISOString().split("T")[0],
+        courierPartner: metaItems.find((m) => m.key === "courier")?.valueEn || "Steadfast Courier",
+        currency: formData.en_currency,
+        items: tableRows.map((r) => ({
+          name: r.nameEn,
+          quantity: r.quantity,
+          price: r.price,
+          unit: r.unit,
+        })),
+        deliveryCharge,
+        discount: discountAmount,
+        paidAmount,
+        signatoryTitle: formData.en_signatory,
+        contacts: headerContacts.map((c) => ({ id: c.id, label: c.labelEn, value: c.valueEn })),
+        metaItems: metaItems.map((m) => ({ id: m.id, label: m.labelEn, value: m.valueEn })),
+      };
+
+      const defaultDataBn = {
+        businessName: businessNameBn,
+        tagline: taglineBn,
+        phone: headerContacts.find((c) => c.type === "phone")?.valueBn || "০১৭১২-০০০০০০",
+        address: headerContacts.find((c) => c.type === "address")?.valueBn || "ঢাকা - ১২০৫, বাংলাদেশ",
+        invoiceNumber: metaItems.find((m) => m.key === "docNo")?.valueBn || "মেমো-০০১",
+        date: metaItems.find((m) => m.key === "date")?.valueBn || new Date().toLocaleDateString("bn-BD"),
+        courierPartner: metaItems.find((m) => m.key === "courier")?.valueBn || "স্টেডফাস্ট কুরিয়ার",
+        currency: formData.bn_currency,
+        items: tableRows.map((r) => ({
+          name: r.nameBn,
+          quantity: r.quantity,
+          price: r.price,
+          unit: r.unit,
+        })),
+        deliveryCharge,
+        discount: discountAmount,
+        paidAmount,
+        signatoryTitle: formData.bn_signatory,
+        contacts: headerContacts.map((c) => ({ id: c.id, label: c.labelBn, value: c.valueBn })),
+        metaItems: metaItems.map((m) => ({ id: m.id, label: m.labelBn, value: m.valueBn })),
+      };
+
       const payload = {
         id: editingTemplate ? editingTemplate.id : undefined,
         slug: formData.slug.toLowerCase().replace(/\s+/g, "-"),
@@ -662,6 +869,9 @@ export default function AdminTemplatesManagerPage() {
         bn_signatory: formData.bn_signatory,
         bn_currency: formData.bn_currency,
         blocks: templateBlocks,
+        defaultData: defaultDataEn,
+        defaultDataEn,
+        defaultDataBn,
       };
 
       const method = editingTemplate && editingTemplate.isCustom ? "PUT" : "POST";
@@ -693,12 +903,20 @@ export default function AdminTemplatesManagerPage() {
     }
   };
 
-  // Keyboard Shortcuts (Ctrl+S / Cmd+S to Save)
+  // Keyboard Shortcuts (Ctrl+S / Cmd+S to Save, Ctrl+Z for Undo)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "s" && isStudioOpen) {
         e.preventDefault();
         handleSaveTemplate();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === "z" && isStudioOpen) {
+        e.preventDefault();
+        handleUndo();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === "y" && isStudioOpen) {
+        e.preventDefault();
+        handleRedo();
       }
       if (e.key === "Escape" && isStudioOpen) {
         setIsStudioOpen(false);
@@ -706,9 +924,7 @@ export default function AdminTemplatesManagerPage() {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isStudioOpen, formData, templateBlocks]);
-
-  const activeSelectedBlock = templateBlocks[selectedBlockIndex] || null;
+  }, [isStudioOpen, formData, templateBlocks, tableRows, metaItems, headerContacts]);
 
   return (
     <div className="space-y-8 max-w-7xl font-sans text-zinc-100">
@@ -718,7 +934,7 @@ export default function AdminTemplatesManagerPage() {
           <div className="flex items-center gap-2">
             <h2 className="text-xl font-black uppercase tracking-wider text-white flex items-center gap-2">
               <Layers className="w-5 h-5 text-red-500" />
-              Template CMS & Visual Studio
+              Template CMS & Elementor Visual Studio
             </h2>
             <span
               className={`text-[10px] px-2 py-0.5 rounded-full font-mono border ${
@@ -731,7 +947,7 @@ export default function AdminTemplatesManagerPage() {
             </span>
           </div>
           <p className="text-xs text-zinc-400 mt-1">
-            Browse templates separated by category, design custom documents with our Smart CMS drag-and-drop studio, and enforce dual-locale (English + বাংলা) parity.
+            Browse templates separated by category, design with an Elementor-grade dynamic visual editor (edit, copy, paste, and duplicate any element), and enforce dual-locale parity.
           </p>
         </div>
 
@@ -749,7 +965,7 @@ export default function AdminTemplatesManagerPage() {
             onClick={handleOpenAddStudio}
             className="flex items-center gap-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition shadow-lg shadow-red-950/50 cursor-pointer"
           >
-            <Plus className="w-4 h-4" /> Launch Smart CMS Studio
+            <Plus className="w-4 h-4" /> Launch Elementor Studio
           </button>
         </div>
       </div>
@@ -800,7 +1016,6 @@ export default function AdminTemplatesManagerPage() {
 
       {/* SEARCH, FILTER & VIEW CONTROLS */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        {/* Search Input */}
         <div className="relative flex-1">
           <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
@@ -820,7 +1035,6 @@ export default function AdminTemplatesManagerPage() {
           )}
         </div>
 
-        {/* Paper Format & Layout Switcher */}
         <div className="flex items-center gap-3">
           <div className="flex items-center bg-zinc-950 border border-zinc-800 rounded-xl p-1 text-xs">
             <button
@@ -978,7 +1192,7 @@ export default function AdminTemplatesManagerPage() {
                       <td className="py-4 font-sans">
                         {t.isCustom ? (
                           <span className="text-[10px] text-cyan-400 font-mono bg-cyan-950/60 border border-cyan-800 px-2 py-0.5 rounded">
-                            Smart CMS Custom
+                            Elementor CMS Custom
                           </span>
                         ) : (
                           <span className="text-[10px] text-zinc-500 font-mono">
@@ -991,7 +1205,7 @@ export default function AdminTemplatesManagerPage() {
                           <button
                             onClick={() => handleOpenEditStudio(t)}
                             className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-2.5 py-1.5 rounded-lg inline-flex items-center gap-1 text-xs transition cursor-pointer border border-zinc-700"
-                            title="Open in Smart CMS Studio"
+                            title="Open in Elementor Studio"
                           >
                             <Edit3 className="w-3.5 h-3.5 text-red-400" /> Edit CMS
                           </button>
@@ -1163,33 +1377,58 @@ export default function AdminTemplatesManagerPage() {
       )}
 
       {/* ============================================================== */}
-      {/* 4. HIGH-LEVEL SMART CMS VISUAL DRAG-AND-DROP STUDIO (MODAL)   */}
+      {/* 4. ELEMENTOR-GRADE DYNAMIC SMART CMS VISUAL STUDIO (FULLSCREEN)*/}
       {/* ============================================================== */}
       {isStudioOpen && (
-        <div className="fixed inset-0 z-50 bg-zinc-950 flex flex-col font-sans text-zinc-100 overflow-hidden animate-in fade-in">
+        <div className="fixed inset-0 z-50 bg-zinc-950 flex flex-col font-sans text-zinc-100 overflow-hidden animate-in fade-in select-none">
+          {/* TOAST NOTIFICATION FOR COPY / PASTE FEEDBACK */}
+          {clipboardToast && (
+            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-zinc-900 border border-red-500 text-white px-4 py-2 rounded-xl text-xs font-mono shadow-2xl flex items-center gap-2 animate-in slide-in-from-bottom">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <span>{clipboardToast}</span>
+            </div>
+          )}
+
           {/* STUDIO TOP COMMAND BAR */}
-          <header className="h-14 bg-zinc-900 border-b border-zinc-800 px-4 flex items-center justify-between shrink-0 select-none">
-            {/* Left: Branding & Current Editing Status */}
+          <header className="h-14 bg-zinc-900 border-b border-zinc-800 px-4 flex items-center justify-between shrink-0">
+            {/* Left: Branding & History Controls */}
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 px-2.5 py-1 rounded-xl">
-                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                <span className="text-[11px] font-mono font-black tracking-wider text-white">DOCFORGE SMART CMS</span>
+                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                <span className="text-[11px] font-mono font-black tracking-wider text-white">ELEMENTOR STUDIO</span>
               </div>
 
-              <div className="hidden md:flex items-center gap-1.5 text-xs text-zinc-400">
-                <span className="text-zinc-600">/</span>
-                <span className="font-semibold text-white truncate max-w-xs">
-                  {formData.en_title || "Untitled Template"}
-                </span>
-                <span className="text-[10px] font-mono text-zinc-500 bg-zinc-800 px-1.5 py-0.5 rounded">
-                  /{formData.slug || "slug"}
-                </span>
+              {/* Undo / Redo */}
+              <div className="flex items-center bg-zinc-950 border border-zinc-800 rounded-lg p-0.5 text-xs">
+                <button
+                  type="button"
+                  onClick={handleUndo}
+                  disabled={historyIndex <= 0}
+                  className="p-1.5 text-zinc-400 hover:text-white disabled:opacity-30 cursor-pointer"
+                  title="Undo (Ctrl+Z)"
+                >
+                  <Undo2 className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRedo}
+                  disabled={historyIndex >= historyStack.length - 1}
+                  className="p-1.5 text-zinc-400 hover:text-white disabled:opacity-30 cursor-pointer"
+                  title="Redo (Ctrl+Y)"
+                >
+                  <Redo2 className="w-3.5 h-3.5" />
+                </button>
               </div>
+
+              {clipboard && (
+                <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-mono bg-red-950/60 text-red-400 border border-red-800 px-2 py-0.5 rounded">
+                  <ClipboardPaste className="w-3 h-3" /> Clipboard: {clipboard.type}
+                </span>
+              )}
             </div>
 
-            {/* Center: Device Viewport & Live Locale Switcher */}
+            {/* Center: Viewport & Dual-Locale Toggle */}
             <div className="flex items-center gap-2">
-              {/* Device Viewport */}
               <div className="flex items-center bg-zinc-950 border border-zinc-800 rounded-xl p-0.5 text-xs">
                 <button
                   type="button"
@@ -1221,7 +1460,7 @@ export default function AdminTemplatesManagerPage() {
                 </button>
               </div>
 
-              {/* Live Preview Dual-Locale Switcher */}
+              {/* Dual-Locale Toggle */}
               <div className="flex items-center bg-zinc-950 border border-zinc-800 rounded-xl p-0.5 text-xs">
                 <button
                   type="button"
@@ -1302,80 +1541,77 @@ export default function AdminTemplatesManagerPage() {
           {/* STUDIO 3-COLUMN WORKSPACE */}
           <div className="flex-1 flex overflow-hidden">
             {/* ============================================================== */}
-            {/* COLUMN 1: COMPONENT PALETTE (LEFT PANEL - 280px)              */}
+            {/* COLUMN 1: ELEMENTOR COMPONENT PALETTE (LEFT - 260px)          */}
             {/* ============================================================== */}
-            <aside className="w-72 bg-zinc-900 border-r border-zinc-800 flex flex-col shrink-0 select-none">
+            <aside className="w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col shrink-0 select-none">
               <div className="p-3 border-b border-zinc-800">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-                    <Sliders className="w-3.5 h-3.5 text-red-400" /> Block Palette
-                  </span>
-                  <span className="text-[10px] font-mono text-zinc-500">Drag or click +</span>
+                <div className="text-xs font-bold uppercase tracking-wider text-zinc-300 flex items-center gap-1.5">
+                  <Sliders className="w-3.5 h-3.5 text-cyan-400" /> Elements & Blocks
                 </div>
-                <div className="relative">
-                  <Search className="w-3 h-3 text-zinc-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    placeholder="Search blocks..."
-                    value={paletteSearch}
-                    onChange={(e) => setPaletteSearch(e.target.value)}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-lg pl-7 pr-2 py-1 text-[11px] text-white focus:outline-none focus:border-red-500"
-                  />
-                </div>
+                <div className="text-[10px] text-zinc-500 mt-0.5">Click to add to canvas</div>
               </div>
 
-              {/* Categorized Palette Items */}
-              <div className="flex-1 overflow-y-auto p-3 space-y-4">
-                {COMPONENT_PALETTE.map((catGroup) => {
-                  const filteredItems = catGroup.items.filter(
-                    (it) =>
-                      it.titleEn.toLowerCase().includes(paletteSearch.toLowerCase()) ||
-                      it.titleBn.toLowerCase().includes(paletteSearch.toLowerCase())
-                  );
-                  if (filteredItems.length === 0) return null;
+              <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                {/* Quick Add Elements */}
+                <div className="space-y-1">
+                  <div className="text-[10px] font-mono uppercase text-zinc-500 px-1">Dynamic Repeater Tools</div>
+                  <button
+                    type="button"
+                    onClick={handleAddRow}
+                    className="w-full text-left p-2 rounded-xl bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-xs font-semibold text-zinc-200 flex items-center justify-between transition group"
+                  >
+                    <span className="flex items-center gap-2">
+                      <FileSpreadsheet className="w-3.5 h-3.5 text-blue-400" /> + Add Item Row
+                    </span>
+                    <Plus className="w-3 h-3 opacity-0 group-hover:opacity-100 text-red-400" />
+                  </button>
 
-                  const GroupIcon = catGroup.icon;
+                  <button
+                    type="button"
+                    onClick={handleAddMeta}
+                    className="w-full text-left p-2 rounded-xl bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-xs font-semibold text-zinc-200 flex items-center justify-between transition group"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Calendar className="w-3.5 h-3.5 text-amber-400" /> + Add Doc Meta Field
+                    </span>
+                    <Plus className="w-3 h-3 opacity-0 group-hover:opacity-100 text-red-400" />
+                  </button>
 
-                  return (
-                    <div key={catGroup.category} className="space-y-1.5">
-                      <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 flex items-center gap-1.5 px-1">
-                        <GroupIcon className="w-3 h-3 text-zinc-400" />
-                        <span>{catGroup.category}</span>
-                      </div>
+                  <button
+                    type="button"
+                    onClick={handleAddContact}
+                    className="w-full text-left p-2 rounded-xl bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-xs font-semibold text-zinc-200 flex items-center justify-between transition group"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Phone className="w-3.5 h-3.5 text-emerald-400" /> + Add Header Contact
+                    </span>
+                    <Plus className="w-3 h-3 opacity-0 group-hover:opacity-100 text-red-400" />
+                  </button>
+                </div>
 
-                      <div className="space-y-1">
-                        {filteredItems.map((item, idx) => (
-                          <div
-                            key={idx}
-                            onClick={() => handleAddPaletteItem(item)}
-                            className="p-2.5 rounded-xl bg-zinc-950/80 hover:bg-zinc-800/80 border border-zinc-800/80 hover:border-zinc-700 cursor-pointer transition flex items-center justify-between group"
-                          >
-                            <div className="pr-2">
-                              <div className="text-xs font-bold text-white group-hover:text-red-400 transition truncate">
-                                {item.titleEn}
-                              </div>
-                              <div className="text-[10px] text-zinc-400 font-sans truncate">
-                                {item.titleBn}
-                              </div>
-                            </div>
-                            <button
-                              type="button"
-                              className="p-1 rounded-md bg-zinc-900 group-hover:bg-red-600 text-zinc-400 group-hover:text-white transition shrink-0"
-                              title="Add this section to canvas"
-                            >
-                              <Plus className="w-3 h-3" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
+                {/* Block Sections */}
+                <div className="space-y-1 pt-2 border-t border-zinc-800">
+                  <div className="text-[10px] font-mono uppercase text-zinc-500 px-1">Structural Sections</div>
+                  {templateBlocks.map((block, idx) => (
+                    <div
+                      key={block.id}
+                      onClick={() => setSelectedElement({ type: "block", id: block.id, index: idx })}
+                      className={`p-2 rounded-xl border text-xs cursor-pointer transition flex items-center justify-between ${
+                        selectedElement.id === block.id
+                          ? "bg-zinc-800 border-red-500 text-white font-bold"
+                          : "bg-zinc-950 border-zinc-850 text-zinc-400 hover:text-white"
+                      }`}
+                    >
+                      <span className="truncate">{block.titleEn}</span>
+                      <span className="text-[9px] font-mono text-zinc-500">#{idx + 1}</span>
                     </div>
-                  );
-                })}
+                  ))}
+                </div>
               </div>
             </aside>
 
             {/* ============================================================== */}
-            {/* COLUMN 2: LIVE RESPONSIVE CANVAS (CENTER VIEWPORT - FLEX-1)    */}
+            {/* COLUMN 2: LIVE DYNAMIC CANVAS (CENTER VIEWPORT - FLEX-1)       */}
             {/* ============================================================== */}
             <main className="flex-1 bg-zinc-950 overflow-y-auto p-6 flex flex-col items-center justify-start relative">
               {/* Visual Canvas Paper Container */}
@@ -1391,290 +1627,499 @@ export default function AdminTemplatesManagerPage() {
                     : "w-full max-w-2xl p-8 font-sans text-xs min-h-[750px] border border-zinc-200"
                 }`}
               >
-                {/* Visual Watermark Badge */}
+                {/* Elementor Watermark */}
                 <div className="absolute right-4 top-4 text-[9px] font-mono uppercase tracking-widest text-zinc-300 pointer-events-none select-none">
-                  FreeDocForge Printable CMS
+                  Elementor Dynamic Studio
                 </div>
 
-                {/* Render Canvas Blocks with Interactive Drag & Drop */}
-                {templateBlocks.map((block, index) => {
-                  const isSelected = selectedBlockIndex === index;
-                  const isDragOver = dragOverIndex === index;
-
-                  return (
-                    <div
-                      key={block.id}
-                      draggable
-                      onDragStart={() => handleDragStart(index)}
-                      onDragOver={(e) => handleDragOver(e, index)}
-                      onDrop={() => handleDrop(index)}
-                      onClick={() => {
-                        setSelectedBlockIndex(index);
-                        setInspectorTab("block");
+                {/* ========================================================== */}
+                {/* 1. HEADER SECTION (EDITABLE, COPYABLE, DUPLICABLE)         */}
+                {/* ========================================================== */}
+                <div
+                  onClick={() => {
+                    setSelectedElement({ type: "header", id: "header" });
+                    setInspectorTab("content");
+                  }}
+                  className={`group relative p-3 rounded-lg border transition mb-2 cursor-pointer ${
+                    selectedElement.id === "header"
+                      ? "ring-2 ring-cyan-500 border-cyan-400 bg-cyan-50/20"
+                      : "border-transparent hover:border-cyan-300 hover:bg-cyan-50/10"
+                  }`}
+                >
+                  {/* Floating Action Badge on Header */}
+                  <div className="absolute -top-3 left-3 opacity-0 group-hover:opacity-100 z-20 flex items-center gap-1 bg-cyan-600 text-white px-2 py-0.5 rounded text-[9px] font-mono font-bold shadow">
+                    <span>HEADER CONTAINER</span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setClipboard({
+                          type: "block",
+                          data: { businessNameEn, businessNameBn, taglineEn, taglineBn, contacts: headerContacts },
+                        });
+                        showToast("Copied header block to clipboard!");
                       }}
-                      className={`relative group transition rounded-lg my-1 p-2 cursor-pointer ${
-                        !block.enabled ? "opacity-30 bg-zinc-100" : ""
-                      } ${
-                        isSelected
-                          ? "ring-2 ring-red-500 bg-red-50/30"
-                          : "hover:ring-1 hover:ring-zinc-400 hover:bg-zinc-50/50"
-                      } ${isDragOver ? "border-t-4 border-red-500" : ""}`}
+                      className="p-0.5 hover:text-cyan-200"
+                      title="Copy Header Block"
                     >
-                      {/* Floating Mini Action Toolbar (Visible on Hover/Selected) */}
-                      <div
-                        className={`absolute -top-3.5 right-2 z-20 flex items-center gap-1 bg-zinc-900 text-white rounded-md shadow-lg px-1.5 py-0.5 text-[10px] font-mono transition-opacity ${
-                          isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-                        }`}
-                      >
-                        <div
-                          className="cursor-grab active:cursor-grabbing p-0.5 hover:text-red-400"
-                          title="Drag to rearrange position"
-                        >
-                          <GripVertical className="w-3 h-3" />
-                        </div>
-                        <button
-                          type="button"
-                          disabled={index === 0}
-                          onClick={(e) => moveBlock(index, "up", e)}
-                          className="p-0.5 hover:text-red-400 disabled:opacity-30"
-                          title="Move Up"
-                        >
-                          <ChevronUp className="w-3 h-3" />
-                        </button>
-                        <button
-                          type="button"
-                          disabled={index === templateBlocks.length - 1}
-                          onClick={(e) => moveBlock(index, "down", e)}
-                          className="p-0.5 hover:text-red-400 disabled:opacity-30"
-                          title="Move Down"
-                        >
-                          <ChevronDown className="w-3 h-3" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => handleDuplicateBlock(index, e)}
-                          className="p-0.5 hover:text-emerald-400"
-                          title="Duplicate block"
-                        >
-                          <Copy className="w-3 h-3" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => toggleBlockEnabled(index, e)}
-                          className={`px-1 rounded text-[9px] ${
-                            block.enabled ? "text-emerald-400" : "text-zinc-500"
-                          }`}
-                          title="Toggle Active/Inactive"
-                        >
-                          {block.enabled ? "ON" : "OFF"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => handleDeleteBlock(index, e)}
-                          className="p-0.5 hover:text-rose-400"
-                          title="Delete Block"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
+                      <Copy className="w-2.5 h-2.5" />
+                    </button>
+                  </div>
 
-                      {/* BLOCK RENDERING LOGIC */}
-                      {/* Block Type: Header */}
-                      {block.type === "header" && (
-                        <div className="text-center pb-2 border-b border-zinc-200">
-                          <div className="text-[10px] uppercase font-mono tracking-widest text-zinc-400">
-                            {previewLocale === "en" ? formData.category : "ক্যাটাগরি"}
-                          </div>
-                          <h1 className="text-base font-black text-zinc-900 mt-0.5">
-                            {previewLocale === "en"
-                              ? formData.en_title || "Sample Business / Clinic Name"
-                              : formData.bn_title || "নমুনা প্রতিষ্ঠান বা ক্লিনিকের নাম"}
-                          </h1>
-                          <p className="text-[10px] text-zinc-500 max-w-md mx-auto">
-                            {previewLocale === "en"
-                              ? formData.en_description || "Quality Products & Diagnostic Services"
-                              : formData.bn_description || "গুণগত মানসম্পন্ন সেবা ও দ্রুততম ডেলিভারি"}
-                          </p>
-                          {block.options?.showContact && (
-                            <div className="text-[10px] text-zinc-600 mt-1">
-                              {previewLocale === "en"
-                                ? "Phone: +880 1712-000000 | Dhaka - 1205, Bangladesh"
-                                : "ফোন: ০১৭১২-০০০০০০ | ঢাকা - ১২০৫, বাংলাদেশ"}
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Block Type: Meta */}
-                      {block.type === "meta" && (
-                        <div className="flex justify-between items-center text-[10px] text-zinc-700 py-1.5 bg-zinc-50 px-3 rounded border border-zinc-100">
-                          <div>
-                            <strong>{previewLocale === "en" ? "Doc / Memo No:" : "নথি / মেমো নং:"}</strong> #DOC-2026-089
-                          </div>
-                          <div>
-                            <strong>{previewLocale === "en" ? "Issue Date:" : "ইস্যু তারিখ:"}</strong> 2026-11-12
-                          </div>
-                          {block.options?.showCourier && (
-                            <div>
-                              <strong>{previewLocale === "en" ? "Courier:" : "কুরিয়ার:"}</strong> Steadfast BD
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Block Type: Recipient */}
-                      {block.type === "recipient" && (
-                        <div className="text-[11px] py-1">
-                          <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-                            {previewLocale === "en" ? "Billed / Prescribed To:" : "প্রাপক / গ্রাহকের তথ্য:"}
-                          </div>
-                          <div className="font-bold text-zinc-800 text-xs">
-                            {previewLocale === "en" ? "Md. Tanvir Ahmed" : "মোঃ তানভীর আহমেদ"}
-                          </div>
-                          <div className="text-[10px] text-zinc-600">
-                            {previewLocale === "en"
-                              ? "House 14, Road 5, Mirpur-10, Dhaka | Phone: +880 1819-000000"
-                              : "বাড়ি ১৪, রোড ৫, মিরপুর-১০, ঢাকা | মোবাইল: ০১৮১৯-০০০০০০"}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Block Type: Table */}
-                      {block.type === "table" && (
-                        <div className="py-2">
-                          <table className="w-full text-left text-[11px] border border-zinc-200">
-                            <thead className="bg-zinc-100 text-zinc-700 font-bold border-b border-zinc-200">
-                              <tr>
-                                <th className="p-2">{previewLocale === "en" ? "Item / Service Description" : "পণ্য বা সেবার বিবরণ"}</th>
-                                <th className="p-2 text-center">{previewLocale === "en" ? "Qty" : "পরিমাণ"}</th>
-                                <th className="p-2 text-right">{previewLocale === "en" ? "Rate" : "দর"}</th>
-                                <th className="p-2 text-right">{previewLocale === "en" ? "Amount" : "টাকা"}</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-zinc-200">
-                              <tr>
-                                <td className="p-2">
-                                  {previewLocale === "en" ? "Premium Formal Cotton Shirt" : "প্রিমিয়াম সুতি ফরমাল শার্ট"}
-                                </td>
-                                <td className="p-2 text-center font-mono">2</td>
-                                <td className="p-2 text-right font-mono">{formData.en_currency} 1,250</td>
-                                <td className="p-2 text-right font-mono font-bold">{formData.en_currency} 2,500</td>
-                              </tr>
-                              <tr>
-                                <td className="p-2">
-                                  {previewLocale === "en" ? "Standard Service / Consultation Fee" : "সার্ভিস বা কনসাল্টেশন ফি"}
-                                </td>
-                                <td className="p-2 text-center font-mono">1</td>
-                                <td className="p-2 text-right font-mono">{formData.en_currency} 500</td>
-                                <td className="p-2 text-right font-mono font-bold">{formData.en_currency} 500</td>
-                              </tr>
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
-
-                      {/* Block Type: Summary */}
-                      {block.type === "summary" && (
-                        <div className="text-[11px] space-y-1 text-right py-1.5 border-t border-zinc-200 mt-1">
-                          <div className="text-zinc-600">
-                            {previewLocale === "en" ? "Subtotal:" : "মোট মূল্য:"}{" "}
-                            <span className="font-mono">{formData.en_currency} 3,000</span>
-                          </div>
-                          {block.options?.showDelivery && (
-                            <div className="text-zinc-600">
-                              {previewLocale === "en" ? "Delivery Fee:" : "ডেলিভারি চার্জ:"}{" "}
-                              <span className="font-mono">+ {formData.en_currency} 120</span>
-                            </div>
-                          )}
-                          {block.options?.showDiscount && (
-                            <div className="text-zinc-600">
-                              {previewLocale === "en" ? "Discount:" : "বিশেষ ছাড়:"}{" "}
-                              <span className="font-mono text-emerald-600">- {formData.en_currency} 100</span>
-                            </div>
-                          )}
-                          <div className="text-xs font-black text-zinc-900 border-t border-zinc-300 pt-1">
-                            {previewLocale === "en" ? "Net Total Due:" : "সর্বমোট বকেয়া:"}{" "}
-                            <span className="font-mono text-red-600">{formData.en_currency} 3,020</span>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Block Type: Signatory */}
-                      {block.type === "signatory" && (
-                        <div className="pt-6 pb-2 flex justify-between items-end">
-                          <div className="text-center w-36 border-t border-zinc-400 pt-1 text-[10px] text-zinc-700 font-bold">
-                            {previewLocale === "en" ? "Customer Signature" : "গ্রাহকের স্বাক্ষর"}
-                          </div>
-                          <div className="text-center w-40 border-t border-zinc-900 pt-1 text-[10px] text-zinc-900 font-bold">
-                            {previewLocale === "en" ? formData.en_signatory : formData.bn_signatory}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Block Type: Terms */}
-                      {block.type === "terms" && (
-                        <div className="text-[9px] text-zinc-500 italic pt-2 border-t border-zinc-200">
-                          * {previewLocale === "en"
-                            ? "Thank you for doing business with us! For warranty, please preserve this document slip."
-                            : "আমাদের সেবা গ্রহণ করার জন্য আপনাকে ধন্যবাদ। ওয়ারেন্টির প্রয়োজনে অনুগ্রহ করে এই রসিদটি সংরক্ষণ করুন।"}
-                        </div>
-                      )}
-
-                      {/* Block Type: QR Code */}
-                      {block.type === "qrcode" && (
-                        <div className="flex items-center gap-3 p-2 bg-zinc-50 rounded border border-zinc-200 my-1">
-                          <div className="p-2 bg-white rounded border border-zinc-300">
-                            <QrCode className="w-8 h-8 text-zinc-900" />
-                          </div>
-                          <div>
-                            <div className="text-[10px] font-bold text-zinc-800">
-                              {previewLocale === "en" ? "Digital Verification QR" : "ডিজিটাল ভেরিফিকেশন কোড"}
-                            </div>
-                            <div className="text-[9px] text-zinc-500 font-mono">
-                              DOC-ID: FDF-8902-BD | Scan to verify originality
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Block Type: Callout */}
-                      {block.type === "callout" && (
-                        <div className="bg-amber-50 border-l-4 border-amber-500 p-2.5 rounded text-amber-900 text-[10px] my-1">
-                          <strong>{previewLocale === "en" ? "Important Notice:" : "জরুরি নোটিশ:"}</strong>{" "}
-                          {previewLocale === "en"
-                            ? "Please verify parcel seal before making payment."
-                            : "পণ্য বুঝে নিয়ে এবং সিলমোহর পরীক্ষা করে মূল্য পরিশোধ করুন।"}
-                        </div>
-                      )}
-
-                      {/* Block Type: Custom */}
-                      {block.type === "custom" && (
-                        <div className="bg-zinc-100 p-2.5 rounded text-[10px] text-zinc-700 my-1">
-                          <strong>{previewLocale === "en" ? block.titleEn : block.titleBn}:</strong> Custom configured block data.
-                        </div>
-                      )}
+                  <div className="text-center pb-2">
+                    <div className="text-[10px] uppercase font-mono tracking-widest text-zinc-400">
+                      {formData.category}
                     </div>
-                  );
-                })}
+
+                    {/* Editable Business Title */}
+                    <h1 className="text-base font-black text-zinc-900 mt-0.5 hover:text-cyan-700 transition">
+                      {previewLocale === "en" ? businessNameEn : businessNameBn}
+                    </h1>
+
+                    {/* Editable Tagline */}
+                    <p className="text-[10px] text-zinc-500 max-w-md mx-auto hover:text-cyan-700 transition">
+                      {previewLocale === "en" ? taglineEn : taglineBn}
+                    </p>
+
+                    {/* Editable Contacts Bar (Redmarked Element in Screenshot!) */}
+                    <div className="mt-2 pt-1 border-t border-zinc-100 flex flex-wrap items-center justify-center gap-2 text-[10px] text-zinc-700">
+                      {headerContacts.map((cnt, cIdx) => (
+                        <div
+                          key={cnt.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedElement({ type: "contact", id: cnt.id, index: cIdx });
+                            setInspectorTab("content");
+                          }}
+                          className="group/cnt relative px-2 py-0.5 rounded border border-zinc-200 hover:border-cyan-500 hover:bg-cyan-50 transition flex items-center gap-1"
+                        >
+                          <span className="font-semibold text-zinc-500">
+                            {previewLocale === "en" ? cnt.labelEn : cnt.labelBn}:
+                          </span>
+                          <span>{previewLocale === "en" ? cnt.valueEn : cnt.valueBn}</span>
+
+                          {/* Mini Elementor Context Toolbar for Contact */}
+                          <div className="absolute -top-5 right-0 opacity-0 group-hover/cnt:opacity-100 bg-zinc-900 text-white rounded px-1 py-0.5 flex items-center gap-1 text-[8px] font-mono shadow z-30">
+                            <button
+                              type="button"
+                              onClick={(e) => handleCopyContact(cnt, e)}
+                              className="hover:text-cyan-400"
+                              title="Copy contact"
+                            >
+                              <Copy className="w-2.5 h-2.5" />
+                            </button>
+                            {clipboard && clipboard.type === "contact" && (
+                              <button
+                                type="button"
+                                onClick={(e) => handlePasteContact(cIdx, e)}
+                                className="hover:text-emerald-400"
+                                title="Paste contact below"
+                              >
+                                <ClipboardPaste className="w-2.5 h-2.5" />
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={(e) => handleDuplicateContact(cIdx, e)}
+                              className="hover:text-amber-400"
+                              title="Duplicate contact"
+                            >
+                              <Plus className="w-2.5 h-2.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => handleDeleteContact(cIdx, e)}
+                              className="hover:text-red-400"
+                              title="Delete contact"
+                            >
+                              <Trash2 className="w-2.5 h-2.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+
+                      {/* Add Contact Trigger */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAddContact();
+                        }}
+                        className="text-[9px] font-mono text-cyan-600 hover:text-cyan-800 px-1 py-0.5 border border-dashed border-cyan-400 rounded"
+                        title="Add contact info"
+                      >
+                        + Add Contact
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ========================================================== */}
+                {/* 2. META ITEMS SECTION (REDMARKED ELEMENT IN SCREENSHOT!)   */}
+                {/* ========================================================== */}
+                <div
+                  onClick={() => {
+                    setSelectedElement({ type: "meta", id: "meta" });
+                    setInspectorTab("content");
+                  }}
+                  className={`group relative p-2.5 rounded-lg border transition mb-2 cursor-pointer bg-zinc-50 ${
+                    selectedElement.id === "meta"
+                      ? "ring-2 ring-cyan-500 border-cyan-400"
+                      : "border-zinc-200 hover:border-cyan-300"
+                  }`}
+                >
+                  <div className="absolute -top-3 left-3 opacity-0 group-hover:opacity-100 z-20 flex items-center gap-1 bg-cyan-600 text-white px-2 py-0.5 rounded text-[9px] font-mono font-bold shadow">
+                    <span>DOCUMENT META ITEMS</span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setClipboard({ type: "block", data: { metaItems } });
+                        showToast("Copied meta section to clipboard!");
+                      }}
+                      className="p-0.5 hover:text-cyan-200"
+                      title="Copy Meta Block"
+                    >
+                      <Copy className="w-2.5 h-2.5" />
+                    </button>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-zinc-700">
+                    {metaItems.map((meta, mIdx) => (
+                      <div
+                        key={meta.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedElement({ type: "meta", id: meta.id, index: mIdx });
+                          setInspectorTab("content");
+                        }}
+                        className="group/meta relative px-2 py-1 rounded border border-transparent hover:border-cyan-500 hover:bg-white transition flex items-center gap-1.5"
+                      >
+                        <strong className="text-zinc-600">
+                          {previewLocale === "en" ? meta.labelEn : meta.labelBn}:
+                        </strong>
+                        <span className="font-mono text-zinc-900 font-bold">
+                          {previewLocale === "en" ? meta.valueEn : meta.valueBn}
+                        </span>
+
+                        {/* Mini Elementor Context Toolbar for Meta Item */}
+                        <div className="absolute -top-5 right-0 opacity-0 group-hover/meta:opacity-100 bg-zinc-900 text-white rounded px-1 py-0.5 flex items-center gap-1 text-[8px] font-mono shadow z-30">
+                          <button
+                            type="button"
+                            onClick={(e) => handleCopyMeta(meta, e)}
+                            className="hover:text-cyan-400"
+                            title="Copy meta tag"
+                          >
+                            <Copy className="w-2.5 h-2.5" />
+                          </button>
+                          {clipboard && clipboard.type === "meta" && (
+                            <button
+                              type="button"
+                              onClick={(e) => handlePasteMeta(mIdx, e)}
+                              className="hover:text-emerald-400"
+                              title="Paste meta tag"
+                            >
+                              <ClipboardPaste className="w-2.5 h-2.5" />
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={(e) => handleDuplicateMeta(mIdx, e)}
+                            className="hover:text-amber-400"
+                            title="Duplicate meta tag"
+                          >
+                            <Plus className="w-2.5 h-2.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => handleDeleteMeta(mIdx, e)}
+                            className="hover:text-red-400"
+                            title="Delete meta tag"
+                          >
+                            <Trash2 className="w-2.5 h-2.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAddMeta();
+                      }}
+                      className="text-[9px] font-mono text-cyan-600 hover:text-cyan-800 px-1.5 py-0.5 border border-dashed border-cyan-400 rounded"
+                    >
+                      + Add Field
+                    </button>
+                  </div>
+                </div>
+
+                {/* ========================================================== */}
+                {/* 3. RECIPIENT PROFILE SECTION                               */}
+                {/* ========================================================== */}
+                <div
+                  onClick={() => {
+                    setSelectedElement({ type: "recipient", id: "recipient" });
+                    setInspectorTab("content");
+                  }}
+                  className={`group relative p-2.5 rounded-lg border transition mb-2 cursor-pointer ${
+                    selectedElement.id === "recipient"
+                      ? "ring-2 ring-cyan-500 border-cyan-400 bg-cyan-50/10"
+                      : "border-transparent hover:border-cyan-300"
+                  }`}
+                >
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                    {previewLocale === "en" ? "Billed / Prescribed To:" : "প্রাপক / গ্রাহকের তথ্য:"}
+                  </div>
+                  <div className="font-bold text-zinc-800 text-xs">
+                    {previewLocale === "en" ? "Md. Tanvir Ahmed" : "মোঃ তানভীর আহমেদ"}
+                  </div>
+                  <div className="text-[10px] text-zinc-600">
+                    {previewLocale === "en"
+                      ? "House 14, Road 5, Mirpur-10, Dhaka | Phone: +880 1819-000000"
+                      : "বাড়ি ১৪, রোড ৫, মিরপুর-১০, ঢাকা | মোবাইল: ০১৮১৯-০০০০০০"}
+                  </div>
+                </div>
+
+                {/* ========================================================== */}
+                {/* 4. DYNAMIC TABLE SECTION (REDMARKED ROWS IN SCREENSHOT!)   */}
+                {/* ========================================================== */}
+                <div
+                  onClick={() => {
+                    setSelectedElement({ type: "table", id: "table" });
+                    setInspectorTab("content");
+                  }}
+                  className={`group relative p-2 rounded-lg border transition mb-2 cursor-pointer ${
+                    selectedElement.id === "table"
+                      ? "ring-2 ring-cyan-500 border-cyan-400"
+                      : "border-transparent hover:border-cyan-300"
+                  }`}
+                >
+                  <div className="absolute -top-3 left-3 opacity-0 group-hover:opacity-100 z-20 flex items-center gap-1 bg-cyan-600 text-white px-2 py-0.5 rounded text-[9px] font-mono font-bold shadow">
+                    <span>DYNAMIC ITEMS TABLE</span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setClipboard({ type: "block", data: { tableRows } });
+                        showToast("Copied table rows to clipboard!");
+                      }}
+                      className="p-0.5 hover:text-cyan-200"
+                      title="Copy Table"
+                    >
+                      <Copy className="w-2.5 h-2.5" />
+                    </button>
+                  </div>
+
+                  <table className="w-full text-left text-[11px] border border-zinc-200">
+                    <thead className="bg-zinc-100 text-zinc-700 font-bold border-b border-zinc-200">
+                      <tr>
+                        <th className="p-2">{previewLocale === "en" ? "Item / Service Description" : "পণ্য বা সেবার বিবরণ"}</th>
+                        <th className="p-2 text-center w-14">{previewLocale === "en" ? "Qty" : "পরিমাণ"}</th>
+                        <th className="p-2 text-right w-20">{previewLocale === "en" ? "Rate" : "দর"}</th>
+                        <th className="p-2 text-right w-24">{previewLocale === "en" ? "Amount" : "টাকা"}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-200">
+                      {tableRows.map((row, rIdx) => {
+                        const isRowSelected = selectedElement.id === row.id;
+
+                        return (
+                          <tr
+                            key={row.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedElement({ type: "row", id: row.id, index: rIdx });
+                              setInspectorTab("content");
+                            }}
+                            className={`group/row relative transition cursor-pointer ${
+                              isRowSelected
+                                ? "bg-red-50/50 ring-2 ring-inset ring-red-400"
+                                : "hover:bg-cyan-50/40"
+                            }`}
+                          >
+                            <td className="p-2 relative font-sans font-medium text-zinc-900">
+                              {previewLocale === "en" ? row.nameEn : row.nameBn}
+
+                              {/* Floating Elementor Action Bar on Hovering Row */}
+                              <div className="absolute left-1 top-1/2 -translate-y-1/2 opacity-0 group-hover/row:opacity-100 bg-zinc-900 text-white rounded px-1.5 py-0.5 flex items-center gap-1.5 text-[9px] font-mono shadow-xl z-30">
+                                <button
+                                  type="button"
+                                  onClick={(e) => handleCopyRow(row, e)}
+                                  className="hover:text-cyan-400"
+                                  title="Copy Row (Ctrl+C)"
+                                >
+                                  <Copy className="w-3 h-3" />
+                                </button>
+                                {clipboard && clipboard.type === "row" && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => handlePasteRow(rIdx, e)}
+                                    className="hover:text-emerald-400"
+                                    title="Paste Row Below"
+                                  >
+                                    <ClipboardPaste className="w-3 h-3" />
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={(e) => handleDuplicateRow(rIdx, e)}
+                                  className="hover:text-amber-400"
+                                  title="Duplicate Row"
+                                >
+                                  <Plus className="w-3 h-3" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => handleDeleteRow(rIdx, e)}
+                                  className="hover:text-rose-400"
+                                  title="Delete Row"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </td>
+                            <td className="p-2 text-center font-mono text-zinc-700">
+                              {row.quantity}
+                            </td>
+                            <td className="p-2 text-right font-mono text-zinc-700">
+                              {formData.en_currency} {row.price.toLocaleString()}
+                            </td>
+                            <td className="p-2 text-right font-mono font-bold text-zinc-900">
+                              {formData.en_currency} {(row.quantity * row.price).toLocaleString()}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+
+                  {/* Add Row Button on Canvas */}
+                  <div className="mt-2 flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAddRow();
+                      }}
+                      className="flex items-center gap-1 text-[10px] font-bold text-cyan-600 hover:text-cyan-800 bg-cyan-50 hover:bg-cyan-100 border border-cyan-300 px-3 py-1 rounded-md transition"
+                    >
+                      <Plus className="w-3 h-3" /> + Add Line Item Row
+                    </button>
+                    <span className="text-[10px] font-mono text-zinc-400">
+                      {tableRows.length} item rows
+                    </span>
+                  </div>
+                </div>
+
+                {/* ========================================================== */}
+                {/* 5. TOTALS & DUE SUMMARY SECTION                            */}
+                {/* ========================================================== */}
+                <div
+                  onClick={() => {
+                    setSelectedElement({ type: "summary", id: "summary" });
+                    setInspectorTab("content");
+                  }}
+                  className={`group relative p-2.5 rounded-lg border transition mb-2 text-right cursor-pointer ${
+                    selectedElement.id === "summary"
+                      ? "ring-2 ring-cyan-500 border-cyan-400 bg-cyan-50/10"
+                      : "border-transparent hover:border-cyan-300"
+                  }`}
+                >
+                  <div className="text-[11px] space-y-1">
+                    <div className="text-zinc-600">
+                      {previewLocale === "en" ? "Subtotal:" : "মোট মূল্য:"}{" "}
+                      <span className="font-mono font-bold">{formData.en_currency} {subtotal.toLocaleString()}</span>
+                    </div>
+
+                    <div className="text-zinc-600">
+                      {previewLocale === "en" ? "Delivery Fee:" : "ডেলিভারি চার্জ:"}{" "}
+                      <span className="font-mono">+ {formData.en_currency} {deliveryCharge.toLocaleString()}</span>
+                    </div>
+
+                    <div className="text-zinc-600">
+                      {previewLocale === "en" ? "Discount:" : "বিশেষ ছাড়:"}{" "}
+                      <span className="font-mono text-emerald-600">- {formData.en_currency} {discountAmount.toLocaleString()}</span>
+                    </div>
+
+                    <div className="text-xs font-black text-zinc-900 border-t border-zinc-300 pt-1">
+                      {previewLocale === "en" ? "Net Total Due:" : "সর্বমোট বকেয়া:"}{" "}
+                      <span className="font-mono text-red-600">{formData.en_currency} {dueAmount.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ========================================================== */}
+                {/* 6. SIGNATURES & OFFICIAL SEAL SECTION                      */}
+                {/* ========================================================== */}
+                <div
+                  onClick={() => {
+                    setSelectedElement({ type: "signatory", id: "signatory" });
+                    setInspectorTab("content");
+                  }}
+                  className={`group relative pt-6 pb-2 px-2 flex justify-between items-end border rounded-lg transition cursor-pointer ${
+                    selectedElement.id === "signatory"
+                      ? "ring-2 ring-cyan-500 border-cyan-400"
+                      : "border-transparent hover:border-cyan-300"
+                  }`}
+                >
+                  <div className="text-center w-36 border-t border-zinc-400 pt-1 text-[10px] text-zinc-700 font-bold">
+                    {previewLocale === "en" ? "Customer Signature" : "গ্রাহকের স্বাক্ষর"}
+                  </div>
+                  <div className="text-center w-40 border-t border-zinc-900 pt-1 text-[10px] text-zinc-900 font-bold">
+                    {previewLocale === "en" ? formData.en_signatory : formData.bn_signatory}
+                  </div>
+                </div>
+
+                {/* ========================================================== */}
+                {/* 7. TERMS & NOTES SECTION                                   */}
+                {/* ========================================================== */}
+                <div
+                  onClick={() => {
+                    setSelectedElement({ type: "terms", id: "terms" });
+                    setInspectorTab("content");
+                  }}
+                  className={`text-[9px] text-zinc-500 italic pt-2 border-t border-zinc-200 mt-2 p-1.5 rounded transition cursor-pointer ${
+                    selectedElement.id === "terms"
+                      ? "ring-2 ring-cyan-500 bg-cyan-50/10"
+                      : "hover:bg-cyan-50/5"
+                  }`}
+                >
+                  * {previewLocale === "en"
+                    ? "Thank you for doing business with us! For warranty, please preserve this document slip."
+                    : "আমাদের সেবা গ্রহণ করার জন্য আপনাকে ধন্যবাদ। ওয়ারেন্টির প্রয়োজনে অনুগ্রহ করে এই রসিদটি সংরক্ষণ করুন।"}
+                </div>
               </div>
             </main>
 
             {/* ============================================================== */}
-            {/* COLUMN 3: BLOCK & STYLE INSPECTOR (RIGHT PANEL - 320px)       */}
+            {/* COLUMN 3: ELEMENTOR 3-TAB INSPECTOR (RIGHT PANEL - 320px)      */}
             {/* ============================================================== */}
             <aside className="w-80 bg-zinc-900 border-l border-zinc-800 flex flex-col shrink-0 select-none">
-              {/* Inspector Top Tabs */}
+              {/* Elementor Tabs Header */}
               <div className="flex border-b border-zinc-800">
                 <button
                   type="button"
-                  onClick={() => setInspectorTab("block")}
+                  onClick={() => setInspectorTab("content")}
                   className={`flex-1 py-3 text-xs font-bold transition flex items-center justify-center gap-1.5 border-b-2 cursor-pointer ${
-                    inspectorTab === "block"
-                      ? "border-red-500 text-white bg-zinc-850"
+                    inspectorTab === "content"
+                      ? "border-cyan-400 text-white bg-zinc-850"
                       : "border-transparent text-zinc-400 hover:text-white"
                   }`}
                 >
-                  <Sliders className="w-3.5 h-3.5 text-amber-400" /> Block Properties
+                  <Sliders className="w-3.5 h-3.5 text-cyan-400" /> Content
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setInspectorTab("style")}
+                  className={`flex-1 py-3 text-xs font-bold transition flex items-center justify-center gap-1.5 border-b-2 cursor-pointer ${
+                    inspectorTab === "style"
+                      ? "border-amber-400 text-white bg-zinc-850"
+                      : "border-transparent text-zinc-400 hover:text-white"
+                  }`}
+                >
+                  <Palette className="w-3.5 h-3.5 text-amber-400" /> Style
                 </button>
                 <button
                   type="button"
@@ -1685,171 +2130,321 @@ export default function AdminTemplatesManagerPage() {
                       : "border-transparent text-zinc-400 hover:text-white"
                   }`}
                 >
-                  <Globe className="w-3.5 h-3.5 text-blue-400" /> Template Meta
+                  <Globe className="w-3.5 h-3.5 text-red-400" /> Template Meta
                 </button>
               </div>
 
-              {/* Inspector Body */}
+              {/* Inspector Content */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {/* 1. BLOCK INSPECTOR TAB */}
-                {inspectorTab === "block" && activeSelectedBlock && (
+                {/* TAB 1: CONTENT TAB */}
+                {inspectorTab === "content" && (
                   <div className="space-y-4">
-                    <div className="bg-zinc-950 p-3 rounded-xl border border-zinc-800 flex items-center justify-between">
+                    {/* Active Selected Element Pill */}
+                    <div className="bg-zinc-950 p-2.5 rounded-xl border border-zinc-800 flex items-center justify-between">
                       <div>
-                        <div className="text-[10px] font-mono uppercase text-zinc-500">Selected Block #{selectedBlockIndex + 1}</div>
-                        <div className="text-xs font-bold text-white">{activeSelectedBlock.titleEn}</div>
+                        <div className="text-[9px] font-mono uppercase text-zinc-500">Active Element</div>
+                        <div className="text-xs font-bold text-cyan-400 capitalize">
+                          {selectedElement.type}: {selectedElement.id}
+                        </div>
                       </div>
+                      <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 border border-emerald-800 px-2 py-0.5 rounded">
+                        Live Editable
+                      </span>
+                    </div>
+
+                    {/* Content Editor based on Selected Element */}
+                    {/* A. If Selected Element is a TABLE ROW */}
+                    {selectedElement.type === "row" && (
+                      <div className="space-y-3 bg-zinc-950 p-3 rounded-xl border border-zinc-800">
+                        <div className="text-[10px] font-mono uppercase text-zinc-400">Row Line Item Properties</div>
+
+                        {(() => {
+                          const row = tableRows[selectedElement.index || 0];
+                          if (!row) return null;
+
+                          return (
+                            <>
+                              <div>
+                                <label className="block text-[11px] font-semibold text-zinc-300 mb-1">
+                                  Item Name (English)
+                                </label>
+                                <input
+                                  type="text"
+                                  value={row.nameEn}
+                                  onChange={(e) => {
+                                    const updated = [...tableRows];
+                                    updated[selectedElement.index || 0].nameEn = e.target.value;
+                                    setTableRows(updated);
+                                  }}
+                                  className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-400"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-[11px] font-semibold text-emerald-400 mb-1">
+                                  পণ্যের নাম (Bangla - Mandatory)
+                                </label>
+                                <input
+                                  type="text"
+                                  value={row.nameBn}
+                                  onChange={(e) => {
+                                    const updated = [...tableRows];
+                                    updated[selectedElement.index || 0].nameBn = e.target.value;
+                                    setTableRows(updated);
+                                  }}
+                                  className="w-full bg-zinc-900 border border-emerald-900/60 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+                                />
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <label className="block text-[10px] font-mono text-zinc-400 mb-1">Quantity</label>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    value={row.quantity}
+                                    onChange={(e) => {
+                                      const updated = [...tableRows];
+                                      updated[selectedElement.index || 0].quantity = Number(e.target.value) || 1;
+                                      setTableRows(updated);
+                                    }}
+                                    className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] font-mono text-zinc-400 mb-1">Unit Rate ({formData.en_currency})</label>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={row.price}
+                                    onChange={(e) => {
+                                      const updated = [...tableRows];
+                                      updated[selectedElement.index || 0].price = Number(e.target.value) || 0;
+                                      setTableRows(updated);
+                                    }}
+                                    className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white"
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="pt-2 flex items-center justify-between border-t border-zinc-800">
+                                <span className="text-[10px] font-mono text-zinc-400">
+                                  Total: <strong>{formData.en_currency} {(row.quantity * row.price).toLocaleString()}</strong>
+                                </span>
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => handleCopyRow(row, e)}
+                                    className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-2 py-1 rounded text-[10px] transition cursor-pointer"
+                                  >
+                                    Copy
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => handleDuplicateRow(selectedElement.index || 0, e)}
+                                    className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-2 py-1 rounded text-[10px] transition cursor-pointer"
+                                  >
+                                    Duplicate
+                                  </button>
+                                </div>
+                              </div>
+                            </>
+                          );
+                        })()}
+                      </div>
+                    )}
+
+                    {/* B. If Selected Element is a META ITEM */}
+                    {selectedElement.type === "meta" && (
+                      <div className="space-y-3 bg-zinc-950 p-3 rounded-xl border border-zinc-800">
+                        <div className="text-[10px] font-mono uppercase text-zinc-400">Document Meta Item</div>
+
+                        {(() => {
+                          const meta = metaItems[selectedElement.index || 0];
+                          if (!meta) return null;
+
+                          return (
+                            <>
+                              <div>
+                                <label className="block text-[11px] font-semibold text-zinc-300 mb-1">
+                                  Label (English)
+                                </label>
+                                <input
+                                  type="text"
+                                  value={meta.labelEn}
+                                  onChange={(e) => {
+                                    const updated = [...metaItems];
+                                    updated[selectedElement.index || 0].labelEn = e.target.value;
+                                    setMetaItems(updated);
+                                  }}
+                                  className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-[11px] font-semibold text-emerald-400 mb-1">
+                                  লেবেল (Bangla)
+                                </label>
+                                <input
+                                  type="text"
+                                  value={meta.labelBn}
+                                  onChange={(e) => {
+                                    const updated = [...metaItems];
+                                    updated[selectedElement.index || 0].labelBn = e.target.value;
+                                    setMetaItems(updated);
+                                  }}
+                                  className="w-full bg-zinc-900 border border-emerald-900/60 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-[11px] font-semibold text-zinc-300 mb-1">
+                                  Default Value (English)
+                                </label>
+                                <input
+                                  type="text"
+                                  value={meta.valueEn}
+                                  onChange={(e) => {
+                                    const updated = [...metaItems];
+                                    updated[selectedElement.index || 0].valueEn = e.target.value;
+                                    setMetaItems(updated);
+                                  }}
+                                  className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono focus:outline-none"
+                                />
+                              </div>
+                            </>
+                          );
+                        })()}
+                      </div>
+                    )}
+
+                    {/* C. If Selected Element is HEADER or CONTACT */}
+                    {(selectedElement.type === "header" || selectedElement.type === "contact") && (
+                      <div className="space-y-3 bg-zinc-950 p-3 rounded-xl border border-zinc-800">
+                        <div className="text-[10px] font-mono uppercase text-zinc-400">Header & Branding Details</div>
+
+                        <div>
+                          <label className="block text-[11px] font-semibold text-zinc-300 mb-1">
+                            Business Name (English)
+                          </label>
+                          <input
+                            type="text"
+                            value={businessNameEn}
+                            onChange={(e) => setBusinessNameEn(e.target.value)}
+                            className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-400"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-semibold text-emerald-400 mb-1">
+                            প্রতিষ্ঠানের নাম (Bangla)
+                          </label>
+                          <input
+                            type="text"
+                            value={businessNameBn}
+                            onChange={(e) => setBusinessNameBn(e.target.value)}
+                            className="w-full bg-zinc-900 border border-emerald-900/60 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-semibold text-zinc-300 mb-1">
+                            Tagline / Motto
+                          </label>
+                          <input
+                            type="text"
+                            value={taglineEn}
+                            onChange={(e) => setTaglineEn(e.target.value)}
+                            className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* D. If Selected Element is SUMMARY */}
+                    {selectedElement.type === "summary" && (
+                      <div className="space-y-3 bg-zinc-950 p-3 rounded-xl border border-zinc-800">
+                        <div className="text-[10px] font-mono uppercase text-zinc-400">Financial Summary Controls</div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-[10px] font-mono text-zinc-400 mb-1">Delivery Charge</label>
+                            <input
+                              type="number"
+                              value={deliveryCharge}
+                              onChange={(e) => setDeliveryCharge(Number(e.target.value) || 0)}
+                              className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-mono text-zinc-400 mb-1">Discount Amount</label>
+                            <input
+                              type="number"
+                              value={discountAmount}
+                              onChange={(e) => setDiscountAmount(Number(e.target.value) || 0)}
+                              className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="p-2 rounded bg-zinc-900 border border-zinc-800 text-xs text-zinc-300 font-mono space-y-1">
+                          <div className="flex justify-between">
+                            <span>Subtotal:</span>
+                            <span>{formData.en_currency} {subtotal.toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between font-bold text-red-400">
+                            <span>Net Total:</span>
+                            <span>{formData.en_currency} {netTotal.toLocaleString()}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* TAB 2: STYLE TAB */}
+                {inspectorTab === "style" && (
+                  <div className="space-y-3">
+                    <div className="text-[10px] font-mono uppercase text-zinc-400">Document Visual Theme</div>
+                    <div className="grid grid-cols-2 gap-2">
                       <button
                         type="button"
-                        onClick={() => toggleBlockEnabled(selectedBlockIndex)}
-                        className={`px-2 py-1 rounded-lg text-[10px] font-mono font-bold transition cursor-pointer border ${
-                          activeSelectedBlock.enabled
-                            ? "bg-emerald-950/80 text-emerald-400 border-emerald-800"
-                            : "bg-zinc-800 text-zinc-500 border-zinc-700"
-                        }`}
+                        className="p-2 rounded-xl bg-zinc-950 border border-red-500 text-white text-xs font-bold text-left"
                       >
-                        {activeSelectedBlock.enabled ? "Active" : "Disabled"}
+                        Modern Blue
+                      </button>
+                      <button
+                        type="button"
+                        className="p-2 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-white text-xs font-bold text-left"
+                      >
+                        Clinical Teal
+                      </button>
+                      <button
+                        type="button"
+                        className="p-2 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-white text-xs font-bold text-left"
+                      >
+                        Luxury Gold
+                      </button>
+                      <button
+                        type="button"
+                        className="p-2 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-white text-xs font-bold text-left"
+                      >
+                        Thermal POS
                       </button>
                     </div>
 
-                    {/* Block Title (English) */}
-                    <div>
-                      <label className="block text-[11px] font-bold text-zinc-300 mb-1">
-                        Block Title (English)
-                      </label>
-                      <input
-                        type="text"
-                        value={activeSelectedBlock.titleEn}
-                        onChange={(e) => {
-                          const updated = [...templateBlocks];
-                          updated[selectedBlockIndex].titleEn = e.target.value;
-                          setTemplateBlocks(updated);
-                        }}
-                        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-red-500"
-                      />
-                    </div>
-
-                    {/* Block Title (Bangla - Mandatory) */}
-                    <div>
-                      <label className="block text-[11px] font-bold text-emerald-400 mb-1 flex items-center justify-between">
-                        <span>বাংলা শিরোনাম (Bangla Title)</span>
-                        <span className="text-[9px] font-mono text-zinc-500">*বাধ্যতামূলক</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={activeSelectedBlock.titleBn}
-                        onChange={(e) => {
-                          const updated = [...templateBlocks];
-                          updated[selectedBlockIndex].titleBn = e.target.value;
-                          setTemplateBlocks(updated);
-                        }}
-                        className="w-full bg-zinc-950 border border-emerald-900/60 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500"
-                      />
-                    </div>
-
-                    {/* Block Options / Feature Toggles */}
-                    <div className="space-y-2 pt-2 border-t border-zinc-800">
-                      <div className="text-[10px] font-mono uppercase text-zinc-500">Block Configuration Toggles</div>
-
-                      {activeSelectedBlock.type === "header" && (
-                        <div className="space-y-2">
-                          <label className="flex items-center justify-between text-xs text-zinc-300 cursor-pointer">
-                            <span>Show Business Logo</span>
-                            <input
-                              type="checkbox"
-                              checked={Boolean(activeSelectedBlock.options?.showLogo)}
-                              onChange={(e) => {
-                                const updated = [...templateBlocks];
-                                updated[selectedBlockIndex].options = {
-                                  ...updated[selectedBlockIndex].options,
-                                  showLogo: e.target.checked,
-                                };
-                                setTemplateBlocks(updated);
-                              }}
-                              className="rounded text-red-600 focus:ring-0"
-                            />
-                          </label>
-                          <label className="flex items-center justify-between text-xs text-zinc-300 cursor-pointer">
-                            <span>Show Contact & Phone</span>
-                            <input
-                              type="checkbox"
-                              checked={Boolean(activeSelectedBlock.options?.showContact)}
-                              onChange={(e) => {
-                                const updated = [...templateBlocks];
-                                updated[selectedBlockIndex].options = {
-                                  ...updated[selectedBlockIndex].options,
-                                  showContact: e.target.checked,
-                                };
-                                setTemplateBlocks(updated);
-                              }}
-                              className="rounded text-red-600 focus:ring-0"
-                            />
-                          </label>
-                        </div>
-                      )}
-
-                      {activeSelectedBlock.type === "summary" && (
-                        <div className="space-y-2">
-                          <label className="flex items-center justify-between text-xs text-zinc-300 cursor-pointer">
-                            <span>Show Delivery Fee</span>
-                            <input
-                              type="checkbox"
-                              checked={Boolean(activeSelectedBlock.options?.showDelivery)}
-                              onChange={(e) => {
-                                const updated = [...templateBlocks];
-                                updated[selectedBlockIndex].options = {
-                                  ...updated[selectedBlockIndex].options,
-                                  showDelivery: e.target.checked,
-                                };
-                                setTemplateBlocks(updated);
-                              }}
-                              className="rounded text-red-600 focus:ring-0"
-                            />
-                          </label>
-                          <label className="flex items-center justify-between text-xs text-zinc-300 cursor-pointer">
-                            <span>Show Special Discount</span>
-                            <input
-                              type="checkbox"
-                              checked={Boolean(activeSelectedBlock.options?.showDiscount)}
-                              onChange={(e) => {
-                                const updated = [...templateBlocks];
-                                updated[selectedBlockIndex].options = {
-                                  ...updated[selectedBlockIndex].options,
-                                  showDiscount: e.target.checked,
-                                };
-                                setTemplateBlocks(updated);
-                              }}
-                              className="rounded text-red-600 focus:ring-0"
-                            />
-                          </label>
-                        </div>
-                      )}
-
-                      {activeSelectedBlock.type === "signatory" && (
-                        <div className="space-y-2">
-                          <label className="flex items-center justify-between text-xs text-zinc-300 cursor-pointer">
-                            <span>Show Official Stamp Seal</span>
-                            <input
-                              type="checkbox"
-                              checked={Boolean(activeSelectedBlock.options?.showSeal)}
-                              onChange={(e) => {
-                                const updated = [...templateBlocks];
-                                updated[selectedBlockIndex].options = {
-                                  ...updated[selectedBlockIndex].options,
-                                  showSeal: e.target.checked,
-                                };
-                                setTemplateBlocks(updated);
-                              }}
-                              className="rounded text-red-600 focus:ring-0"
-                            />
-                          </label>
-                        </div>
-                      )}
+                    <div className="pt-2 border-t border-zinc-800 space-y-2">
+                      <div className="text-[10px] font-mono uppercase text-zinc-400">Typography Scale</div>
+                      <select className="w-full text-xs bg-zinc-950 border border-zinc-800 rounded-lg p-2 text-white">
+                        <option>Standard Editorial (12px Body)</option>
+                        <option>Compact Accounting (10px)</option>
+                        <option>Large Print (14px)</option>
+                      </select>
                     </div>
                   </div>
                 )}
 
-                {/* 2. TEMPLATE META INSPECTOR TAB */}
+                {/* TAB 3: TEMPLATE META TAB */}
                 {inspectorTab === "meta" && (
                   <div className="space-y-3">
                     <div>
@@ -1883,7 +2478,6 @@ export default function AdminTemplatesManagerPage() {
                       </select>
                     </div>
 
-                    {/* Dual-Locale Title & Description */}
                     <div className="space-y-3 pt-2 border-t border-zinc-800">
                       <div>
                         <label className="block text-xs font-bold text-zinc-300 mb-1">

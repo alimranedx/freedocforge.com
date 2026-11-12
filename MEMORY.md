@@ -156,6 +156,27 @@
      * `npx tsc --noEmit` verified with 0 errors.
      * `npm run build` verified: All 74 routes compiled with Exit code 0.
 
+### N. Elementor-Grade Dynamic CMS Editor with Element-Level Edit, Copy, Paste, Duplicate & History
+* **Resolved User Request:** "edit , copy , past those readmarked element also. Think about elementor editor and make a most dynamic editor . Think about a senior Wordpress elementor editor . I want a most user firendly editor . Any user can edit that and make a teplate as he wants. think step by step and make a plan first. Then implement . No need to take perission from me . I belive you will provide me a best editor thats I will be appretiate properly. Implement and thing about design and user friendly also."
+* **Architectural Modules Engineered:**
+  1. **Element-Level Dynamic Interactivity (`src/app/admin/(dashboard)/templates/page.tsx`):**
+     * **Redmarked Header Elements:** Business title, tagline, phone, address, and license codes are dynamically editable, copyable, pastable, and duplicable.
+     * **Redmarked Document Meta Items:** Serial/invoice numbers, dates, courier partners, and custom fields have floating element-level action toolbars (Copy, Paste Below, Duplicate, Delete) with live two-way data binding.
+     * **Redmarked Itemized Table Rows:** Repeater table rows featuring direct inline quantity and price math with real-time recalculation of line totals (`Qty * Rate`), subtotal, and net balance due. Each row features a floating mini-action toolbar (Copy, Paste Below, Duplicate, Delete).
+     * **`+ Add Line Item Row`, `+ Add Doc Meta Field`, and `+ Add Header Contact`:** 1-click element adders on canvas and palette.
+  2. **CMS Clipboard & Undo/Redo Engine:**
+     * **Internal Clipboard:** Global copy/paste state supporting cross-element clipboard operations with instant toast notifications.
+     * **History Stack (Undo / Redo):** 25-state snapshot stack with `Ctrl+Z` and `Ctrl+Y` keyboard shortcuts and top bar action buttons.
+  3. **Elementor 3-Tab Inspector (Content, Style, Meta):**
+     * **Content Tab:** Adapts dynamically to whichever child element or block is selected (Row, Meta Tag, Contact, Header, Summary, Signatory). Enforces mandatory Bangla (`বাংলা`) parity for every field.
+     * **Style Tab:** Visual typography scales (Editorial, Compact, Large), design theme presets (Modern Blue, Clinical Teal, Luxury Gold, Thermal POS), and text alignment.
+     * **Meta Tab:** URL slug validation, category switcher, and currency settings.
+  4. **Backend Dynamic Schema Sanitization (`src/app/api/admin/templates/route.ts`):**
+     * `sanitizeDefaultData()` recursively cleans all line item names, quantities, unit prices, contacts, and meta items to neutralize XSS vectors while preserving full dynamic template state.
+  5. **Verification & Build:**
+     * `npx tsc --noEmit` verified with 0 errors.
+     * `npm run build` verified: All 74 routes compiled with Exit code 0.
+
 ---
 
 ## 3. Where You Should Start Next (Actionable Roadmap)

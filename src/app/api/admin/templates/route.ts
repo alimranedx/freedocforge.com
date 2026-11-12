@@ -73,6 +73,81 @@ function sanitizeText(val: any, maxLength = 500): string {
   return cleaned.slice(0, maxLength);
 }
 
+// Security: Sanitize line items inside dynamic tables
+function sanitizeLineItems(rawItems: any[]): Array<{ name: string; quantity: number; price: number; unit?: string }> {
+  if (!Array.isArray(rawItems) || rawItems.length === 0) {
+    return [
+      { name: "Premium Formal Cotton Shirt", quantity: 2, price: 1250 },
+      { name: "Standard Consultation / Service Fee", quantity: 1, price: 500 },
+    ];
+  }
+  return rawItems.slice(0, 50).map((it, idx) => ({
+    name: sanitizeText(it?.name || `Item ${idx + 1}`, 100),
+    quantity: Math.max(1, Math.min(999999, Number(it?.quantity) || 1)),
+    price: Math.max(0, Math.min(99999999, Number(it?.price) || 0)),
+    unit: it?.unit ? sanitizeText(it.unit, 20) : undefined,
+  }));
+}
+
+// Security: Sanitize full dynamic template data
+function sanitizeDefaultData(raw: any, fallbackTitle: string, currency: string, isBangla = false) {
+  if (!raw || typeof raw !== "object") {
+    return {
+      businessName: fallbackTitle,
+      tagline: isBangla ? "গুণগত মানসম্পন্ন সেবা ও দ্রুততম ডেলিভারি" : "Quality Products & Diagnostic Services",
+      phone: isBangla ? "০১৭১২-০০০০০০" : "+880 1712-000000",
+      address: isBangla ? "ঢাকা - ১২০৫, বাংলাদেশ" : "Dhaka - 1205, Bangladesh",
+      invoiceNumber: isBangla ? "মেমো-০০১" : "INV-001",
+      date: new Date().toISOString().split("T")[0],
+      courierPartner: "Steadfast Courier",
+      customerName: isBangla ? "মোঃ তানভীর আহমেদ" : "Md. Tanvir Ahmed",
+      customerPhone: "+880 1819-000000",
+      customerAddress: isBangla ? "মিরপুর-১০, ঢাকা" : "Mirpur-10, Dhaka",
+      currency: currency || "৳",
+      items: sanitizeLineItems([]),
+      deliveryCharge: 60,
+      discount: 0,
+      paidAmount: 0,
+      notes: isBangla ? "আমাদের সেবা গ্রহণ করার জন্য আপনাকে ধন্যবাদ।" : "Thank you for doing business with us.",
+      signatoryTitle: isBangla ? "অনুমোদিত স্বাক্ষর" : "Authorized Signature",
+    };
+  }
+
+  return {
+    businessName: sanitizeText(raw.businessName || fallbackTitle, 120),
+    tagline: sanitizeText(raw.tagline || "", 150),
+    phone: sanitizeText(raw.phone || "", 60),
+    address: sanitizeText(raw.address || "", 200),
+    invoiceNumber: sanitizeText(raw.invoiceNumber || (isBangla ? "মেমো-০০১" : "INV-001"), 60),
+    date: sanitizeText(raw.date || new Date().toISOString().split("T")[0], 40),
+    courierPartner: sanitizeText(raw.courierPartner || "Steadfast Courier", 60),
+    customerName: sanitizeText(raw.customerName || (isBangla ? "মোঃ তানভীর আহমেদ" : "Md. Tanvir Ahmed"), 100),
+    customerPhone: sanitizeText(raw.customerPhone || "+880 1819-000000", 60),
+    customerAddress: sanitizeText(raw.customerAddress || (isBangla ? "মিরপুর-১০, ঢাকা" : "Mirpur-10, Dhaka"), 200),
+    currency: sanitizeText(raw.currency || currency || "৳", 10),
+    items: sanitizeLineItems(raw.items),
+    deliveryCharge: Math.max(0, Math.min(999999, Number(raw.deliveryCharge) || 0)),
+    discount: Math.max(0, Math.min(999999, Number(raw.discount) || 0)),
+    paidAmount: Math.max(0, Math.min(99999999, Number(raw.paidAmount) || 0)),
+    notes: sanitizeText(raw.notes || "", 300),
+    signatoryTitle: sanitizeText(raw.signatoryTitle || (isBangla ? "অনুমোদিত স্বাক্ষর" : "Authorized Signature"), 60),
+    contacts: Array.isArray(raw.contacts)
+      ? raw.contacts.slice(0, 10).map((c: any) => ({
+          id: sanitizeText(c?.id || "", 40),
+          label: sanitizeText(c?.label || "", 40),
+          value: sanitizeText(c?.value || "", 100),
+        }))
+      : undefined,
+    metaItems: Array.isArray(raw.metaItems)
+      ? raw.metaItems.slice(0, 10).map((m: any) => ({
+          id: sanitizeText(m?.id || "", 40),
+          label: sanitizeText(m?.label || "", 40),
+          value: sanitizeText(m?.value || "", 100),
+        }))
+      : undefined,
+  };
+}
+
 // Security: Validate and sanitize blocks
 function sanitizeBlocks(rawBlocks: any[]): TemplateBlock[] {
   if (!Array.isArray(rawBlocks)) return DEFAULT_TEMPLATE_BLOCKS;
@@ -447,6 +522,20 @@ export async function POST(req: Request) {
       },
     });
 
+    // Sanitize dynamic defaultData for English & Bangla
+    const defaultDataEn = sanitizeDefaultData(
+      body.defaultDataEn || body.defaultData || body.locales?.en?.defaultData,
+      enTitle,
+      enCurrency,
+      false
+    );
+    const defaultDataBn = sanitizeDefaultData(
+      body.defaultDataBn || body.locales?.bn?.defaultData,
+      bnTitle,
+      bnCurrency,
+      true
+    );
+
     // Create custom template
     const newTemplate = await prisma.template.create({
       data: {
@@ -462,58 +551,19 @@ export async function POST(req: Request) {
           blocks,
           paperSize,
           category: categoryName,
-          defaultData: {
-            businessName: enTitle,
-            invoiceNumber: "INV-001",
-            date: new Date().toISOString().split("T")[0],
-            currency: enCurrency,
-            items: [
-              { name: "Sample Service or Item 01", quantity: 1, price: 1000 },
-              { name: "Sample Service or Item 02", quantity: 2, price: 500 },
-            ],
-            signatoryTitle: enSignatory,
-            deliveryCharge: 60,
-            discount: 0,
-            notes: "Thank you for doing business with us.",
-          },
+          defaultData: defaultDataEn,
           locales: {
             en: {
               title: enTitle,
               description: enDescription,
               badge: "Admin Custom Template",
-              defaultData: {
-                businessName: enTitle,
-                invoiceNumber: "INV-001",
-                date: new Date().toISOString().split("T")[0],
-                currency: enCurrency,
-                items: [
-                  { name: "Sample Service or Item 01", quantity: 1, price: 1000 },
-                  { name: "Sample Service or Item 02", quantity: 2, price: 500 },
-                ],
-                signatoryTitle: enSignatory,
-                deliveryCharge: 60,
-                discount: 0,
-                notes: "Thank you for doing business with us.",
-              },
+              defaultData: defaultDataEn,
             },
             bn: {
               title: bnTitle,
               description: bnDescription,
               badge: "কাস্টম এডমিন টেমপ্লেট",
-              defaultData: {
-                businessName: bnTitle,
-                invoiceNumber: "মেমো-০০১",
-                date: new Date().toLocaleDateString("bn-BD"),
-                currency: bnCurrency,
-                items: [
-                  { name: "নমুনা পণ্য বা সেবা ০১", quantity: 1, price: 1000 },
-                  { name: "নমুনা পণ্য বা সেবা ০২", quantity: 2, price: 500 },
-                ],
-                signatoryTitle: bnSignatory,
-                deliveryCharge: 60,
-                discount: 0,
-                notes: "আমাদের সেবা গ্রহণ করার জন্য আপনাকে ধন্যবাদ।",
-              },
+              defaultData: defaultDataBn,
             },
           },
         } as any,
@@ -579,6 +629,21 @@ export async function PUT(req: Request) {
     }
 
     const blocks = sanitizeBlocks(body.blocks || (existing.fieldSchema as any)?.blocks || DEFAULT_TEMPLATE_BLOCKS);
+    const enCurrency = sanitizeText(body.en_currency || "৳", 10);
+    const bnCurrency = sanitizeText(body.bn_currency || "৳", 10);
+
+    const defaultDataEn = sanitizeDefaultData(
+      body.defaultDataEn || body.defaultData || (existing.fieldSchema as any)?.defaultData || (existing.fieldSchema as any)?.locales?.en?.defaultData,
+      enTitle,
+      enCurrency,
+      false
+    );
+    const defaultDataBn = sanitizeDefaultData(
+      body.defaultDataBn || (existing.fieldSchema as any)?.locales?.bn?.defaultData,
+      bnTitle,
+      bnCurrency,
+      true
+    );
 
     const updated = await prisma.template.update({
       where: { id: existing.id },
@@ -588,18 +653,19 @@ export async function PUT(req: Request) {
         paperSize: body.paperSize === "POS_80MM" ? "POS_80MM" : "A4",
         fieldSchema: {
           blocks,
+          defaultData: defaultDataEn,
           locales: {
             en: {
               title: enTitle,
               description: enDescription,
               badge: "Admin Custom Template",
-              defaultData: body.defaultDataEn || (existing.fieldSchema as any)?.locales?.en?.defaultData,
+              defaultData: defaultDataEn,
             },
             bn: {
               title: bnTitle,
               description: bnDescription,
               badge: "কাস্টম এডমিন টেমপ্লেট",
-              defaultData: body.defaultDataBn || (existing.fieldSchema as any)?.locales?.bn?.defaultData,
+              defaultData: defaultDataBn,
             },
           },
         } as any,
