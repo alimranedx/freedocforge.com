@@ -16,6 +16,106 @@ export interface TemplateBlock {
   options?: Record<string, any>;
 }
 
+// Allowed component types in the Smart CMS
+export const ALLOWED_BLOCK_TYPES = [
+  "header",
+  "meta",
+  "recipient",
+  "table",
+  "summary",
+  "signatory",
+  "terms",
+  "callout",
+  "qrcode",
+  "custom",
+];
+
+// Reserved slugs to prevent URL hijacking and prototype pollution
+const RESERVED_SLUGS = new Set([
+  "api",
+  "admin",
+  "login",
+  "register",
+  "dashboard",
+  "templates",
+  "auth",
+  "profile",
+  "contact",
+  "about",
+  "privacy",
+  "terms",
+  "sitemap",
+  "robots",
+  "ads",
+  "null",
+  "undefined",
+  "__proto__",
+  "constructor",
+  "settings",
+  "history",
+  "users",
+  "documents",
+]);
+
+// Security: Strip dangerous script and HTML tags to prevent stored XSS
+function sanitizeText(val: any, maxLength = 500): string {
+  if (typeof val !== "string") return "";
+  const cleaned = val
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+    .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, "")
+    .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, "")
+    .replace(/<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi, "")
+    .replace(/javascript:/gi, "")
+    .replace(/onerror\s*=/gi, "")
+    .replace(/onload\s*=/gi, "")
+    .replace(/onclick\s*=/gi, "")
+    .trim();
+  return cleaned.slice(0, maxLength);
+}
+
+// Security: Validate and sanitize blocks
+function sanitizeBlocks(rawBlocks: any[]): TemplateBlock[] {
+  if (!Array.isArray(rawBlocks)) return DEFAULT_TEMPLATE_BLOCKS;
+
+  // Max 30 blocks per template to prevent DoS via massive payloads
+  const sliced = rawBlocks.slice(0, 30);
+
+  return sliced.map((b, index) => {
+    const rawType = typeof b.type === "string" ? b.type.toLowerCase().trim() : "custom";
+    const type = ALLOWED_BLOCK_TYPES.includes(rawType) ? rawType : "custom";
+    const id = typeof b.id === "string" ? b.id.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 50) : `block_${index}`;
+
+    const titleEn = sanitizeText(b.titleEn || "Custom Block", 80);
+    const titleBn = sanitizeText(b.titleBn || "কাস্টম সেকশন", 80);
+    const descriptionEn = sanitizeText(b.descriptionEn || "", 200);
+    const descriptionBn = sanitizeText(b.descriptionBn || "", 200);
+
+    const safeOptions: Record<string, any> = {};
+    if (b.options && typeof b.options === "object" && !Array.isArray(b.options)) {
+      for (const [k, v] of Object.entries(b.options)) {
+        const safeKey = k.replace(/[^a-zA-Z0-9_]/g, "").slice(0, 30);
+        if (typeof v === "boolean" || typeof v === "number") {
+          safeOptions[safeKey] = v;
+        } else if (typeof v === "string") {
+          safeOptions[safeKey] = sanitizeText(v, 200);
+        }
+      }
+    }
+
+    return {
+      id,
+      type,
+      titleEn,
+      titleBn,
+      enabled: Boolean(b.enabled !== false),
+      order: index,
+      descriptionEn,
+      descriptionBn,
+      options: safeOptions,
+    };
+  });
+}
+
 export const DEFAULT_TEMPLATE_BLOCKS: TemplateBlock[] = [
   {
     id: "header",
@@ -26,7 +126,7 @@ export const DEFAULT_TEMPLATE_BLOCKS: TemplateBlock[] = [
     order: 0,
     descriptionEn: "Business/Institute name, logo, phone, address, and license/BIN",
     descriptionBn: "প্রতিষ্ঠান বা ক্লিনিকের নাম, লোগো, ফোন নম্বর, ঠিকানা ও বিআইএন",
-    options: { showLogo: true, showTagline: true, showContact: true, showTaxId: false },
+    options: { showLogo: true, showTagline: true, showContact: true, showTaxId: false, headerTheme: "modern" },
   },
   {
     id: "meta",
@@ -59,7 +159,7 @@ export const DEFAULT_TEMPLATE_BLOCKS: TemplateBlock[] = [
     order: 3,
     descriptionEn: "Line items table with quantity, unit price, and calculated amount",
     descriptionBn: "পণ্য বা সেবার তালিকা, পরিমাণ, একক মূল্য এবং মোট টাকা",
-    options: { showQuantity: true, showUnitPrice: true, showItemCode: false },
+    options: { showQuantity: true, showUnitPrice: true, showItemCode: false, tableTheme: "bordered" },
   },
   {
     id: "summary",
@@ -134,13 +234,13 @@ export async function GET(req: Request) {
         slug: t.slug,
         title: t.title,
         description: t.description || "",
-        category: (t.category.name as any) || "Business",
+        category: (t.category?.name as any) || "Business",
         paperSize: (t.paperSize as any) || "A4",
         badge: t.isFeatured ? "Featured" : "Custom Template",
         isCustom: true,
-        blocks: fieldSchema.blocks || DEFAULT_TEMPLATE_BLOCKS,
+        blocks: sanitizeBlocks(fieldSchema.blocks || DEFAULT_TEMPLATE_BLOCKS),
         defaultData: fieldSchema.locales?.en?.defaultData || fieldSchema.defaultData || {
-          businessName: "Sample Business",
+          businessName: t.title,
           currency: "৳",
           items: [{ name: "Sample Item", quantity: 1, price: 100 }],
         },
@@ -150,7 +250,7 @@ export async function GET(req: Request) {
             description: t.description || "",
             badge: "English Edition",
             defaultData: {
-              businessName: "Sample Business",
+              businessName: t.title,
               currency: "৳",
               items: [{ name: "Sample Item", quantity: 1, price: 100 }],
             },
@@ -160,7 +260,7 @@ export async function GET(req: Request) {
             description: t.description || "",
             badge: "বাংলা সংস্করণ",
             defaultData: {
-              businessName: "নমুনা প্রতিষ্ঠান",
+              businessName: t.title,
               currency: "৳",
               items: [{ name: "নমুনা পণ্য", quantity: 1, price: 100 }],
             },
@@ -280,27 +380,33 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    // 1. Strict Server-Side Validation
-    const slug = (body.slug || "").trim().toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-");
-    const categoryName = (body.category || "Business").trim();
+    // 1. Strict Server-Side Validation & Sanitization
+    const rawSlug = (body.slug || "").trim().toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+    const slug = rawSlug.slice(0, 60);
+
+    const categoryName = sanitizeText(body.category || "Business", 40);
     const paperSize = body.paperSize === "POS_80MM" ? "POS_80MM" : "A4";
 
-    const enTitle = (body.en_title || "").trim();
-    const enDescription = (body.en_description || "").trim();
-    const enSignatory = (body.en_signatory || "Authorized Signature").trim();
-    const enCurrency = (body.en_currency || "৳").trim();
+    const enTitle = sanitizeText(body.en_title || "", 120);
+    const enDescription = sanitizeText(body.en_description || "", 500);
+    const enSignatory = sanitizeText(body.en_signatory || "Authorized Signature", 60);
+    const enCurrency = sanitizeText(body.en_currency || "৳", 10);
 
-    const bnTitle = (body.bn_title || "").trim();
-    const bnDescription = (body.bn_description || "").trim();
-    const bnSignatory = (body.bn_signatory || "অনুমোদিত স্বাক্ষর").trim();
-    const bnCurrency = (body.bn_currency || "৳").trim();
+    const bnTitle = sanitizeText(body.bn_title || "", 120);
+    const bnDescription = sanitizeText(body.bn_description || "", 500);
+    const bnSignatory = sanitizeText(body.bn_signatory || "অনুমোদিত স্বাক্ষর", 60);
+    const bnCurrency = sanitizeText(body.bn_currency || "৳", 10);
 
-    const blocks: TemplateBlock[] = Array.isArray(body.blocks) && body.blocks.length > 0
-      ? body.blocks
-      : DEFAULT_TEMPLATE_BLOCKS;
+    const blocks = sanitizeBlocks(body.blocks || []);
 
     if (!slug || slug.length < 3) {
-      return NextResponse.json({ error: "A valid URL slug (at least 3 characters) is required." }, { status: 400 });
+      return NextResponse.json({ error: "A valid URL slug (at least 3 characters, alphanumeric with hyphens) is required." }, { status: 400 });
+    }
+
+    if (RESERVED_SLUGS.has(slug)) {
+      return NextResponse.json({
+        error: `The slug '${slug}' is a reserved system keyword. Please choose a distinct slug.`,
+      }, { status: 400 });
     }
 
     if (!enTitle || !enDescription) {
@@ -441,15 +547,17 @@ export async function PUT(req: Request) {
 
   try {
     const body = await req.json();
-    const id = body.id;
+    const id = typeof body.id === "string" ? body.id : undefined;
     const slug = (body.slug || "").trim().toLowerCase();
 
     if (!id && !slug) {
       return NextResponse.json({ error: "Template ID or Slug required for update." }, { status: 400 });
     }
 
-    const enTitle = (body.en_title || "").trim();
-    const bnTitle = (body.bn_title || "").trim();
+    const enTitle = sanitizeText(body.en_title || "", 120);
+    const bnTitle = sanitizeText(body.bn_title || "", 120);
+    const enDescription = sanitizeText(body.en_description || "", 500);
+    const bnDescription = sanitizeText(body.bn_description || "", 500);
 
     if (!enTitle || !bnTitle) {
       return NextResponse.json({
@@ -470,24 +578,26 @@ export async function PUT(req: Request) {
       }, { status: 404 });
     }
 
+    const blocks = sanitizeBlocks(body.blocks || (existing.fieldSchema as any)?.blocks || DEFAULT_TEMPLATE_BLOCKS);
+
     const updated = await prisma.template.update({
       where: { id: existing.id },
       data: {
         title: enTitle,
-        description: body.en_description || existing.description,
+        description: enDescription || existing.description,
         paperSize: body.paperSize === "POS_80MM" ? "POS_80MM" : "A4",
         fieldSchema: {
-          blocks: body.blocks || (existing.fieldSchema as any)?.blocks || DEFAULT_TEMPLATE_BLOCKS,
+          blocks,
           locales: {
             en: {
               title: enTitle,
-              description: body.en_description || "",
+              description: enDescription,
               badge: "Admin Custom Template",
               defaultData: body.defaultDataEn || (existing.fieldSchema as any)?.locales?.en?.defaultData,
             },
             bn: {
               title: bnTitle,
-              description: body.bn_description || "",
+              description: bnDescription,
               badge: "কাস্টম এডমিন টেমপ্লেট",
               defaultData: body.defaultDataBn || (existing.fieldSchema as any)?.locales?.bn?.defaultData,
             },

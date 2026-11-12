@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Layers,
   Plus,
@@ -33,6 +33,25 @@ import {
   ChevronRight,
   Printer,
   FileSpreadsheet,
+  QrCode,
+  Copy,
+  Maximize2,
+  Minimize2,
+  ZoomIn,
+  ZoomOut,
+  Smartphone,
+  Monitor,
+  ShieldCheck,
+  Sliders,
+  Palette,
+  Undo2,
+  CheckSquare,
+  BadgeAlert,
+  Building2,
+  Calendar,
+  UserCheck,
+  Receipt,
+  FileSignature,
 } from "lucide-react";
 import { INITIAL_TEMPLATES, TemplateDefinition } from "@/lib/templates";
 
@@ -48,26 +67,184 @@ export interface TemplateBlock {
   options?: Record<string, any>;
 }
 
+// Available Smart CMS Components in the Block Palette
+const COMPONENT_PALETTE = [
+  {
+    category: "Identity & Header",
+    icon: Building2,
+    items: [
+      {
+        type: "header",
+        titleEn: "Brand & Company Header",
+        titleBn: "প্রতিষ্ঠান ও ব্র্যান্ড হেডার",
+        descriptionEn: "Business title, logo, contact phone, address, and BIN/Tax ID",
+        descriptionBn: "প্রতিষ্ঠানের নাম, লোগো, ফোন, ঠিকানা ও ট্রেড লাইসেন্স",
+        options: { showLogo: true, showTagline: true, showContact: true, showTaxId: false, theme: "modern" },
+      },
+      {
+        type: "header",
+        titleEn: "Clinical Doctor Rx Header",
+        titleBn: "চিকিৎসক ও ক্লিনিক্যাল হেডার",
+        descriptionEn: "Doctor name, MBBS/FCPS degrees, BMDC reg no, chamber timings",
+        descriptionBn: "চিকিৎসকের নাম, ডিগ্রি, বিএমডিসি রেজিঃ নং ও চেম্বার সময়সূচি",
+        options: { showLogo: true, showTagline: true, showContact: true, showTaxId: true, theme: "clinical" },
+      },
+      {
+        type: "header",
+        titleEn: "Academic School Crest Header",
+        titleBn: "বিদ্যালয় বা শিক্ষা প্রতিষ্ঠান হেডার",
+        descriptionEn: "Institute name, EIIN code, establishment year, board affiliation",
+        descriptionBn: "শিক্ষা প্রতিষ্ঠানের নাম, ইআইআইএন কোড ও বোর্ড স্বীকৃতি",
+        options: { showLogo: true, showTagline: true, showContact: true, showTaxId: false, theme: "academic" },
+      },
+    ],
+  },
+  {
+    category: "Metadata & Tracking",
+    icon: Calendar,
+    items: [
+      {
+        type: "meta",
+        titleEn: "Invoice & Document Serial Meta",
+        titleBn: "নথির তথ্য ও স্মারক তারিখ",
+        descriptionEn: "Invoice / Bill / Rx serial number, issue date, due date",
+        descriptionBn: "বিল বা প্রেসক্রিপশন নম্বর, তারিখ ও কুরিয়ার ডেলিভারি",
+        options: { showDate: true, showDueDate: false, showCourier: true },
+      },
+      {
+        type: "qrcode",
+        titleEn: "Anti-Counterfeit QR Code Token",
+        titleBn: "নিরাপত্তা কিউআর কোড ভেরিফিকেশন",
+        descriptionEn: "Scannable digital QR token for document authenticity verification",
+        descriptionBn: "নথির সত্যতা যাচাইকরণ স্ক্যান কোড ও সুরক্ষা বারকোড",
+        options: { qrLabel: "VERIFIED AUTHENTIC DOCUMENT", showSerial: true },
+      },
+    ],
+  },
+  {
+    category: "Recipient & Client",
+    icon: UserCheck,
+    items: [
+      {
+        type: "recipient",
+        titleEn: "Customer Profile Card",
+        titleBn: "ক্রেতার নাম ও ডেলিভারি বিবরণ",
+        descriptionEn: "Customer name, mobile number, shipping address, note",
+        descriptionBn: "গ্রাহকের নাম, মোবাইল নম্বর ও ডেলিভারি ঠিকানা",
+        options: { showPhone: true, showAddress: true, showCustomId: false },
+      },
+      {
+        type: "recipient",
+        titleEn: "Clinical Patient Record",
+        titleBn: "রোগীর নাম ও শারীরিক তথ্য",
+        descriptionEn: "Patient name, age, sex, blood pressure, weight",
+        descriptionBn: "রোগীর বয়স, লিঙ্গ, ওজন এবং রক্তচাপ বিবরণ",
+        options: { showPhone: true, showAddress: true, showCustomId: true, isPatient: true },
+      },
+    ],
+  },
+  {
+    category: "Tables & Grids",
+    icon: FileSpreadsheet,
+    items: [
+      {
+        type: "table",
+        titleEn: "Product Sales & Services Table",
+        titleBn: "পণ্য বা সেবার বিবরণী ছক",
+        descriptionEn: "Line items table with quantity, unit rate, and total price",
+        descriptionBn: "পণ্যের নাম, পরিমাণ, একক দর ও মোট টাকার হিসাব",
+        options: { showQuantity: true, showUnitPrice: true, showItemCode: false, theme: "bordered" },
+      },
+      {
+        type: "table",
+        titleEn: "Clinical Diagnostic Pathology Tests",
+        titleBn: "ডায়াগনস্টিক টেস্ট ও প্যাথলজি তালিকা",
+        descriptionEn: "Diagnostic investigations list, sample collection time, room no",
+        descriptionBn: "প্যাথলজিক্যাল পরীক্ষা তালিকা, স্যাম্পল সংগ্রহ সময়",
+        options: { showQuantity: false, showUnitPrice: true, showItemCode: true, theme: "clinical" },
+      },
+    ],
+  },
+  {
+    category: "Totals & Calculation",
+    icon: Receipt,
+    items: [
+      {
+        type: "summary",
+        titleEn: "Financial Totals & Due Balance",
+        titleBn: "মোট হিসাব, ছাড় ও বকেয়া",
+        descriptionEn: "Subtotal, VAT %, delivery fee, special discount, and net due",
+        descriptionBn: "সাবটোটাল, ভ্যাট, ডেলিভারি চার্জ, ছাড় ও মোট বকেয়া টাকা",
+        options: { showTax: false, showDiscount: true, showDelivery: true, showPaidDue: true },
+      },
+    ],
+  },
+  {
+    category: "Signatures & Seals",
+    icon: FileSignature,
+    items: [
+      {
+        type: "signatory",
+        titleEn: "Authorized Signatory Authority",
+        titleBn: "অনুমোদিত স্বাক্ষর ও সিলমোহর",
+        descriptionEn: "Executive authorized signature, official company stamp line",
+        descriptionBn: "কর্মকর্তার স্বাক্ষর ও প্রাতিষ্ঠানিক সিলমোহর",
+        options: { showSeal: true, titleEn: "Authorized Signature", titleBn: "অনুমোদিত স্বাক্ষর" },
+      },
+      {
+        type: "signatory",
+        titleEn: "BMDC Doctor Stamp & Registration",
+        titleBn: "বিএমডিসি চিকিৎসকের সিল ও স্বাক্ষর",
+        descriptionEn: "Physician stamp line with official medical council reg number",
+        descriptionBn: "চিকিৎসকের অফিসিয়াল সিলমোহর ও রেজিস্ট্রেশন স্বাক্ষর",
+        options: { showSeal: true, titleEn: "Registered Physician Seal", titleBn: "চিকিৎসকের স্বাক্ষর ও সিল" },
+      },
+    ],
+  },
+  {
+    category: "Terms & Policies",
+    icon: ShieldCheck,
+    items: [
+      {
+        type: "terms",
+        titleEn: "Return Warranty & Payment Policy",
+        titleBn: "পণ্য ফেরত শর্ত ও পেমেন্ট বিবরণ",
+        descriptionEn: "7-day return conditions, bKash/Nagad merchant payment instructions",
+        descriptionBn: "ওয়ারেন্টি নীতিমালা, বিকাশ বা ব্যাংক পেমেন্ট ও ফুটনোট",
+        options: { showFooterNote: true, showPaymentQR: true },
+      },
+      {
+        type: "callout",
+        titleEn: "Important Notice / Warning Banner",
+        titleBn: "জরুরি নোটিশ বা সতর্কবার্তা বক্স",
+        descriptionEn: "High-contrast highlighted note for customers or patients",
+        descriptionBn: "জরুরি নোটিশ বা বিশেষ নির্দেশনা সম্বলিত হাইলাইট বক্স",
+        options: { calloutTheme: "alert" },
+      },
+    ],
+  },
+];
+
 const DEFAULT_BLOCKS: TemplateBlock[] = [
   {
     id: "header",
     type: "header",
-    titleEn: "Brand & Organization Header",
+    titleEn: "Brand & Company Header",
     titleBn: "প্রতিষ্ঠান ও ব্র্যান্ড পরিচিতি",
     enabled: true,
     order: 0,
     descriptionEn: "Business/Institute name, logo, phone, address, and license/BIN",
     descriptionBn: "প্রতিষ্ঠান বা ক্লিনিকের নাম, লোগো, ফোন নম্বর, ঠিকানা ও বিআইএন",
-    options: { showLogo: true, showTagline: true, showContact: true, showTaxId: false },
+    options: { showLogo: true, showTagline: true, showContact: true, showTaxId: false, theme: "modern" },
   },
   {
     id: "meta",
     type: "meta",
-    titleEn: "Document Identifier & Date Info",
-    titleBn: "নথির তথ্য ও তারিখ",
+    titleEn: "Document Identifier & Dates",
+    titleBn: "নথির তথ্য ও স্মারক তারিখ",
     enabled: true,
     order: 1,
-    descriptionEn: "Invoice / Rx / Token No, issue date, due date, courier",
+    descriptionEn: "Invoice / Rx / Token serial, issue date, due date, courier",
     descriptionBn: "চালান / প্রেসক্রিপশন নম্বর, তারিখ ও কুরিয়ার তথ্য",
     options: { showDate: true, showDueDate: false, showCourier: true },
   },
@@ -91,7 +268,7 @@ const DEFAULT_BLOCKS: TemplateBlock[] = [
     order: 3,
     descriptionEn: "Line items table with quantity, unit price, and calculated amount",
     descriptionBn: "পণ্য বা সেবার তালিকা, পরিমাণ, একক মূল্য এবং মোট টাকা",
-    options: { showQuantity: true, showUnitPrice: true, showItemCode: false },
+    options: { showQuantity: true, showUnitPrice: true, showItemCode: false, theme: "bordered" },
   },
   {
     id: "summary",
@@ -152,39 +329,46 @@ export default function AdminTemplatesManagerPage() {
   const [formatFilter, setFormatFilter] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"table" | "sections" | "grid">("table");
 
-  // Modal State
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalTab, setModalTab] = useState<"locales" | "blocks" | "preview">("locales");
-  const [localeTab, setLocaleTab] = useState<"en" | "bn">("en");
-  const [previewLocale, setPreviewLocale] = useState<"en" | "bn">("en");
+  // SMART CMS STUDIO STATE
+  const [isStudioOpen, setIsStudioOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<any>(null);
   const [validationError, setValidationError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Form State with mandatory EN and BN fields
+  // Viewport & Live Locale in Studio
+  const [previewViewport, setPreviewViewport] = useState<"A4" | "POS_80MM">("A4");
+  const [previewLocale, setPreviewLocale] = useState<"en" | "bn">("en");
+  const [zoomScale, setZoomScale] = useState<number>(100);
+
+  // Active Block Selection in Studio
+  const [selectedBlockIndex, setSelectedBlockIndex] = useState<number>(0);
+  const [inspectorTab, setInspectorTab] = useState<"block" | "meta">("block");
+  const [paletteSearch, setPaletteSearch] = useState("");
+
+  // Drag and Drop State
+  const [draggedBlockIndex, setDraggedBlockIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  // Master Template Form Data
   const [formData, setFormData] = useState({
     id: "",
     slug: "",
     category: "Business",
     paperSize: "A4",
     isFeatured: false,
-    // English Version
     en_title: "",
     en_description: "",
     en_signatory: "Authorized Signature",
     en_currency: "৳",
-    // Bangla Version (Mandatory!)
     bn_title: "",
     bn_description: "",
     bn_signatory: "অনুমোদিত স্বাক্ষর",
     bn_currency: "৳",
   });
 
-  // Drag and Drop Visual Block Builder State
+  // Template Blocks on Canvas
   const [templateBlocks, setTemplateBlocks] = useState<TemplateBlock[]>(DEFAULT_BLOCKS);
-  const [draggedBlockIndex, setDraggedBlockIndex] = useState<number | null>(null);
-  const [expandedBlockId, setExpandedBlockId] = useState<string | null>(null);
 
   // Fetch templates from API
   const fetchTemplates = async () => {
@@ -235,19 +419,16 @@ export default function AdminTemplatesManagerPage() {
   // Filtered Templates
   const filteredTemplates = useMemo(() => {
     return templates.filter((t) => {
-      // Category filter
       if (selectedCategory === "custom") {
         if (!t.isCustom) return false;
       } else if (selectedCategory !== "all" && t.category !== selectedCategory) {
         return false;
       }
 
-      // Format filter
       if (formatFilter !== "all" && t.paperSize !== formatFilter) {
         return false;
       }
 
-      // Search query filter
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const enTitle = (t.locales?.en?.title || t.title || "").toLowerCase();
@@ -269,7 +450,7 @@ export default function AdminTemplatesManagerPage() {
     });
   }, [templates, selectedCategory, formatFilter, searchQuery]);
 
-  // Group templates by category for Section View
+  // Grouped for sections view
   const groupedByCategory = useMemo(() => {
     const groups: Record<string, typeof templates> = {
       Business: [],
@@ -290,8 +471,8 @@ export default function AdminTemplatesManagerPage() {
     return groups;
   }, [filteredTemplates]);
 
-  // Open Add Modal
-  const handleOpenAddModal = () => {
+  // Open Smart CMS Studio for Adding a New Template
+  const handleOpenAddStudio = () => {
     setEditingTemplate(null);
     setValidationError("");
     setTemplateBlocks(DEFAULT_BLOCKS.map((b, i) => ({ ...b, order: i })));
@@ -310,21 +491,22 @@ export default function AdminTemplatesManagerPage() {
       bn_signatory: "অনুমোদিত স্বাক্ষর",
       bn_currency: "৳",
     });
-    setModalTab("locales");
-    setLocaleTab("en");
+    setPreviewViewport("A4");
     setPreviewLocale("en");
-    setIsModalOpen(true);
+    setSelectedBlockIndex(0);
+    setInspectorTab("meta");
+    setIsStudioOpen(true);
   };
 
-  // Open Edit Modal
-  const handleOpenEditModal = (t: any) => {
+  // Open Smart CMS Studio for Modifying Existing Template
+  const handleOpenEditStudio = (t: any) => {
     setEditingTemplate(t);
     setValidationError("");
-    setTemplateBlocks(
+    const blocks =
       t.blocks && Array.isArray(t.blocks) && t.blocks.length > 0
         ? t.blocks
-        : DEFAULT_BLOCKS.map((b, i) => ({ ...b, order: i }))
-    );
+        : DEFAULT_BLOCKS.map((b, i) => ({ ...b, order: i }));
+    setTemplateBlocks(blocks);
     setFormData({
       id: t.id,
       slug: t.slug,
@@ -340,33 +522,42 @@ export default function AdminTemplatesManagerPage() {
       bn_signatory: t.locales?.bn?.defaultData?.signatoryTitle || "অনুমোদিত স্বাক্ষর",
       bn_currency: t.locales?.bn?.defaultData?.currency || "৳",
     });
-    setModalTab("locales");
-    setLocaleTab("en");
+    setPreviewViewport(t.paperSize === "POS_80MM" ? "POS_80MM" : "A4");
     setPreviewLocale("en");
-    setIsModalOpen(true);
+    setSelectedBlockIndex(0);
+    setInspectorTab("block");
+    setIsStudioOpen(true);
   };
 
-  // Drag and Drop Handlers for Organizing Template Blocks
+  // Drag and Drop Block Movement
   const handleDragStart = (index: number) => {
     setDraggedBlockIndex(index);
   };
 
   const handleDragOver = (e: React.DragEvent, index: number) => {
     e.preventDefault();
+    setDragOverIndex(index);
   };
 
   const handleDrop = (index: number) => {
-    if (draggedBlockIndex === null || draggedBlockIndex === index) return;
+    if (draggedBlockIndex === null || draggedBlockIndex === index) {
+      setDragOverIndex(null);
+      setDraggedBlockIndex(null);
+      return;
+    }
     const reordered = [...templateBlocks];
     const [movedItem] = reordered.splice(draggedBlockIndex, 1);
     reordered.splice(index, 0, movedItem);
     const updated = reordered.map((b, idx) => ({ ...b, order: idx }));
     setTemplateBlocks(updated);
+    setSelectedBlockIndex(index);
     setDraggedBlockIndex(null);
+    setDragOverIndex(null);
   };
 
-  // Reorder buttons (Move Up / Down)
-  const moveBlock = (index: number, direction: "up" | "down") => {
+  // Reorder via arrow buttons
+  const moveBlock = (index: number, direction: "up" | "down", e?: React.MouseEvent) => {
+    e?.stopPropagation();
     const targetIndex = direction === "up" ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= templateBlocks.length) return;
     const reordered = [...templateBlocks];
@@ -374,57 +565,79 @@ export default function AdminTemplatesManagerPage() {
     reordered.splice(targetIndex, 0, movedItem);
     const updated = reordered.map((b, idx) => ({ ...b, order: idx }));
     setTemplateBlocks(updated);
+    setSelectedBlockIndex(targetIndex);
   };
 
-  // Toggle Block Visibility (Active / Inactive)
-  const toggleBlockEnabled = (id: string) => {
-    setTemplateBlocks((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, enabled: !b.enabled } : b))
-    );
-  };
-
-  // Add Custom Section Block
-  const handleAddCustomBlock = () => {
-    const customId = `custom_${Date.now()}`;
+  // Add Block from Palette
+  const handleAddPaletteItem = (item: any) => {
+    const newId = `${item.type}_${Date.now()}`;
     const newBlock: TemplateBlock = {
-      id: customId,
-      type: "custom",
-      titleEn: "Custom Information Block",
-      titleBn: "কাস্টম তথ্য সেকশন",
+      id: newId,
+      type: item.type,
+      titleEn: item.titleEn,
+      titleBn: item.titleBn,
       enabled: true,
       order: templateBlocks.length,
-      descriptionEn: "Custom key-value attributes or special policy note",
-      descriptionBn: "বিশেষ তথ্য ফিল্ড বা পলিসি নোট",
-      options: { customText: "" },
+      descriptionEn: item.descriptionEn,
+      descriptionBn: item.descriptionBn,
+      options: { ...item.options },
     };
     setTemplateBlocks([...templateBlocks, newBlock]);
-    setExpandedBlockId(customId);
+    setSelectedBlockIndex(templateBlocks.length);
+    setInspectorTab("block");
+  };
+
+  // Duplicate Block
+  const handleDuplicateBlock = (index: number, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    const target = templateBlocks[index];
+    const duplicated: TemplateBlock = {
+      ...target,
+      id: `${target.type}_${Date.now()}`,
+      titleEn: `${target.titleEn} (Copy)`,
+      titleBn: `${target.titleBn} (কপি)`,
+      order: index + 1,
+    };
+    const updated = [...templateBlocks];
+    updated.splice(index + 1, 0, duplicated);
+    setTemplateBlocks(updated.map((b, i) => ({ ...b, order: i })));
+    setSelectedBlockIndex(index + 1);
   };
 
   // Delete Block
-  const handleDeleteBlock = (id: string) => {
+  const handleDeleteBlock = (index: number, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (templateBlocks.length <= 1) {
+      alert("A template must contain at least 1 layout block.");
+      return;
+    }
+    const updated = templateBlocks.filter((_, i) => i !== index).map((b, idx) => ({ ...b, order: idx }));
+    setTemplateBlocks(updated);
+    setSelectedBlockIndex(Math.max(0, index - 1));
+  };
+
+  // Toggle Block Visibility
+  const toggleBlockEnabled = (index: number, e?: React.MouseEvent) => {
+    e?.stopPropagation();
     setTemplateBlocks((prev) =>
-      prev.filter((b) => b.id !== id).map((b, idx) => ({ ...b, order: idx }))
+      prev.map((b, i) => (i === index ? { ...b, enabled: !b.enabled } : b))
     );
   };
 
   // Save Template with strict EN + BN validation
-  const handleSaveTemplate = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSaveTemplate = async () => {
     setValidationError("");
 
-    // 1. Validate English fields
+    // 1. Strict English Validation
     if (!formData.slug || !formData.en_title || !formData.en_description) {
-      setModalTab("locales");
-      setLocaleTab("en");
-      setValidationError("Mandatory Requirement: English Title, Slug, and Description must be provided.");
+      setInspectorTab("meta");
+      setValidationError("Mandatory Requirement: English Title, URL Slug, and Description must be provided.");
       return;
     }
 
-    // 2. Strict Requirement: Validate Bangla fields
+    // 2. Strict Bangla Validation
     if (!formData.bn_title || !formData.bn_description) {
-      setModalTab("locales");
-      setLocaleTab("bn");
+      setInspectorTab("meta");
       setValidationError(
         "Mandatory Requirement: FreeDocForge strictly requires the Bangla (বাংলা) version of this template as well before publishing!"
       );
@@ -466,11 +679,11 @@ export default function AdminTemplatesManagerPage() {
 
       setSuccessMsg(
         editingTemplate
-          ? "Template updated successfully with verified English & Bangla locales!"
-          : "New template published successfully with verified English & Bangla locales!"
+          ? `Template '${formData.en_title}' updated with verified English & Bangla locales!`
+          : `New template '${formData.en_title}' published to CMS catalog!`
       );
 
-      setIsModalOpen(false);
+      setIsStudioOpen(false);
       fetchTemplates();
       setTimeout(() => setSuccessMsg(""), 5000);
     } catch (err: any) {
@@ -480,28 +693,22 @@ export default function AdminTemplatesManagerPage() {
     }
   };
 
-  // Delete Custom Template
-  const handleDeleteCustomTemplate = async (t: any) => {
-    if (!confirm(`Are you sure you want to delete custom template '${t.title}'? This cannot be undone.`)) {
-      return;
-    }
-
-    try {
-      const res = await fetch(`/api/admin/templates?id=${t.id}&slug=${t.slug}`, {
-        method: "DELETE",
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        alert(data.error || "Failed to delete template.");
-        return;
+  // Keyboard Shortcuts (Ctrl+S / Cmd+S to Save)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "s" && isStudioOpen) {
+        e.preventDefault();
+        handleSaveTemplate();
       }
-      setSuccessMsg(`Template '${t.title}' deleted successfully.`);
-      fetchTemplates();
-      setTimeout(() => setSuccessMsg(""), 4000);
-    } catch (err: any) {
-      alert("Error deleting template: " + (err.message || "Unknown error"));
-    }
-  };
+      if (e.key === "Escape" && isStudioOpen) {
+        setIsStudioOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isStudioOpen, formData, templateBlocks]);
+
+  const activeSelectedBlock = templateBlocks[selectedBlockIndex] || null;
 
   return (
     <div className="space-y-8 max-w-7xl font-sans text-zinc-100">
@@ -511,7 +718,7 @@ export default function AdminTemplatesManagerPage() {
           <div className="flex items-center gap-2">
             <h2 className="text-xl font-black uppercase tracking-wider text-white flex items-center gap-2">
               <Layers className="w-5 h-5 text-red-500" />
-              Template CMS & Dual-Locale Engine
+              Template CMS & Visual Studio
             </h2>
             <span
               className={`text-[10px] px-2 py-0.5 rounded-full font-mono border ${
@@ -524,7 +731,7 @@ export default function AdminTemplatesManagerPage() {
             </span>
           </div>
           <p className="text-xs text-zinc-400 mt-1">
-            Browse templates separated by category, organize document layout sections with drag & drop, and publish verified dual-locale (English + বাংলা) editions.
+            Browse templates separated by category, design custom documents with our Smart CMS drag-and-drop studio, and enforce dual-locale (English + বাংলা) parity.
           </p>
         </div>
 
@@ -539,10 +746,10 @@ export default function AdminTemplatesManagerPage() {
             Sync
           </button>
           <button
-            onClick={handleOpenAddModal}
-            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition shadow-lg shadow-red-950/40 cursor-pointer"
+            onClick={handleOpenAddStudio}
+            className="flex items-center gap-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition shadow-lg shadow-red-950/50 cursor-pointer"
           >
-            <Plus className="w-4 h-4" /> Add New Template
+            <Plus className="w-4 h-4" /> Launch Smart CMS Studio
           </button>
         </div>
       </div>
@@ -555,7 +762,7 @@ export default function AdminTemplatesManagerPage() {
         </div>
       )}
 
-      {/* QUICK CATEGORY METRIC TILES */}
+      {/* CATEGORY STATISTIC TILES */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {CATEGORY_TABS.map((cat) => {
           const Icon = cat.icon;
@@ -615,7 +822,6 @@ export default function AdminTemplatesManagerPage() {
 
         {/* Paper Format & Layout Switcher */}
         <div className="flex items-center gap-3">
-          {/* Format Filter */}
           <div className="flex items-center bg-zinc-950 border border-zinc-800 rounded-xl p-1 text-xs">
             <button
               onClick={() => setFormatFilter("all")}
@@ -623,7 +829,7 @@ export default function AdminTemplatesManagerPage() {
                 formatFilter === "all" ? "bg-zinc-800 text-white font-bold" : "text-zinc-400 hover:text-white"
               }`}
             >
-              All Sizes
+              All Formats
             </button>
             <button
               onClick={() => setFormatFilter("A4")}
@@ -639,11 +845,10 @@ export default function AdminTemplatesManagerPage() {
                 formatFilter === "POS_80MM" ? "bg-zinc-800 text-white font-bold" : "text-zinc-400 hover:text-white"
               }`}
             >
-              80mm Thermal
+              80mm POS Roll
             </button>
           </div>
 
-          {/* View Mode Toggle */}
           <div className="flex items-center bg-zinc-950 border border-zinc-800 rounded-xl p-1 text-xs">
             <button
               onClick={() => setViewMode("table")}
@@ -773,7 +978,7 @@ export default function AdminTemplatesManagerPage() {
                       <td className="py-4 font-sans">
                         {t.isCustom ? (
                           <span className="text-[10px] text-cyan-400 font-mono bg-cyan-950/60 border border-cyan-800 px-2 py-0.5 rounded">
-                            Custom Admin
+                            Smart CMS Custom
                           </span>
                         ) : (
                           <span className="text-[10px] text-zinc-500 font-mono">
@@ -784,11 +989,11 @@ export default function AdminTemplatesManagerPage() {
                       <td className="py-4 text-right">
                         <div className="flex items-center justify-end gap-2 font-sans">
                           <button
-                            onClick={() => handleOpenEditModal(t)}
+                            onClick={() => handleOpenEditStudio(t)}
                             className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-2.5 py-1.5 rounded-lg inline-flex items-center gap-1 text-xs transition cursor-pointer border border-zinc-700"
-                            title="Organize Layout & Edit Details"
+                            title="Open in Smart CMS Studio"
                           >
-                            <Edit3 className="w-3.5 h-3.5 text-red-400" /> Organize
+                            <Edit3 className="w-3.5 h-3.5 text-red-400" /> Edit CMS
                           </button>
                           <a
                             href={`/templates/${t.slug}`}
@@ -799,15 +1004,6 @@ export default function AdminTemplatesManagerPage() {
                           >
                             <ExternalLink className="w-3.5 h-3.5 text-zinc-400" /> Test
                           </a>
-                          {t.isCustom && (
-                            <button
-                              onClick={() => handleDeleteCustomTemplate(t)}
-                              className="text-zinc-500 hover:text-red-400 p-1.5 rounded-lg transition cursor-pointer"
-                              title="Delete Custom Template"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          )}
                         </div>
                       </td>
                     </tr>
@@ -877,10 +1073,10 @@ export default function AdminTemplatesManagerPage() {
                         </span>
                         <div className="flex items-center gap-1.5">
                           <button
-                            onClick={() => handleOpenEditModal(t)}
+                            onClick={() => handleOpenEditStudio(t)}
                             className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-2 py-1 rounded text-xs transition cursor-pointer"
                           >
-                            Organize
+                            Edit CMS
                           </button>
                           <a
                             href={`/templates/${t.slug}`}
@@ -946,10 +1142,10 @@ export default function AdminTemplatesManagerPage() {
                 </span>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => handleOpenEditModal(t)}
+                    onClick={() => handleOpenEditStudio(t)}
                     className="bg-zinc-800 hover:bg-zinc-700 text-white text-xs px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1"
                   >
-                    <Edit3 className="w-3.5 h-3.5 text-red-400" /> Organize
+                    <Edit3 className="w-3.5 h-3.5 text-red-400" /> Edit CMS
                   </button>
                   <a
                     href={`/templates/${t.slug}`}
@@ -966,107 +1162,718 @@ export default function AdminTemplatesManagerPage() {
         </div>
       )}
 
-      {/* DUAL-LOCALE & VISUAL DRAG-AND-DROP TEMPLATE ORGANIZER MODAL ("DARK DROP EDIT BOX") */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-zinc-950 border border-zinc-800 rounded-3xl w-full max-w-4xl p-6 shadow-2xl space-y-5 my-8 max-h-[92vh] flex flex-col">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-3 shrink-0">
-              <div>
-                <h3 className="text-base font-black text-white uppercase tracking-wider flex items-center gap-2">
-                  <Settings2 className="w-4 h-4 text-red-500" />
-                  {editingTemplate ? `Organize Template: ${editingTemplate.title}` : "Visual Template Builder & Dual-Locale Engine"}
-                </h3>
-                <p className="text-[11px] text-zinc-400">
-                  Configure English and Bangla locales, drag & drop layout blocks, and preview your document before publishing.
-                </p>
+      {/* ============================================================== */}
+      {/* 4. HIGH-LEVEL SMART CMS VISUAL DRAG-AND-DROP STUDIO (MODAL)   */}
+      {/* ============================================================== */}
+      {isStudioOpen && (
+        <div className="fixed inset-0 z-50 bg-zinc-950 flex flex-col font-sans text-zinc-100 overflow-hidden animate-in fade-in">
+          {/* STUDIO TOP COMMAND BAR */}
+          <header className="h-14 bg-zinc-900 border-b border-zinc-800 px-4 flex items-center justify-between shrink-0 select-none">
+            {/* Left: Branding & Current Editing Status */}
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 px-2.5 py-1 rounded-xl">
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                <span className="text-[11px] font-mono font-black tracking-wider text-white">DOCFORGE SMART CMS</span>
               </div>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="text-zinc-500 hover:text-white p-1 rounded-lg cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
+
+              <div className="hidden md:flex items-center gap-1.5 text-xs text-zinc-400">
+                <span className="text-zinc-600">/</span>
+                <span className="font-semibold text-white truncate max-w-xs">
+                  {formData.en_title || "Untitled Template"}
+                </span>
+                <span className="text-[10px] font-mono text-zinc-500 bg-zinc-800 px-1.5 py-0.5 rounded">
+                  /{formData.slug || "slug"}
+                </span>
+              </div>
             </div>
 
-            {/* ERROR ALERT */}
-            {validationError && (
-              <div className="bg-red-950/60 border border-red-800 text-red-300 px-4 py-3 rounded-xl text-xs flex items-center gap-2 shrink-0">
+            {/* Center: Device Viewport & Live Locale Switcher */}
+            <div className="flex items-center gap-2">
+              {/* Device Viewport */}
+              <div className="flex items-center bg-zinc-950 border border-zinc-800 rounded-xl p-0.5 text-xs">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPreviewViewport("A4");
+                    setFormData({ ...formData, paperSize: "A4" });
+                  }}
+                  className={`flex items-center gap-1 px-3 py-1 rounded-lg transition text-xs cursor-pointer ${
+                    previewViewport === "A4" ? "bg-zinc-800 text-white font-bold" : "text-zinc-400 hover:text-white"
+                  }`}
+                  title="ISO Standard A4 (210 x 297 mm)"
+                >
+                  <Monitor className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">A4 Sheet</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPreviewViewport("POS_80MM");
+                    setFormData({ ...formData, paperSize: "POS_80MM" });
+                  }}
+                  className={`flex items-center gap-1 px-3 py-1 rounded-lg transition text-xs cursor-pointer ${
+                    previewViewport === "POS_80MM" ? "bg-zinc-800 text-white font-bold" : "text-zinc-400 hover:text-white"
+                  }`}
+                  title="POS Thermal Slip (80mm width)"
+                >
+                  <Smartphone className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">80mm POS</span>
+                </button>
+              </div>
+
+              {/* Live Preview Dual-Locale Switcher */}
+              <div className="flex items-center bg-zinc-950 border border-zinc-800 rounded-xl p-0.5 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setPreviewLocale("en")}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg transition text-xs font-bold cursor-pointer ${
+                    previewLocale === "en" ? "bg-red-600 text-white shadow" : "text-zinc-400 hover:text-white"
+                  }`}
+                >
+                  <Globe className="w-3 h-3 text-blue-400" />
+                  <span>EN</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewLocale("bn")}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg transition text-xs font-bold cursor-pointer ${
+                    previewLocale === "bn" ? "bg-emerald-600 text-white shadow" : "text-zinc-400 hover:text-white"
+                  }`}
+                >
+                  <Globe className="w-3 h-3 text-white" />
+                  <span>বাংলা</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Right: Zoom Scale & Save / Exit Controls */}
+            <div className="flex items-center gap-2">
+              <div className="hidden lg:flex items-center bg-zinc-950 border border-zinc-800 rounded-xl px-2 py-1 text-[11px] font-mono text-zinc-400 gap-2">
+                <button
+                  onClick={() => setZoomScale(Math.max(50, zoomScale - 10))}
+                  className="hover:text-white cursor-pointer"
+                >
+                  <ZoomOut className="w-3 h-3" />
+                </button>
+                <span>{zoomScale}%</span>
+                <button
+                  onClick={() => setZoomScale(Math.min(150, zoomScale + 10))}
+                  className="hover:text-white cursor-pointer"
+                >
+                  <ZoomIn className="w-3 h-3" />
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleSaveTemplate}
+                disabled={isSubmitting}
+                className="flex items-center gap-1.5 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold px-4 py-1.5 rounded-xl text-xs transition shadow-lg shadow-red-950/60 cursor-pointer disabled:opacity-50"
+                title="Save & Publish Template (Ctrl+S)"
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{isSubmitting ? "Publishing..." : "Save & Publish"}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsStudioOpen(false)}
+                className="p-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white transition cursor-pointer"
+                title="Close Studio (Esc)"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </header>
+
+          {/* STUDIO ERROR BAR */}
+          {validationError && (
+            <div className="bg-red-950/90 border-b border-red-800 text-red-200 px-4 py-2 text-xs flex items-center justify-between shrink-0 shadow-lg animate-in slide-in-from-top">
+              <div className="flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
                 <span>{validationError}</span>
               </div>
-            )}
-
-            {/* MODAL WORKSPACE TABS */}
-            <div className="flex border-b border-zinc-800 shrink-0">
-              <button
-                type="button"
-                onClick={() => setModalTab("locales")}
-                className={`flex-1 py-2.5 text-xs font-bold transition flex items-center justify-center gap-2 border-b-2 cursor-pointer ${
-                  modalTab === "locales"
-                    ? "border-red-500 text-white bg-zinc-900/80"
-                    : "border-transparent text-zinc-400 hover:text-white"
-                }`}
-              >
-                <Globe className="w-3.5 h-3.5 text-blue-400" />
-                1. Dual-Locale & Metadata
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setModalTab("blocks")}
-                className={`flex-1 py-2.5 text-xs font-bold transition flex items-center justify-center gap-2 border-b-2 cursor-pointer ${
-                  modalTab === "blocks"
-                    ? "border-red-500 text-white bg-zinc-900/80"
-                    : "border-transparent text-zinc-400 hover:text-white"
-                }`}
-              >
-                <GripVertical className="w-3.5 h-3.5 text-amber-400" />
-                2. Visual Block Organizer (Drag & Drop)
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setModalTab("preview")}
-                className={`flex-1 py-2.5 text-xs font-bold transition flex items-center justify-center gap-2 border-b-2 cursor-pointer ${
-                  modalTab === "preview"
-                    ? "border-red-500 text-white bg-zinc-900/80"
-                    : "border-transparent text-zinc-400 hover:text-white"
-                }`}
-              >
-                <Eye className="w-3.5 h-3.5 text-emerald-400" />
-                3. Live Layout Preview
+              <button onClick={() => setValidationError("")} className="hover:text-white">
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
+          )}
 
-            {/* TAB CONTENT (SCROLLABLE AREA) */}
-            <div className="overflow-y-auto flex-1 pr-1 space-y-4">
-              {/* TAB 1: LOCALES & METADATA */}
-              {modalTab === "locales" && (
-                <div className="space-y-4">
-                  {/* Meta Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-zinc-900/80 p-3.5 rounded-2xl border border-zinc-800">
+          {/* STUDIO 3-COLUMN WORKSPACE */}
+          <div className="flex-1 flex overflow-hidden">
+            {/* ============================================================== */}
+            {/* COLUMN 1: COMPONENT PALETTE (LEFT PANEL - 280px)              */}
+            {/* ============================================================== */}
+            <aside className="w-72 bg-zinc-900 border-r border-zinc-800 flex flex-col shrink-0 select-none">
+              <div className="p-3 border-b border-zinc-800">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
+                    <Sliders className="w-3.5 h-3.5 text-red-400" /> Block Palette
+                  </span>
+                  <span className="text-[10px] font-mono text-zinc-500">Drag or click +</span>
+                </div>
+                <div className="relative">
+                  <Search className="w-3 h-3 text-zinc-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Search blocks..."
+                    value={paletteSearch}
+                    onChange={(e) => setPaletteSearch(e.target.value)}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-lg pl-7 pr-2 py-1 text-[11px] text-white focus:outline-none focus:border-red-500"
+                  />
+                </div>
+              </div>
+
+              {/* Categorized Palette Items */}
+              <div className="flex-1 overflow-y-auto p-3 space-y-4">
+                {COMPONENT_PALETTE.map((catGroup) => {
+                  const filteredItems = catGroup.items.filter(
+                    (it) =>
+                      it.titleEn.toLowerCase().includes(paletteSearch.toLowerCase()) ||
+                      it.titleBn.toLowerCase().includes(paletteSearch.toLowerCase())
+                  );
+                  if (filteredItems.length === 0) return null;
+
+                  const GroupIcon = catGroup.icon;
+
+                  return (
+                    <div key={catGroup.category} className="space-y-1.5">
+                      <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 flex items-center gap-1.5 px-1">
+                        <GroupIcon className="w-3 h-3 text-zinc-400" />
+                        <span>{catGroup.category}</span>
+                      </div>
+
+                      <div className="space-y-1">
+                        {filteredItems.map((item, idx) => (
+                          <div
+                            key={idx}
+                            onClick={() => handleAddPaletteItem(item)}
+                            className="p-2.5 rounded-xl bg-zinc-950/80 hover:bg-zinc-800/80 border border-zinc-800/80 hover:border-zinc-700 cursor-pointer transition flex items-center justify-between group"
+                          >
+                            <div className="pr-2">
+                              <div className="text-xs font-bold text-white group-hover:text-red-400 transition truncate">
+                                {item.titleEn}
+                              </div>
+                              <div className="text-[10px] text-zinc-400 font-sans truncate">
+                                {item.titleBn}
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              className="p-1 rounded-md bg-zinc-900 group-hover:bg-red-600 text-zinc-400 group-hover:text-white transition shrink-0"
+                              title="Add this section to canvas"
+                            >
+                              <Plus className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </aside>
+
+            {/* ============================================================== */}
+            {/* COLUMN 2: LIVE RESPONSIVE CANVAS (CENTER VIEWPORT - FLEX-1)    */}
+            {/* ============================================================== */}
+            <main className="flex-1 bg-zinc-950 overflow-y-auto p-6 flex flex-col items-center justify-start relative">
+              {/* Visual Canvas Paper Container */}
+              <div
+                style={{
+                  transform: `scale(${zoomScale / 100})`,
+                  transformOrigin: "top center",
+                  transition: "transform 0.15s ease",
+                }}
+                className={`bg-white text-zinc-900 rounded-lg shadow-2xl transition-all relative ${
+                  previewViewport === "POS_80MM"
+                    ? "w-80 p-5 font-mono text-xs border-dashed border-2 border-zinc-400"
+                    : "w-full max-w-2xl p-8 font-sans text-xs min-h-[750px] border border-zinc-200"
+                }`}
+              >
+                {/* Visual Watermark Badge */}
+                <div className="absolute right-4 top-4 text-[9px] font-mono uppercase tracking-widest text-zinc-300 pointer-events-none select-none">
+                  FreeDocForge Printable CMS
+                </div>
+
+                {/* Render Canvas Blocks with Interactive Drag & Drop */}
+                {templateBlocks.map((block, index) => {
+                  const isSelected = selectedBlockIndex === index;
+                  const isDragOver = dragOverIndex === index;
+
+                  return (
+                    <div
+                      key={block.id}
+                      draggable
+                      onDragStart={() => handleDragStart(index)}
+                      onDragOver={(e) => handleDragOver(e, index)}
+                      onDrop={() => handleDrop(index)}
+                      onClick={() => {
+                        setSelectedBlockIndex(index);
+                        setInspectorTab("block");
+                      }}
+                      className={`relative group transition rounded-lg my-1 p-2 cursor-pointer ${
+                        !block.enabled ? "opacity-30 bg-zinc-100" : ""
+                      } ${
+                        isSelected
+                          ? "ring-2 ring-red-500 bg-red-50/30"
+                          : "hover:ring-1 hover:ring-zinc-400 hover:bg-zinc-50/50"
+                      } ${isDragOver ? "border-t-4 border-red-500" : ""}`}
+                    >
+                      {/* Floating Mini Action Toolbar (Visible on Hover/Selected) */}
+                      <div
+                        className={`absolute -top-3.5 right-2 z-20 flex items-center gap-1 bg-zinc-900 text-white rounded-md shadow-lg px-1.5 py-0.5 text-[10px] font-mono transition-opacity ${
+                          isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                        }`}
+                      >
+                        <div
+                          className="cursor-grab active:cursor-grabbing p-0.5 hover:text-red-400"
+                          title="Drag to rearrange position"
+                        >
+                          <GripVertical className="w-3 h-3" />
+                        </div>
+                        <button
+                          type="button"
+                          disabled={index === 0}
+                          onClick={(e) => moveBlock(index, "up", e)}
+                          className="p-0.5 hover:text-red-400 disabled:opacity-30"
+                          title="Move Up"
+                        >
+                          <ChevronUp className="w-3 h-3" />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={index === templateBlocks.length - 1}
+                          onClick={(e) => moveBlock(index, "down", e)}
+                          className="p-0.5 hover:text-red-400 disabled:opacity-30"
+                          title="Move Down"
+                        >
+                          <ChevronDown className="w-3 h-3" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => handleDuplicateBlock(index, e)}
+                          className="p-0.5 hover:text-emerald-400"
+                          title="Duplicate block"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => toggleBlockEnabled(index, e)}
+                          className={`px-1 rounded text-[9px] ${
+                            block.enabled ? "text-emerald-400" : "text-zinc-500"
+                          }`}
+                          title="Toggle Active/Inactive"
+                        >
+                          {block.enabled ? "ON" : "OFF"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => handleDeleteBlock(index, e)}
+                          className="p-0.5 hover:text-rose-400"
+                          title="Delete Block"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+
+                      {/* BLOCK RENDERING LOGIC */}
+                      {/* Block Type: Header */}
+                      {block.type === "header" && (
+                        <div className="text-center pb-2 border-b border-zinc-200">
+                          <div className="text-[10px] uppercase font-mono tracking-widest text-zinc-400">
+                            {previewLocale === "en" ? formData.category : "ক্যাটাগরি"}
+                          </div>
+                          <h1 className="text-base font-black text-zinc-900 mt-0.5">
+                            {previewLocale === "en"
+                              ? formData.en_title || "Sample Business / Clinic Name"
+                              : formData.bn_title || "নমুনা প্রতিষ্ঠান বা ক্লিনিকের নাম"}
+                          </h1>
+                          <p className="text-[10px] text-zinc-500 max-w-md mx-auto">
+                            {previewLocale === "en"
+                              ? formData.en_description || "Quality Products & Diagnostic Services"
+                              : formData.bn_description || "গুণগত মানসম্পন্ন সেবা ও দ্রুততম ডেলিভারি"}
+                          </p>
+                          {block.options?.showContact && (
+                            <div className="text-[10px] text-zinc-600 mt-1">
+                              {previewLocale === "en"
+                                ? "Phone: +880 1712-000000 | Dhaka - 1205, Bangladesh"
+                                : "ফোন: ০১৭১২-০০০০০০ | ঢাকা - ১২০৫, বাংলাদেশ"}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Block Type: Meta */}
+                      {block.type === "meta" && (
+                        <div className="flex justify-between items-center text-[10px] text-zinc-700 py-1.5 bg-zinc-50 px-3 rounded border border-zinc-100">
+                          <div>
+                            <strong>{previewLocale === "en" ? "Doc / Memo No:" : "নথি / মেমো নং:"}</strong> #DOC-2026-089
+                          </div>
+                          <div>
+                            <strong>{previewLocale === "en" ? "Issue Date:" : "ইস্যু তারিখ:"}</strong> 2026-11-12
+                          </div>
+                          {block.options?.showCourier && (
+                            <div>
+                              <strong>{previewLocale === "en" ? "Courier:" : "কুরিয়ার:"}</strong> Steadfast BD
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Block Type: Recipient */}
+                      {block.type === "recipient" && (
+                        <div className="text-[11px] py-1">
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                            {previewLocale === "en" ? "Billed / Prescribed To:" : "প্রাপক / গ্রাহকের তথ্য:"}
+                          </div>
+                          <div className="font-bold text-zinc-800 text-xs">
+                            {previewLocale === "en" ? "Md. Tanvir Ahmed" : "মোঃ তানভীর আহমেদ"}
+                          </div>
+                          <div className="text-[10px] text-zinc-600">
+                            {previewLocale === "en"
+                              ? "House 14, Road 5, Mirpur-10, Dhaka | Phone: +880 1819-000000"
+                              : "বাড়ি ১৪, রোড ৫, মিরপুর-১০, ঢাকা | মোবাইল: ০১৮১৯-০০০০০০"}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Block Type: Table */}
+                      {block.type === "table" && (
+                        <div className="py-2">
+                          <table className="w-full text-left text-[11px] border border-zinc-200">
+                            <thead className="bg-zinc-100 text-zinc-700 font-bold border-b border-zinc-200">
+                              <tr>
+                                <th className="p-2">{previewLocale === "en" ? "Item / Service Description" : "পণ্য বা সেবার বিবরণ"}</th>
+                                <th className="p-2 text-center">{previewLocale === "en" ? "Qty" : "পরিমাণ"}</th>
+                                <th className="p-2 text-right">{previewLocale === "en" ? "Rate" : "দর"}</th>
+                                <th className="p-2 text-right">{previewLocale === "en" ? "Amount" : "টাকা"}</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-zinc-200">
+                              <tr>
+                                <td className="p-2">
+                                  {previewLocale === "en" ? "Premium Formal Cotton Shirt" : "প্রিমিয়াম সুতি ফরমাল শার্ট"}
+                                </td>
+                                <td className="p-2 text-center font-mono">2</td>
+                                <td className="p-2 text-right font-mono">{formData.en_currency} 1,250</td>
+                                <td className="p-2 text-right font-mono font-bold">{formData.en_currency} 2,500</td>
+                              </tr>
+                              <tr>
+                                <td className="p-2">
+                                  {previewLocale === "en" ? "Standard Service / Consultation Fee" : "সার্ভিস বা কনসাল্টেশন ফি"}
+                                </td>
+                                <td className="p-2 text-center font-mono">1</td>
+                                <td className="p-2 text-right font-mono">{formData.en_currency} 500</td>
+                                <td className="p-2 text-right font-mono font-bold">{formData.en_currency} 500</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+
+                      {/* Block Type: Summary */}
+                      {block.type === "summary" && (
+                        <div className="text-[11px] space-y-1 text-right py-1.5 border-t border-zinc-200 mt-1">
+                          <div className="text-zinc-600">
+                            {previewLocale === "en" ? "Subtotal:" : "মোট মূল্য:"}{" "}
+                            <span className="font-mono">{formData.en_currency} 3,000</span>
+                          </div>
+                          {block.options?.showDelivery && (
+                            <div className="text-zinc-600">
+                              {previewLocale === "en" ? "Delivery Fee:" : "ডেলিভারি চার্জ:"}{" "}
+                              <span className="font-mono">+ {formData.en_currency} 120</span>
+                            </div>
+                          )}
+                          {block.options?.showDiscount && (
+                            <div className="text-zinc-600">
+                              {previewLocale === "en" ? "Discount:" : "বিশেষ ছাড়:"}{" "}
+                              <span className="font-mono text-emerald-600">- {formData.en_currency} 100</span>
+                            </div>
+                          )}
+                          <div className="text-xs font-black text-zinc-900 border-t border-zinc-300 pt-1">
+                            {previewLocale === "en" ? "Net Total Due:" : "সর্বমোট বকেয়া:"}{" "}
+                            <span className="font-mono text-red-600">{formData.en_currency} 3,020</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Block Type: Signatory */}
+                      {block.type === "signatory" && (
+                        <div className="pt-6 pb-2 flex justify-between items-end">
+                          <div className="text-center w-36 border-t border-zinc-400 pt-1 text-[10px] text-zinc-700 font-bold">
+                            {previewLocale === "en" ? "Customer Signature" : "গ্রাহকের স্বাক্ষর"}
+                          </div>
+                          <div className="text-center w-40 border-t border-zinc-900 pt-1 text-[10px] text-zinc-900 font-bold">
+                            {previewLocale === "en" ? formData.en_signatory : formData.bn_signatory}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Block Type: Terms */}
+                      {block.type === "terms" && (
+                        <div className="text-[9px] text-zinc-500 italic pt-2 border-t border-zinc-200">
+                          * {previewLocale === "en"
+                            ? "Thank you for doing business with us! For warranty, please preserve this document slip."
+                            : "আমাদের সেবা গ্রহণ করার জন্য আপনাকে ধন্যবাদ। ওয়ারেন্টির প্রয়োজনে অনুগ্রহ করে এই রসিদটি সংরক্ষণ করুন।"}
+                        </div>
+                      )}
+
+                      {/* Block Type: QR Code */}
+                      {block.type === "qrcode" && (
+                        <div className="flex items-center gap-3 p-2 bg-zinc-50 rounded border border-zinc-200 my-1">
+                          <div className="p-2 bg-white rounded border border-zinc-300">
+                            <QrCode className="w-8 h-8 text-zinc-900" />
+                          </div>
+                          <div>
+                            <div className="text-[10px] font-bold text-zinc-800">
+                              {previewLocale === "en" ? "Digital Verification QR" : "ডিজিটাল ভেরিফিকেশন কোড"}
+                            </div>
+                            <div className="text-[9px] text-zinc-500 font-mono">
+                              DOC-ID: FDF-8902-BD | Scan to verify originality
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Block Type: Callout */}
+                      {block.type === "callout" && (
+                        <div className="bg-amber-50 border-l-4 border-amber-500 p-2.5 rounded text-amber-900 text-[10px] my-1">
+                          <strong>{previewLocale === "en" ? "Important Notice:" : "জরুরি নোটিশ:"}</strong>{" "}
+                          {previewLocale === "en"
+                            ? "Please verify parcel seal before making payment."
+                            : "পণ্য বুঝে নিয়ে এবং সিলমোহর পরীক্ষা করে মূল্য পরিশোধ করুন।"}
+                        </div>
+                      )}
+
+                      {/* Block Type: Custom */}
+                      {block.type === "custom" && (
+                        <div className="bg-zinc-100 p-2.5 rounded text-[10px] text-zinc-700 my-1">
+                          <strong>{previewLocale === "en" ? block.titleEn : block.titleBn}:</strong> Custom configured block data.
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </main>
+
+            {/* ============================================================== */}
+            {/* COLUMN 3: BLOCK & STYLE INSPECTOR (RIGHT PANEL - 320px)       */}
+            {/* ============================================================== */}
+            <aside className="w-80 bg-zinc-900 border-l border-zinc-800 flex flex-col shrink-0 select-none">
+              {/* Inspector Top Tabs */}
+              <div className="flex border-b border-zinc-800">
+                <button
+                  type="button"
+                  onClick={() => setInspectorTab("block")}
+                  className={`flex-1 py-3 text-xs font-bold transition flex items-center justify-center gap-1.5 border-b-2 cursor-pointer ${
+                    inspectorTab === "block"
+                      ? "border-red-500 text-white bg-zinc-850"
+                      : "border-transparent text-zinc-400 hover:text-white"
+                  }`}
+                >
+                  <Sliders className="w-3.5 h-3.5 text-amber-400" /> Block Properties
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setInspectorTab("meta")}
+                  className={`flex-1 py-3 text-xs font-bold transition flex items-center justify-center gap-1.5 border-b-2 cursor-pointer ${
+                    inspectorTab === "meta"
+                      ? "border-red-500 text-white bg-zinc-850"
+                      : "border-transparent text-zinc-400 hover:text-white"
+                  }`}
+                >
+                  <Globe className="w-3.5 h-3.5 text-blue-400" /> Template Meta
+                </button>
+              </div>
+
+              {/* Inspector Body */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {/* 1. BLOCK INSPECTOR TAB */}
+                {inspectorTab === "block" && activeSelectedBlock && (
+                  <div className="space-y-4">
+                    <div className="bg-zinc-950 p-3 rounded-xl border border-zinc-800 flex items-center justify-between">
+                      <div>
+                        <div className="text-[10px] font-mono uppercase text-zinc-500">Selected Block #{selectedBlockIndex + 1}</div>
+                        <div className="text-xs font-bold text-white">{activeSelectedBlock.titleEn}</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => toggleBlockEnabled(selectedBlockIndex)}
+                        className={`px-2 py-1 rounded-lg text-[10px] font-mono font-bold transition cursor-pointer border ${
+                          activeSelectedBlock.enabled
+                            ? "bg-emerald-950/80 text-emerald-400 border-emerald-800"
+                            : "bg-zinc-800 text-zinc-500 border-zinc-700"
+                        }`}
+                      >
+                        {activeSelectedBlock.enabled ? "Active" : "Disabled"}
+                      </button>
+                    </div>
+
+                    {/* Block Title (English) */}
+                    <div>
+                      <label className="block text-[11px] font-bold text-zinc-300 mb-1">
+                        Block Title (English)
+                      </label>
+                      <input
+                        type="text"
+                        value={activeSelectedBlock.titleEn}
+                        onChange={(e) => {
+                          const updated = [...templateBlocks];
+                          updated[selectedBlockIndex].titleEn = e.target.value;
+                          setTemplateBlocks(updated);
+                        }}
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-red-500"
+                      />
+                    </div>
+
+                    {/* Block Title (Bangla - Mandatory) */}
+                    <div>
+                      <label className="block text-[11px] font-bold text-emerald-400 mb-1 flex items-center justify-between">
+                        <span>বাংলা শিরোনাম (Bangla Title)</span>
+                        <span className="text-[9px] font-mono text-zinc-500">*বাধ্যতামূলক</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={activeSelectedBlock.titleBn}
+                        onChange={(e) => {
+                          const updated = [...templateBlocks];
+                          updated[selectedBlockIndex].titleBn = e.target.value;
+                          setTemplateBlocks(updated);
+                        }}
+                        className="w-full bg-zinc-950 border border-emerald-900/60 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+
+                    {/* Block Options / Feature Toggles */}
+                    <div className="space-y-2 pt-2 border-t border-zinc-800">
+                      <div className="text-[10px] font-mono uppercase text-zinc-500">Block Configuration Toggles</div>
+
+                      {activeSelectedBlock.type === "header" && (
+                        <div className="space-y-2">
+                          <label className="flex items-center justify-between text-xs text-zinc-300 cursor-pointer">
+                            <span>Show Business Logo</span>
+                            <input
+                              type="checkbox"
+                              checked={Boolean(activeSelectedBlock.options?.showLogo)}
+                              onChange={(e) => {
+                                const updated = [...templateBlocks];
+                                updated[selectedBlockIndex].options = {
+                                  ...updated[selectedBlockIndex].options,
+                                  showLogo: e.target.checked,
+                                };
+                                setTemplateBlocks(updated);
+                              }}
+                              className="rounded text-red-600 focus:ring-0"
+                            />
+                          </label>
+                          <label className="flex items-center justify-between text-xs text-zinc-300 cursor-pointer">
+                            <span>Show Contact & Phone</span>
+                            <input
+                              type="checkbox"
+                              checked={Boolean(activeSelectedBlock.options?.showContact)}
+                              onChange={(e) => {
+                                const updated = [...templateBlocks];
+                                updated[selectedBlockIndex].options = {
+                                  ...updated[selectedBlockIndex].options,
+                                  showContact: e.target.checked,
+                                };
+                                setTemplateBlocks(updated);
+                              }}
+                              className="rounded text-red-600 focus:ring-0"
+                            />
+                          </label>
+                        </div>
+                      )}
+
+                      {activeSelectedBlock.type === "summary" && (
+                        <div className="space-y-2">
+                          <label className="flex items-center justify-between text-xs text-zinc-300 cursor-pointer">
+                            <span>Show Delivery Fee</span>
+                            <input
+                              type="checkbox"
+                              checked={Boolean(activeSelectedBlock.options?.showDelivery)}
+                              onChange={(e) => {
+                                const updated = [...templateBlocks];
+                                updated[selectedBlockIndex].options = {
+                                  ...updated[selectedBlockIndex].options,
+                                  showDelivery: e.target.checked,
+                                };
+                                setTemplateBlocks(updated);
+                              }}
+                              className="rounded text-red-600 focus:ring-0"
+                            />
+                          </label>
+                          <label className="flex items-center justify-between text-xs text-zinc-300 cursor-pointer">
+                            <span>Show Special Discount</span>
+                            <input
+                              type="checkbox"
+                              checked={Boolean(activeSelectedBlock.options?.showDiscount)}
+                              onChange={(e) => {
+                                const updated = [...templateBlocks];
+                                updated[selectedBlockIndex].options = {
+                                  ...updated[selectedBlockIndex].options,
+                                  showDiscount: e.target.checked,
+                                };
+                                setTemplateBlocks(updated);
+                              }}
+                              className="rounded text-red-600 focus:ring-0"
+                            />
+                          </label>
+                        </div>
+                      )}
+
+                      {activeSelectedBlock.type === "signatory" && (
+                        <div className="space-y-2">
+                          <label className="flex items-center justify-between text-xs text-zinc-300 cursor-pointer">
+                            <span>Show Official Stamp Seal</span>
+                            <input
+                              type="checkbox"
+                              checked={Boolean(activeSelectedBlock.options?.showSeal)}
+                              onChange={(e) => {
+                                const updated = [...templateBlocks];
+                                updated[selectedBlockIndex].options = {
+                                  ...updated[selectedBlockIndex].options,
+                                  showSeal: e.target.checked,
+                                };
+                                setTemplateBlocks(updated);
+                              }}
+                              className="rounded text-red-600 focus:ring-0"
+                            />
+                          </label>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. TEMPLATE META INSPECTOR TAB */}
+                {inspectorTab === "meta" && (
+                  <div className="space-y-3">
                     <div>
                       <label className="block text-[10px] font-mono uppercase text-zinc-400 mb-1">
-                        URL Identifier (Slug) *
+                        URL Slug Identifier *
                       </label>
                       <input
                         type="text"
                         required
                         placeholder="e.g. madrasah-cash-memo"
-                        className="w-full text-xs bg-zinc-950 border border-zinc-750 rounded-lg px-2.5 py-2 text-white font-mono focus:ring-1 focus:ring-red-500 focus:outline-none"
                         value={formData.slug}
                         onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                        className="w-full text-xs bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-2 text-white font-mono focus:outline-none focus:border-red-500"
                       />
                     </div>
+
                     <div>
                       <label className="block text-[10px] font-mono uppercase text-zinc-400 mb-1">
                         Category Classification *
                       </label>
                       <select
-                        className="w-full text-xs bg-zinc-950 border border-zinc-750 rounded-lg px-2.5 py-2 text-white focus:outline-none"
                         value={formData.category}
                         onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                        className="w-full text-xs bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-2 text-white focus:outline-none"
                       >
                         <option value="Business">Business & Commerce</option>
                         <option value="Healthcare">Healthcare & Clinics</option>
@@ -1075,472 +1882,86 @@ export default function AdminTemplatesManagerPage() {
                         <option value="Printables">Printables & Legal</option>
                       </select>
                     </div>
-                    <div>
-                      <label className="block text-[10px] font-mono uppercase text-zinc-400 mb-1">
-                        Paper Format *
-                      </label>
-                      <select
-                        className="w-full text-xs bg-zinc-950 border border-zinc-750 rounded-lg px-2.5 py-2 text-white focus:outline-none"
-                        value={formData.paperSize}
-                        onChange={(e) => setFormData({ ...formData, paperSize: e.target.value })}
-                      >
-                        <option value="A4">A4 Standard Sheet (210 x 297 mm)</option>
-                        <option value="POS_80MM">80mm POS Thermal Receipt Roll</option>
-                      </select>
-                    </div>
-                  </div>
 
-                  {/* Bilingual Tabs Switcher */}
-                  <div className="flex border-b border-zinc-800 mt-2">
-                    <button
-                      type="button"
-                      onClick={() => setLocaleTab("en")}
-                      className={`px-4 py-2 text-xs font-bold transition flex items-center gap-1.5 border-b-2 cursor-pointer ${
-                        localeTab === "en"
-                          ? "border-red-500 text-white bg-zinc-900"
-                          : "border-transparent text-zinc-400 hover:text-white"
-                      }`}
-                    >
-                      <Globe className="w-3.5 h-3.5 text-blue-400" /> English Content (Required)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setLocaleTab("bn")}
-                      className={`px-4 py-2 text-xs font-bold transition flex items-center gap-1.5 border-b-2 cursor-pointer ${
-                        localeTab === "bn"
-                          ? "border-emerald-500 text-white bg-zinc-900"
-                          : "border-transparent text-zinc-400 hover:text-white"
-                      }`}
-                    >
-                      <Globe className="w-3.5 h-3.5 text-emerald-400" /> বাংলা সংস্করণ (Mandatory!)
-                    </button>
-                  </div>
-
-                  {/* ENGLISH FIELDS */}
-                  {localeTab === "en" && (
-                    <div className="space-y-3 bg-zinc-900/60 p-4 rounded-2xl border border-zinc-800">
+                    {/* Dual-Locale Title & Description */}
+                    <div className="space-y-3 pt-2 border-t border-zinc-800">
                       <div>
-                        <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                          English Template Title *
+                        <label className="block text-xs font-bold text-zinc-300 mb-1">
+                          English Title *
                         </label>
                         <input
                           type="text"
-                          placeholder="e.g. Diagnostic Center Clinical Test Bill"
-                          className="w-full text-xs bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-red-500"
+                          placeholder="e.g. Clinical Test Bill"
                           value={formData.en_title}
                           onChange={(e) => setFormData({ ...formData, en_title: e.target.value })}
+                          className="w-full text-xs bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-2 text-white focus:outline-none focus:border-red-500"
                         />
                       </div>
+
                       <div>
-                        <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                        <label className="block text-xs font-bold text-zinc-300 mb-1">
                           English Description *
                         </label>
                         <textarea
                           rows={2}
-                          placeholder="Detailed purpose and instructions for English users..."
-                          className="w-full text-xs bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-red-500"
                           value={formData.en_description}
                           onChange={(e) => setFormData({ ...formData, en_description: e.target.value })}
+                          className="w-full text-xs bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-2 text-white focus:outline-none focus:border-red-500"
                         />
                       </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                            Signatory Title (EN)
-                          </label>
-                          <input
-                            type="text"
-                            className="w-full text-xs bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none"
-                            value={formData.en_signatory}
-                            onChange={(e) => setFormData({ ...formData, en_signatory: e.target.value })}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                            Currency Symbol
-                          </label>
-                          <input
-                            type="text"
-                            className="w-full text-xs bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none"
-                            value={formData.en_currency}
-                            onChange={(e) => setFormData({ ...formData, en_currency: e.target.value })}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
 
-                  {/* BANGLA FIELDS (MANDATORY) */}
-                  {localeTab === "bn" && (
-                    <div className="space-y-3 bg-zinc-900/60 p-4 rounded-2xl border border-emerald-950/60">
                       <div>
-                        <label className="block text-xs font-semibold text-emerald-400 mb-1 flex items-center justify-between">
-                          <span>বাংলা শিরোনাম (Bangla Title - Mandatory) *</span>
-                          <span className="text-[10px] text-zinc-400 font-mono">*বাধ্যতামূলক</span>
+                        <label className="block text-xs font-bold text-emerald-400 mb-1 flex items-center justify-between">
+                          <span>বাংলা শিরোনাম (Bangla Title) *</span>
+                          <span className="text-[9px] font-mono text-zinc-500">*বাধ্যতামূলক</span>
                         </label>
                         <input
                           type="text"
-                          placeholder="যেমন: ডায়াগনস্টিক টেস্ট ও ক্লিনিক্যাল মানি রসিদ"
-                          className="w-full text-xs bg-zinc-950 border border-emerald-800/60 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                          placeholder="যেমন: ক্লিনিক্যাল টেস্ট মানি রসিদ"
                           value={formData.bn_title}
                           onChange={(e) => setFormData({ ...formData, bn_title: e.target.value })}
+                          className="w-full text-xs bg-zinc-950 border border-emerald-900/60 rounded-lg px-2.5 py-2 text-white focus:outline-none focus:border-emerald-500"
                         />
                       </div>
+
                       <div>
-                        <label className="block text-xs font-semibold text-emerald-400 mb-1 flex items-center justify-between">
-                          <span>বাংলা বিবরণ (Bangla Description - Mandatory) *</span>
-                          <span className="text-[10px] text-zinc-400 font-mono">*বাধ্যতামূলক</span>
+                        <label className="block text-xs font-bold text-emerald-400 mb-1 flex items-center justify-between">
+                          <span>বাংলা বিবরণ (Bangla Description) *</span>
+                          <span className="text-[9px] font-mono text-zinc-500">*বাধ্যতামূলক</span>
                         </label>
                         <textarea
                           rows={2}
-                          placeholder="টেমপ্লেটটির ব্যবহার ও সুবিধা সম্পর্কে বাংলায় লিখুন..."
-                          className="w-full text-xs bg-zinc-950 border border-emerald-800/60 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
                           value={formData.bn_description}
                           onChange={(e) => setFormData({ ...formData, bn_description: e.target.value })}
+                          className="w-full text-xs bg-zinc-950 border border-emerald-900/60 rounded-lg px-2.5 py-2 text-white focus:outline-none focus:border-emerald-500"
                         />
                       </div>
-                      <div className="grid grid-cols-2 gap-3">
+
+                      <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="block text-xs font-semibold text-emerald-400 mb-1">
-                            স্বাক্ষর পদবি (BN Signatory Title)
-                          </label>
+                          <label className="block text-[10px] font-mono text-zinc-400 mb-1">Currency</label>
                           <input
                             type="text"
-                            className="w-full text-xs bg-zinc-950 border border-emerald-800/60 rounded-lg px-3 py-2 text-white focus:outline-none"
-                            value={formData.bn_signatory}
-                            onChange={(e) => setFormData({ ...formData, bn_signatory: e.target.value })}
+                            value={formData.en_currency}
+                            onChange={(e) => setFormData({ ...formData, en_currency: e.target.value })}
+                            className="w-full text-xs bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-1.5 text-white"
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-semibold text-emerald-400 mb-1">
-                            মুদ্রা প্রতীক (Currency)
-                          </label>
+                          <label className="block text-[10px] font-mono text-zinc-400 mb-1">মুদ্রা (BN)</label>
                           <input
                             type="text"
-                            className="w-full text-xs bg-zinc-950 border border-emerald-800/60 rounded-lg px-3 py-2 text-white focus:outline-none"
                             value={formData.bn_currency}
                             onChange={(e) => setFormData({ ...formData, bn_currency: e.target.value })}
+                            className="w-full text-xs bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-1.5 text-white"
                           />
                         </div>
                       </div>
                     </div>
-                  )}
-                </div>
-              )}
-
-              {/* TAB 2: VISUAL BLOCK ORGANIZER ("DARK DROP EDIT BOX") */}
-              {modalTab === "blocks" && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between bg-zinc-900/60 p-3 rounded-xl border border-zinc-800">
-                    <div>
-                      <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
-                        <GripVertical className="w-3.5 h-3.5 text-amber-400" />
-                        Interactive Layout Structure (Dark Drop Box)
-                      </h4>
-                      <p className="text-[11px] text-zinc-400">
-                        Drag & drop blocks to rearrange the vertical flow of your printable document. Toggle switches to enable or disable sections.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleAddCustomBlock}
-                      className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs px-2.5 py-1.5 rounded-lg border border-zinc-700 flex items-center gap-1 cursor-pointer"
-                    >
-                      <Plus className="w-3.5 h-3.5" /> Add Section
-                    </button>
                   </div>
-
-                  {/* DRAGGABLE BLOCK LIST */}
-                  <div className="space-y-2">
-                    {templateBlocks.map((block, index) => (
-                      <div
-                        key={block.id}
-                        draggable
-                        onDragStart={() => handleDragStart(index)}
-                        onDragOver={(e) => handleDragOver(e, index)}
-                        onDrop={() => handleDrop(index)}
-                        className={`p-3.5 rounded-xl border transition flex flex-col gap-2 ${
-                          draggedBlockIndex === index
-                            ? "opacity-50 border-red-500 bg-zinc-800/80"
-                            : block.enabled
-                            ? "bg-zinc-900 border-zinc-800 hover:border-zinc-700"
-                            : "bg-zinc-950/60 border-zinc-900 opacity-60"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between gap-3">
-                          {/* Drag Handle & Step */}
-                          <div className="flex items-center gap-2.5">
-                            <div
-                              className="cursor-grab active:cursor-grabbing text-zinc-500 hover:text-white p-1"
-                              title="Drag to reorder section"
-                            >
-                              <GripVertical className="w-4 h-4" />
-                            </div>
-                            <span className="text-[10px] font-mono font-bold bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded">
-                              {String(index + 1).padStart(2, "0")}
-                            </span>
-                            <div>
-                              <div className="font-bold text-white text-xs flex items-center gap-2">
-                                {block.titleEn}
-                                <span className="text-zinc-500 font-normal">/</span>
-                                <span className="text-emerald-400 font-normal">{block.titleBn}</span>
-                              </div>
-                              <div className="text-[10px] text-zinc-400 mt-0.5">
-                                {block.descriptionEn}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Controls (Move Up/Down & Toggle) */}
-                          <div className="flex items-center gap-2">
-                            <div className="flex items-center bg-zinc-950 rounded-lg border border-zinc-800 p-0.5">
-                              <button
-                                type="button"
-                                disabled={index === 0}
-                                onClick={() => moveBlock(index, "up")}
-                                className="p-1 text-zinc-400 hover:text-white disabled:opacity-30 cursor-pointer"
-                                title="Move Up"
-                              >
-                                <ChevronUp className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                type="button"
-                                disabled={index === templateBlocks.length - 1}
-                                onClick={() => moveBlock(index, "down")}
-                                className="p-1 text-zinc-400 hover:text-white disabled:opacity-30 cursor-pointer"
-                                title="Move Down"
-                              >
-                                <ChevronDown className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-
-                            {/* Active Switch */}
-                            <button
-                              type="button"
-                              onClick={() => toggleBlockEnabled(block.id)}
-                              className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold transition cursor-pointer border ${
-                                block.enabled
-                                  ? "bg-emerald-950/80 text-emerald-400 border-emerald-800"
-                                  : "bg-zinc-800 text-zinc-500 border-zinc-700"
-                              }`}
-                            >
-                              {block.enabled ? "Active" : "Disabled"}
-                            </button>
-
-                            {block.type === "custom" && (
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteBlock(block.id)}
-                                className="p-1 text-zinc-500 hover:text-red-400 cursor-pointer"
-                                title="Delete Section"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* TAB 3: LIVE PREVIEW CANVAS */}
-              {modalTab === "preview" && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between bg-zinc-900/60 p-3 rounded-xl border border-zinc-800">
-                    <span className="text-xs text-zinc-400 font-mono">
-                      Visual snapshot with current organized block layout:
-                    </span>
-                    <div className="flex items-center bg-zinc-950 border border-zinc-800 rounded-lg p-0.5 text-xs">
-                      <button
-                        type="button"
-                        onClick={() => setPreviewLocale("en")}
-                        className={`px-3 py-1 rounded-md transition text-xs font-bold cursor-pointer ${
-                          previewLocale === "en" ? "bg-red-600 text-white" : "text-zinc-400 hover:text-white"
-                        }`}
-                      >
-                        English Preview
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPreviewLocale("bn")}
-                        className={`px-3 py-1 rounded-md transition text-xs font-bold cursor-pointer ${
-                          previewLocale === "bn" ? "bg-red-600 text-white" : "text-zinc-400 hover:text-white"
-                        }`}
-                      >
-                        বাংলা প্রিভিউ
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* DOCUMENT PREVIEW CONTAINER */}
-                  <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 flex justify-center">
-                    <div
-                      className={`bg-white text-zinc-900 rounded-lg shadow-2xl p-6 transition-all ${
-                        formData.paperSize === "POS_80MM"
-                          ? "w-80 border-dashed border-2 border-zinc-400 font-mono text-xs"
-                          : "w-full max-w-lg font-sans text-xs"
-                      }`}
-                    >
-                      {/* Render blocks in organized order */}
-                      {templateBlocks
-                        .filter((b) => b.enabled)
-                        .map((block) => (
-                          <div key={block.id} className="py-2.5 border-b border-zinc-200 last:border-b-0">
-                            {/* Block 1: Header */}
-                            {block.type === "header" && (
-                              <div className="text-center pb-2">
-                                <div className="text-xs uppercase font-mono tracking-widest text-zinc-500">
-                                  {previewLocale === "en" ? formData.category : "ক্যাটাগরি"}
-                                </div>
-                                <h1 className="text-base font-black text-zinc-900 mt-0.5">
-                                  {previewLocale === "en"
-                                    ? formData.en_title || "Sample Business / Clinic Name"
-                                    : formData.bn_title || "নমুনা প্রতিষ্ঠান বা ক্লিনিকের নাম"}
-                                </h1>
-                                <p className="text-[10px] text-zinc-500">
-                                  {previewLocale === "en" ? formData.en_description : formData.bn_description}
-                                </p>
-                              </div>
-                            )}
-
-                            {/* Block 2: Meta */}
-                            {block.type === "meta" && (
-                              <div className="flex justify-between text-[10px] text-zinc-600 py-1 bg-zinc-50 px-2 rounded">
-                                <span>
-                                  <strong>{previewLocale === "en" ? "Doc No:" : "নথি নং:"}</strong> #DOC-2026-001
-                                </span>
-                                <span>
-                                  <strong>{previewLocale === "en" ? "Date:" : "তারিখ:"}</strong> 2026-11-12
-                                </span>
-                              </div>
-                            )}
-
-                            {/* Block 3: Recipient */}
-                            {block.type === "recipient" && (
-                              <div className="text-[11px] py-1">
-                                <span className="font-bold text-zinc-700">
-                                  {previewLocale === "en" ? "Billed / Prescribed To:" : "প্রাপক / রোগী:"}
-                                </span>
-                                <div className="text-zinc-800">
-                                  {previewLocale === "en" ? "Md. Tanvir Ahmed (Customer/Patient)" : "মোঃ তানভীর আহমেদ (গ্রাহক)"}
-                                </div>
-                                <div className="text-[10px] text-zinc-500">
-                                  {previewLocale === "en" ? "Dhaka, Bangladesh | +880 1712-000000" : "ঢাকা, বাংলাদেশ | ০১৭১২-০০০০০০"}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Block 4: Table */}
-                            {block.type === "table" && (
-                              <div className="py-2">
-                                <table className="w-full text-left text-[11px] border border-zinc-200">
-                                  <thead className="bg-zinc-100 text-zinc-700 font-bold">
-                                    <tr>
-                                      <th className="p-1.5">{previewLocale === "en" ? "Item / Service" : "বিবরণ"}</th>
-                                      <th className="p-1.5 text-center">{previewLocale === "en" ? "Qty" : "পরিমাণ"}</th>
-                                      <th className="p-1.5 text-right">{previewLocale === "en" ? "Total" : "টাকা"}</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody className="divide-y divide-zinc-200">
-                                    <tr>
-                                      <td className="p-1.5">
-                                        {previewLocale === "en" ? "Standard Service Item" : "নমুনা পণ্য বা সেবা ০১"}
-                                      </td>
-                                      <td className="p-1.5 text-center font-mono">1</td>
-                                      <td className="p-1.5 text-right font-mono font-bold">
-                                        {formData.en_currency} 1,200
-                                      </td>
-                                    </tr>
-                                    <tr>
-                                      <td className="p-1.5">
-                                        {previewLocale === "en" ? "Consultation / Delivery" : "নমুনা পণ্য বা সেবা ০২"}
-                                      </td>
-                                      <td className="p-1.5 text-center font-mono">2</td>
-                                      <td className="p-1.5 text-right font-mono font-bold">
-                                        {formData.en_currency} 800
-                                      </td>
-                                    </tr>
-                                  </tbody>
-                                </table>
-                              </div>
-                            )}
-
-                            {/* Block 5: Summary */}
-                            {block.type === "summary" && (
-                              <div className="text-[11px] space-y-1 text-right py-1">
-                                <div className="text-zinc-600">
-                                  {previewLocale === "en" ? "Subtotal:" : "মোট টাকা:"}{" "}
-                                  <span className="font-mono">{formData.en_currency} 2,000</span>
-                                </div>
-                                <div className="text-zinc-600">
-                                  {previewLocale === "en" ? "Discount:" : "বিশেষ ছাড়:"}{" "}
-                                  <span className="font-mono">- {formData.en_currency} 100</span>
-                                </div>
-                                <div className="text-xs font-black text-zinc-900 border-t border-zinc-300 pt-1">
-                                  {previewLocale === "en" ? "Net Total Due:" : "সর্বমোট বকেয়া:"}{" "}
-                                  <span className="font-mono text-red-600">{formData.en_currency} 1,900</span>
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Block 6: Signatory */}
-                            {block.type === "signatory" && (
-                              <div className="pt-4 flex justify-end">
-                                <div className="text-center w-36 border-t border-zinc-400 pt-1 text-[10px] text-zinc-700 font-bold">
-                                  {previewLocale === "en" ? formData.en_signatory : formData.bn_signatory}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Block 7: Terms */}
-                            {block.type === "terms" && (
-                              <div className="text-[9px] text-zinc-500 italic pt-1">
-                                * {previewLocale === "en"
-                                  ? "Thank you for doing business with us. Keep this voucher for warranty."
-                                  : "আমাদের সেবা গ্রহণ করার জন্য ধন্যবাদ। ওয়ারেন্টির জন্য রসিদটি সংরক্ষণ করুন।"}
-                              </div>
-                            )}
-
-                            {/* Custom Blocks */}
-                            {block.type === "custom" && (
-                              <div className="bg-zinc-100 p-2 rounded text-[10px] text-zinc-700">
-                                <strong>{previewLocale === "en" ? block.titleEn : block.titleBn}:</strong> Custom configured block data.
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* MODAL ACTIONS FOOTER */}
-            <div className="pt-4 border-t border-zinc-800 flex items-center justify-between shrink-0">
-              <span className="text-[11px] text-zinc-500 font-mono">
-                *Strict Bilingual Parity: Both English &amp; Bangla must be completed.
-              </span>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="text-xs text-zinc-400 hover:text-white px-3 py-2 rounded-xl cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSaveTemplate}
-                  disabled={isSubmitting}
-                  className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs transition shadow-md cursor-pointer disabled:opacity-50"
-                >
-                  <Save className="w-3.5 h-3.5" />
-                  {isSubmitting ? "Publishing..." : "Save & Publish Template"}
-                </button>
+                )}
               </div>
-            </div>
+            </aside>
           </div>
         </div>
       )}

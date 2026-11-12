@@ -139,6 +139,23 @@
      * `npx tsc --noEmit` verified with 0 errors.
      * `npm run build` verified: All 74 routes compiled cleanly (Exit code 0).
 
+### M. High-Level Smart CMS Drag-and-Drop Studio & Security Hardening
+* **Resolved User Request:** "That template created from admin panel drop down editor will be most responsive and looks like a smart cms. Right now there have many webiste were we can make a page by darg and drop. So thats will be hight level editor . Obviously attractive and user friendly . Think about security issue of system . Think about a senior engineer who is working dropdown website making boss and Best UI UX designer then implement carefully. Test every case and make sure nothing break existing feature"
+* **Architectural Modules Engineered:**
+  1. **Full-Screen 3-Column Smart CMS Studio (`src/app/admin/(dashboard)/templates/page.tsx`):**
+     * **Top Command Bar:** Pulse indicator `● DOCFORGE SMART CMS`, live inline template title & slug display, responsive device viewport toggling (**ISO A4 Sheet** vs **80mm POS Thermal Roll**), live dual-locale toggle (**EN** vs **বাংলা**), zoom scale controls (`50%` to `150%`), and keyboard shortcuts (`Ctrl+S` / `Cmd+S` to save, `Esc` to close).
+     * **Column 1: Component Palette (Left Panel - 280px):** Categorized drag-and-drop block drawer with real-time search: Identity & Headers (Company, Clinic Rx, Academic Crest), Metadata & Tracking (Serials, Anti-counterfeit QR codes), Recipients (Customer profile, Clinical patient records), Itemized Tables (Sales, Pathology, Exam marksheets), Financial Totals, Signatures & BMDC seals, and Terms / Callout notices.
+     * **Column 2: Interactive Responsive Document Canvas (Center):** Authentic paper layout scaling with zoom, realistic sheet drop shadows, margins, and watermarks. Every block features floating hover toolbars (Drag handle, Move Up/Down, Duplicate, Visibility Toggle, Delete) and electric drop target indicator lines.
+     * **Column 3: Block & Style Inspector (Right Panel - 320px):** Dynamic dual-tab inspector displaying block-level properties (English and Bangla labels, theme presets, feature toggles) and master template metadata (slug, category, format, currencies).
+  2. **End-to-End Security Hardening (`src/app/api/admin/templates/route.ts`):**
+     * **Stored XSS Neutralization:** `sanitizeText()` strips dangerous `<script>`, `<iframe>`, `<object>`, `<embed>`, `javascript:`, and DOM event handlers (`onerror=`, `onload=`, `onclick=`) from all inputs.
+     * **Payload Size & DoS Protection:** Slices incoming blocks to a maximum of 30 blocks per template, bounds string lengths, and caps JSON schema to prevent memory exhaustion.
+     * **Reserved Slug Protection:** Blacklists system routing keywords (`api`, `admin`, `login`, `register`, `dashboard`, `templates`, `auth`, `null`, `undefined`, `__proto__`, `constructor`) and prohibits collisions with core built-in template slugs.
+     * **RBAC & Parameterized Queries:** Strictly guards all mutations with `getAdminSession` requiring cryptographic JWT with `role === "ADMIN"`. All queries parameterized through Prisma ORM.
+  3. **Verification & Build:**
+     * `npx tsc --noEmit` verified with 0 errors.
+     * `npm run build` verified: All 74 routes compiled with Exit code 0.
+
 ---
 
 ## 3. Where You Should Start Next (Actionable Roadmap)
