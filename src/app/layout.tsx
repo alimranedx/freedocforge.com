@@ -2,13 +2,22 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import "./globals.css";
 import { GlobalSettingsProvider } from "@/context/GlobalSettingsContext";
+import JsonLd from "@/components/JsonLd";
+import { getWebsiteSchema, getWebApplicationSchema, getOrganizationSchema } from "@/lib/seo";
 
-const siteUrl = process.env.NEXTAUTH_URL || "https://freedocforge.com";
+const isProduction = process.env.NODE_ENV === "production";
+const siteUrl =
+  isProduction && (!process.env.NEXTAUTH_URL || process.env.NEXTAUTH_URL.includes("localhost"))
+    ? "https://freedocforge.com"
+    : process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "https://freedocforge.com";
 const adsenseClientId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
 const enableAds = process.env.NEXT_PUBLIC_ENABLE_ADS === "true";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
+  alternates: {
+    canonical: "./",
+  },
   title: {
     default: "FreeDocForge.com - Free Smart Business Invoices, School Marksheets & Printables",
     template: "%s | FreeDocForge.com",
@@ -63,9 +72,18 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const rootSchemas = [
+    getWebsiteSchema(siteUrl),
+    getWebApplicationSchema(siteUrl),
+    getOrganizationSchema(siteUrl),
+  ];
+
   return (
     <html lang="en" className="h-full antialiased" suppressHydrationWarning>
       <head>
+        {/* Schema.org Structured Data */}
+        <JsonLd data={rootSchemas} />
+
         {/* Google AdSense Verification Script */}
         {enableAds && adsenseClientId && !adsenseClientId.includes("placeholder") && (
           <Script

@@ -20,9 +20,14 @@ import {
   Save,
   BookmarkCheck,
   Loader2,
+  RotateCcw,
+  ChevronDown,
+  ChevronUp,
+  Sparkles,
 } from "lucide-react";
 import { numberToWordsEnglish, numberToWordsBengali } from "@/lib/numberToWords";
 import AdSenseSlot from "@/components/AdSenseSlot";
+import PostDownloadModal from "@/components/PostDownloadModal";
 import VoiceInputButton, { parseBanglaDigits } from "@/components/VoiceInputButton";
 import { useGlobalSettings } from "@/context/GlobalSettingsContext";
 import { trackEvent } from "@/lib/analytics";
@@ -98,11 +103,48 @@ export default function InvoiceEditor({
   const [mobileView, setMobileView] = useState<"form" | "preview">("form");
   const [isExportingJpg, setIsExportingJpg] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [showPostDownloadModal, setShowPostDownloadModal] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
   const [docSaveLoading, setDocSaveLoading] = useState(false);
   const [docSaveSuccess, setDocSaveSuccess] = useState(false);
   const [docSaveMessage, setDocSaveMessage] = useState<string | null>(null);
+
+  // Collapsible Form Section Cards
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
+  const toggleSection = (id: string) => {
+    setCollapsedSections((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  // Quick Pre-Fill / Sample Data Handlers
+  const handleResetToSample = () => {
+    const sample = locales?.[docLang]?.defaultData || initialData || {};
+    setData((prev: any) => ({
+      ...prev,
+      ...sample,
+    }));
+  };
+
+  const handleClearForm = () => {
+    setData((prev: any) => ({
+      ...prev,
+      customerName: "",
+      customerPhone: "",
+      customerAddress: "",
+      patientName: "",
+      patientAge: "",
+      gender: "",
+      patientId: "",
+      referredBy: "",
+      bedWard: "",
+      sampleTime: "",
+      items: [{ name: "", quantity: 1, price: 0 }],
+      deliveryCharge: 0,
+      discount: 0,
+      paidAmount: 0,
+      notes: "",
+    }));
+  };
 
   // Auto-fill from user's active preset or load saved document
   useEffect(() => {
@@ -314,6 +356,8 @@ export default function InvoiceEditor({
         name: "pdf_download_completed",
         properties: { template_slug: templateSlug, paper_size: isPos ? "POS_80MM" : "A4" },
       });
+
+      setShowPostDownloadModal(true);
     } catch (e) {
       console.error("Direct PDF export error:", e);
       alert(
@@ -336,6 +380,8 @@ export default function InvoiceEditor({
         name: "pdf_download_completed",
         properties: { template_slug: templateSlug, paper_size: "A4_JPG" },
       });
+
+      setShowPostDownloadModal(true);
     } catch (e) {
       console.error("JPG export error:", e);
       alert(
@@ -475,7 +521,7 @@ export default function InvoiceEditor({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-20 lg:pb-0">
       {/* INDEPENDENT TEMPLATE DOCUMENT LANGUAGE BAR */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs print:hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-2.5">
@@ -1430,7 +1476,7 @@ export default function InvoiceEditor({
           </div>
 
           {/* In-sidebar AdSense Ad (Hidden when disabled) */}
-          <AdSenseSlot slotId="editor-sidebar-slot" format="rectangle" label="Sponsored Partner" />
+          <AdSenseSlot slotId="editor-sidebar-slot" format="rectangle" label="Advertisement" />
         </div>
 
         {/* RIGHT COLUMN: Live Printable A4 Canvas */}
@@ -1795,6 +1841,46 @@ export default function InvoiceEditor({
           <AdSenseSlot slotId="canvas-bottom-banner" format="horizontal" className="print:hidden" />
         </div>
       </div>
+
+      {/* STICKY BOTTOM MOBILE ACTION BAR (Hidden on lg+ and during print) */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-4 py-2.5 shadow-2xl flex items-center justify-between gap-2 lg:hidden print:hidden">
+        <button
+          type="button"
+          onClick={() => setMobileView(mobileView === "form" ? "preview" : "form")}
+          className="flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 active:scale-95 transition cursor-pointer"
+        >
+          {mobileView === "form" ? <Eye className="w-4 h-4 text-blue-600" /> : <Edit3 className="w-4 h-4 text-blue-600" />}
+          <span>{mobileView === "form" ? (docLang === "bn" ? "প্রিভিউ দেখুন" : "View Preview") : (docLang === "bn" ? "ফর্ম এডিট" : "Edit Form")}</span>
+        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handlePrint}
+            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white shadow-xs active:scale-95 transition cursor-pointer"
+            title="Print"
+          >
+            <Printer className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={handleDownloadPdf}
+            disabled={isExportingPdf}
+            className="flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md active:scale-95 transition cursor-pointer disabled:opacity-50"
+          >
+            {isExportingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            <span>{docLang === "bn" ? "PDF ডাউনলোড" : "Download PDF"}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Post-Download Confirmation Modal with Policy-Compliant Ad */}
+      <PostDownloadModal
+        isOpen={showPostDownloadModal}
+        onClose={() => setShowPostDownloadModal(false)}
+        documentTitle={data.businessName || data.templateTitle || "Document"}
+        lang={docLang}
+        paperSize={isPos ? "POS_80MM" : "A4"}
+      />
     </div>
   );
 }

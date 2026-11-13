@@ -6,6 +6,8 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AdSenseSlot from "@/components/AdSenseSlot";
 import TemplateCardPreview from "@/components/TemplateCardPreview";
+import JsonLd from "@/components/JsonLd";
+import { getBreadcrumbListSchema, getFaqPageSchema, SITE_URL } from "@/lib/seo";
 import { INITIAL_TEMPLATES, TemplateDefinition } from "@/lib/templates";
 import {
   Printer,
@@ -35,8 +37,44 @@ import {
 } from "lucide-react";
 import { useGlobalSettings } from "@/context/GlobalSettingsContext";
 
+const HOME_FAQS = [
+  {
+    questionEn: "Is FreeDocForge really 100% free with no watermarks?",
+    questionBn: "FreeDocForge কি সত্যিই সম্পূর্ণ ফ্রি এবং ওয়াটারমার্ক ছাড়া?",
+    answerEn: "Yes, 100% free forever. FreeDocForge does not place any watermarks, require subscription plans, or charge hidden fees for downloading or printing.",
+    answerBn: "হ্যাঁ, আজীবনের জন্য ১০০% ফ্রি। এতে কোনো ওয়াটারমার্ক থাকবে না এবং কোনো সাবস্ক্রিপশন ফি ছাড়াই আনলিমিটেড ডকুমেন্ট ডাউনলোড ও প্রিন্ট করতে পারবেন।",
+  },
+  {
+    questionEn: "Can I print documents on both standard ISO A4 paper and 80mm thermal POS receipt rolls?",
+    questionBn: "ডকুমেন্টগুলো কি সাধারণ A4 এবং ৮০ মিমি থার্মাল পিওএস উভয় পেপারে প্রিন্ট করা যায়?",
+    answerEn: "Yes! Our templates dynamically adapt to standard ISO A4 (desktop & laser printers) and 80mm ESC/POS thermal paper rolls widely used in restaurants and retail shops.",
+    answerBn: "হ্যাঁ! সাধারণ লেজার প্রিন্টারের জন্য স্ট্যান্ডার্ড A4 এবং রেস্টুরেন্ট বা সুপারশপের ৮০মিমি থার্মাল পেপার রোলের মাপে নিখুঁতভাবে প্রিন্ট নেওয়া যায়।",
+  },
+  {
+    questionEn: "How do I download vector PDF files directly without OS print dialogs?",
+    questionBn: "প্রিন্ট ডায়ালগ ছাড়া সরাসরি ভেক্টর PDF কীভাবে ডাউনলোড করব?",
+    answerEn: "Click the 'Download PDF' button on any document. Our client-side rendering engine instantly compiles and downloads a crystal-clear vector PDF into your device storage.",
+    answerBn: "যেকোনো টেমপ্লেটে 'PDF ডাউনলোড' বাটনে ক্লিক করলেই সরাসরি হাই-রেজোলিউশন ভেক্টর PDF আপনার ডিভাইসে ডাউনলোড হয়ে যাবে।",
+  },
+  {
+    questionEn: "Does Bengali Voice Typing support real-time voice speech input?",
+    questionBn: "বাংলা ভয়েস টাইপিং কি স্বাভাবিক কথোপকথনের আওয়াজ শনাক্ত করতে পারে?",
+    answerEn: "Yes! Click the microphone button next to any input field and speak naturally in Bengali (bn-BD) or English (en-US). Our voice engine types item names and amounts automatically.",
+    answerBn: "হ্যাঁ! যেকোনো ইনপুট বক্সের পাশের মাইক বাটনে ক্লিক করে বাংলায় কথা বলুন। স্বয়ংক্রিয়ভাবে পণ্য ও টাকার পরিমাণ বাংলায় টাইপ হয়ে যাবে।",
+  },
+  {
+    questionEn: "Is my business, customer, and student data kept private and secure?",
+    questionBn: "আমার ব্যবসা, কাস্টমার এবং শিক্ষার্থীদের তথ্যের গোপনীয়তা কি সুরক্ষিত থাকে?",
+    answerEn: "100% private. All document processing and PDF generation take place directly inside your web browser. We never store or transmit your guest invoice details to external servers.",
+    answerBn: "১০০% নিরাপদ ও গোপন। সমস্ত ডেটা সম্পূর্ণ আপনার ডিভাইসের ব্রাউজারে প্রক্রিয়াজাত হয়। কোনো সার্ভারে গ্রাহকের তথ্য সংরক্ষিত হয় না।",
+  },
+];
+
 export default function HomePage() {
   const { lang, t } = useGlobalSettings();
+
+  const homeBreadcrumb = getBreadcrumbListSchema([{ name: "Home", url: "/" }]);
+  const homeFaq = getFaqPageSchema(HOME_FAQS, lang);
 
   // Active Hero Interactive Studio Preview Tab
   const [heroActiveTab, setHeroActiveTab] = useState<
@@ -113,6 +151,10 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200">
+      {/* Schema.org Structured Data */}
+      <JsonLd data={homeBreadcrumb} />
+      <JsonLd data={homeFaq} />
+
       <Navbar />
 
       {/* 0. HIGH-CONVERTING TRUST & RETENTION RIBBON */}
@@ -1119,7 +1161,7 @@ export default function HomePage() {
 
       {/* MID-PAGE AD UNIT */}
       <div className="max-w-7xl mx-auto px-4 w-full my-6">
-        <AdSenseSlot slotId="home-mid-content-ad" format="horizontal" label="Sponsored Content" />
+        <AdSenseSlot slotId="home-mid-content-ad" format="horizontal" label="Advertisement" />
       </div>
 
       {/* 9. WHY STAY HERE? (FREEDOCFORGE VS WORD/EXCEL/PAID APPS) COMPARISON */}

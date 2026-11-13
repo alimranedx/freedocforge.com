@@ -5,12 +5,22 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { FileCheck, ShieldAlert, Award } from "lucide-react";
 import { useGlobalSettings } from "@/context/GlobalSettingsContext";
+import JsonLd from "@/components/JsonLd";
+import { getBreadcrumbListSchema } from "@/lib/seo";
 
 export default function TermsPage() {
   const { lang } = useGlobalSettings();
 
+  const breadcrumbs = getBreadcrumbListSchema([
+    { name: "Home", url: "/" },
+    { name: "Terms of Service", url: "/terms" },
+  ]);
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200">
+      {/* Schema.org Structured Data */}
+      <JsonLd data={breadcrumbs} />
+
       <Navbar />
 
       <main className="flex-1 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 w-full">

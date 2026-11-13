@@ -21,8 +21,14 @@ import {
   Loader2,
   MessageCircle,
   Image as ImageIcon,
+  RotateCcw,
+  ChevronDown,
+  ChevronUp,
+  Eye,
+  Edit3,
 } from "lucide-react";
 import AdSenseSlot from "@/components/AdSenseSlot";
+import PostDownloadModal from "@/components/PostDownloadModal";
 import VoiceInputButton from "@/components/VoiceInputButton";
 import { useGlobalSettings } from "@/context/GlobalSettingsContext";
 import ThemeSelectorBar from "@/components/ThemeSelectorBar";
@@ -66,11 +72,42 @@ export default function MedicalPrescriptionEditor({
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [isExportingJpg, setIsExportingJpg] = useState(false);
+  const [showPostDownloadModal, setShowPostDownloadModal] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
   const [docSaveLoading, setDocSaveLoading] = useState(false);
   const [docSaveSuccess, setDocSaveSuccess] = useState(false);
   const [docSaveMessage, setDocSaveMessage] = useState<string | null>(null);
+
+  const [mobileView, setMobileView] = useState<"form" | "preview">("form");
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
+  const toggleSection = (id: string) => {
+    setCollapsedSections((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const handleResetToSample = () => {
+    const sample = locales?.[docLang]?.defaultData || initialData || {};
+    setData((prev: any) => ({
+      ...prev,
+      ...sample,
+    }));
+  };
+
+  const handleClearForm = () => {
+    setData((prev: any) => ({
+      ...prev,
+      patientName: "",
+      patientAge: "",
+      patientGender: "",
+      patientWeight: "",
+      bp: "",
+      complaints: "",
+      diagnosis: "",
+      medicines: [{ name: "", dosage: "", duration: "", instruction: "" }],
+      tests: "",
+      advice: "",
+    }));
+  };
 
   // Auto-fill from user's active preset or load saved document
   useEffect(() => {
@@ -202,6 +239,7 @@ export default function MedicalPrescriptionEditor({
         paperSize: "A4",
         scale: 2,
       });
+      setShowPostDownloadModal(true);
     } catch (e) {
       console.error("Prescription PDF export error:", e);
       alert(
@@ -223,6 +261,7 @@ export default function MedicalPrescriptionEditor({
         `${data.prescriptionNumber || data.tokenNumber || "medical-prescription"}.jpg`,
         2
       );
+      setShowPostDownloadModal(true);
     } catch (e) {
       console.error("JPG export error:", e);
       alert(
@@ -383,7 +422,7 @@ export default function MedicalPrescriptionEditor({
   const isPrescription = !isSerial && !isDischarge;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-20 lg:pb-0">
       {/* INDEPENDENT TEMPLATE DOCUMENT LANGUAGE BAR */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs print:hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-2.5">
@@ -443,9 +482,41 @@ export default function MedicalPrescriptionEditor({
         lang={docLang}
       />
 
+      {/* MOBILE VIEWPORT SEGMENTED SWITCHER (<1024px) */}
+      <div className="flex lg:hidden items-center justify-between bg-slate-100 dark:bg-slate-800 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-700 print:hidden">
+        <button
+          type="button"
+          onClick={() => setMobileView("form")}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+            mobileView === "form"
+              ? "bg-white dark:bg-rose-600 text-rose-700 dark:text-white shadow-xs"
+              : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+          }`}
+        >
+          <Edit3 className="w-3.5 h-3.5" />
+          {docLang === "bn" ? "ফর্ম এডিট" : "Edit Form"}
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileView("preview")}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+            mobileView === "preview"
+              ? "bg-white dark:bg-rose-600 text-rose-700 dark:text-white shadow-xs"
+              : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+          }`}
+        >
+          <Eye className="w-3.5 h-3.5" />
+          {docLang === "bn" ? "প্রিন্ট প্রিভিউ" : "Print Preview"}
+        </button>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* LEFT COLUMN: Input Form Controls (Hidden during printing) */}
-        <div className="lg:col-span-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs print:hidden space-y-6 transition-colors">
+        <div
+          className={`lg:col-span-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs print:hidden space-y-6 transition-colors ${
+            mobileView === "form" ? "block" : "hidden lg:block"
+          }`}
+        >
           {/* Header & Voice Input Language Controls */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 gap-3">
             <div>
@@ -490,6 +561,33 @@ export default function MedicalPrescriptionEditor({
                 <span>English</span>
               </button>
             </div>
+          </div>
+
+          {/* Quick Pre-Fill / Sample Data Toolbar */}
+          <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleResetToSample}
+                className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 shadow-2xs transition cursor-pointer active:scale-95"
+                title={docLang === "bn" ? "আসল নমুনা প্রেসক্রিপশন ফিরিয়ে আনুন" : "Reset form to original sample data"}
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>{docLang === "bn" ? "নমুনা ডাটা" : "Reset Sample"}</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleClearForm}
+                className="inline-flex items-center gap-1 text-xs font-medium px-2 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition cursor-pointer"
+                title={docLang === "bn" ? "নতুন রোগীর জন্য ফর্ম খালি করুন" : "Clear fields for a fresh entry"}
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{docLang === "bn" ? "ফর্ম খালি করুন" : "Clear Form"}</span>
+              </button>
+            </div>
+            <span className="hidden sm:inline text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+              {docLang === "bn" ? "১-ক্লিক রিসেট" : "1-Click Reset"}
+            </span>
           </div>
 
           {/* 1. Doctor & Chamber Info */}
@@ -1204,11 +1302,30 @@ export default function MedicalPrescriptionEditor({
             </button>
           </div>
 
-          <AdSenseSlot slotId="medical-editor-sidebar" format="rectangle" label="Healthcare Partner" />
+          <AdSenseSlot slotId="medical-editor-sidebar" format="rectangle" label="Advertisement" />
         </div>
 
         {/* RIGHT COLUMN: Live Printable A4 Prescription Pad */}
-        <div className="lg:col-span-7 flex flex-col items-center">
+        <div
+          className={`lg:col-span-7 flex flex-col items-center ${
+            mobileView === "preview" ? "flex" : "hidden lg:flex"
+          }`}
+        >
+          {/* Mobile Back-to-Form Header (<1024px) */}
+          <div className="w-full flex lg:hidden items-center justify-between mb-4 bg-rose-50 dark:bg-rose-950/60 p-3 rounded-2xl border border-rose-200 dark:border-rose-800 print:hidden">
+            <span className="text-xs font-bold text-rose-900 dark:text-rose-200 flex items-center gap-1.5">
+              <Eye className="w-4 h-4 text-rose-600" />
+              {docLang === "bn" ? "লাইভ প্রেসক্রিপশন প্রিভিউ" : "Live Clinical Preview"}
+            </span>
+            <button
+              type="button"
+              onClick={() => setMobileView("form")}
+              className="text-xs font-bold px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-700 shadow-2xs active:scale-95 transition cursor-pointer"
+            >
+              {docLang === "bn" ? "← ফর্মে ফিরে যান" : "← Back to Form"}
+            </button>
+          </div>
+
           <div className="w-full flex items-center justify-between mb-3 print:hidden">
             <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-medium">
               <span className="inline-block w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
@@ -1684,6 +1801,46 @@ export default function MedicalPrescriptionEditor({
           <AdSenseSlot slotId="medical-canvas-bottom" format="horizontal" className="print:hidden mt-4" />
         </div>
       </div>
+
+      {/* STICKY BOTTOM MOBILE ACTION BAR (Hidden on lg+ and during print) */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-4 py-2.5 shadow-2xl flex items-center justify-between gap-2 lg:hidden print:hidden">
+        <button
+          type="button"
+          onClick={() => setMobileView(mobileView === "form" ? "preview" : "form")}
+          className="flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 active:scale-95 transition cursor-pointer"
+        >
+          {mobileView === "form" ? <Eye className="w-4 h-4 text-rose-600" /> : <Edit3 className="w-4 h-4 text-rose-600" />}
+          <span>{mobileView === "form" ? (docLang === "bn" ? "প্রিভিউ দেখুন" : "View Preview") : (docLang === "bn" ? "ফর্ম এডিট" : "Edit Form")}</span>
+        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handlePrint}
+            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white shadow-xs active:scale-95 transition cursor-pointer"
+            title="Print"
+          >
+            <Printer className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={handleDownloadPdf}
+            disabled={isExportingPdf}
+            className="flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white shadow-md active:scale-95 transition cursor-pointer disabled:opacity-50"
+          >
+            {isExportingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            <span>{docLang === "bn" ? "PDF ডাউনলোড" : "Download PDF"}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Post-Download Confirmation Modal with Policy-Compliant Ad */}
+      <PostDownloadModal
+        isOpen={showPostDownloadModal}
+        onClose={() => setShowPostDownloadModal(false)}
+        documentTitle={data.doctorName || data.templateTitle || "Medical Record"}
+        lang={docLang}
+        paperSize="A4"
+      />
     </div>
   );
 }

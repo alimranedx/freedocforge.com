@@ -7,6 +7,8 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AdSenseSlot from "@/components/AdSenseSlot";
 import TemplateCardPreview from "@/components/TemplateCardPreview";
+import JsonLd from "@/components/JsonLd";
+import { getBreadcrumbListSchema, SITE_URL } from "@/lib/seo";
 import { INITIAL_TEMPLATES, TemplateDefinition } from "@/lib/templates";
 import {
   Printer,
@@ -576,8 +578,31 @@ function CatalogContent() {
 }
 
 export default function TemplatesCatalogPage() {
+  const breadcrumbs = getBreadcrumbListSchema([
+    { name: "Home", url: "/" },
+    { name: "Templates", url: "/templates" },
+  ]);
+
+  const itemListSchema = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: "Free Printable Document & Invoicing Templates Catalog",
+    description: "Browse 60+ free printable templates for business invoices, class routines, exam schedules, and medical receipts.",
+    numberOfItems: INITIAL_TEMPLATES.length,
+    itemListElement: INITIAL_TEMPLATES.slice(0, 30).map((tmpl, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: `${tmpl.title} (${tmpl.category})`,
+      url: `${SITE_URL}/templates/${tmpl.slug}`,
+    })),
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200">
+      {/* Schema.org Structured Data */}
+      <JsonLd data={breadcrumbs} />
+      <JsonLd data={itemListSchema} />
+
       <Navbar />
       <Suspense fallback={<div className="flex-1 flex items-center justify-center p-20 text-xs text-slate-400">Loading catalog...</div>}>
         <CatalogContent />

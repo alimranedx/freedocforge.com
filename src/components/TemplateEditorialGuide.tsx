@@ -30,31 +30,109 @@ interface TemplateEditorialGuideProps {
   paperSize?: string;
 }
 
-const CATEGORY_FAQS: Record<string, FAQItem[]> = {
-  Business: [
+const PILLAR_FAQS: Record<string, FAQItem[]> = {
+  ClassRoutine: [
     {
-      questionEn: "Is this invoice and cash memo template completely free to use?",
-      questionBn: "এই ক্যাশ মেমো ও ইনভয়েস টেমপ্লেটটি কি সম্পূর্ণ ফ্রি?",
-      answerEn: "Yes, 100% free forever. FreeDocForge does not add any watermarks, require credit cards, or limit how many invoices you can create, download, or print.",
-      answerBn: "হ্যাঁ, এটি সম্পূর্ণ বিনামূল্যে আজীবনের জন্য ফ্রি। এতে কোনো ওয়াটারমার্ক থাকবে না এবং কোনো লিমিটেশন ছাড়াই যত খুশি ইনভয়েস প্রিন্ট ও ডাউনলোড করতে পারবেন।",
+      questionEn: "How do I customize class periods (P1 to P7) and timetable hours?",
+      questionBn: "ক্লাসের পিরিয়ড (১ম থেকে ৭ম) এবং সময়সূচি কীভাবে পরিবর্তন করব?",
+      answerEn: "You can click directly on any period time slot or subject badge in the interactive routine grid to edit class timings, room numbers, and assigned faculty members.",
+      answerBn: "ইন্টারেক্টিভ রুটিন গ্রিডের যেকোনো সময় বা বিষয়ের উপর ক্লিক করে আপনি খুব সহজেই ক্লাসের সময়, কক্ষ নম্বর ও শিক্ষকের নাম এডিট করতে পারবেন।",
     },
     {
-      questionEn: "Can I print this on both standard A4 and POS thermal receipt paper?",
-      questionBn: "এটি কি সাধারণ A4 এবং POS থার্মাল পেপার উভয়েই প্রিন্ট করা যাবে?",
-      answerEn: "Yes! You can choose standard A4 format for regular laser/inkjet printers, or select the POS 80mm format for thermal receipt printers widely used in retail and restaurants.",
-      answerBn: "হ্যাঁ! সাধারণ প্রিন্টারের জন্য A4 ফরম্যাট অথবা রেস্টুরেন্ট ও খুচরা দোকানের জন্য POS ৮০মিমি থার্মাল স্লিপ ফরম্যাট বেছে নিয়ে প্রিন্ট করতে পারেন।",
+      questionEn: "Can I print this class routine on standard ISO A4 paper?",
+      questionBn: "এই ক্লাস রুটিনটি কি সাধারণ A4 কাগজে পরিষ্কার প্রিন্ট হবে?",
+      answerEn: "Yes, our routine layouts are precision-crafted for standard ISO A4 sheets with crystal-clear borders and zero margin cut-offs on both desktop and laser printers.",
+      answerBn: "হ্যাঁ, আমাদের সব ক্লাস রুটিন স্ট্যান্ডার্ড A4 পেপারের মাপে নিখুঁতভাবে মার্জিন সেট করা, যাতে যেকোনো লেজার বা কালার প্রিন্টারে সম্পূর্ণ স্পষ্ট প্রিন্ট হয়।",
+    },
+    {
+      questionEn: "Does this routine support dual shifts (Morning & Day) and lab practicals?",
+      questionBn: "এটি কি মর্নিং/ডে শিফট এবং সাইন্স ল্যাব প্র্যাকটিক্যাল ক্লাসের জন্য উপযোগী?",
+      answerEn: "Yes. You can organize morning and day sections, specify double laboratory blocks, and add a teacher workload directory at the bottom of the sheet.",
+      answerBn: "হ্যাঁ। মর্নিং ও ডে শিফটের আলাদা সেকশন তৈরি, ডাবল ল্যাব পিরিয়ড নির্ধারণ এবং নিচে শিক্ষকগণের নাম ও বিষয়ের ডিরেক্টরি যুক্ত করার সম্পূর্ণ সুবিধা রয়েছে।",
+    },
+    {
+      questionEn: "Is this routine generator completely free without watermarks?",
+      questionBn: "এই রুটিন মেকার কি কোনো ওয়াটারমার্ক ছাড়া সম্পূর্ণ ফ্রি?",
+      answerEn: "100% free forever. FreeDocForge does not place any watermarks, require account signups, or restrict how many routines you can export and print.",
+      answerBn: "হ্যাঁ, আজীবনের জন্য ১০০% ফ্রি। এতে কোনো ওয়াটারমার্ক থাকবে না এবং কোনো রেজিস্ট্রেশন ছাড়াই যত খুশি রুটিন প্রিন্ট ও ডাউনলোড করতে পারবেন।",
+    },
+  ],
+  ExamRoutine: [
+    {
+      questionEn: "How do I set up exam shifts, dates, and subject codes?",
+      questionBn: "পরীক্ষার তারিখ, সময়, শিফট ও বিষয় কোড কীভাবে সাজাব?",
+      answerEn: "Enter exam dates, day names, start/end times, shifts (Morning / Afternoon), subject titles, and official board or institutional subject codes in the structured schedule table.",
+      answerBn: "পরীক্ষার রুটিন টেবিলে তারিখ, দিন, সময়, শিফট (মর্নিং/ডে), বিষয়ের নাম ও অফিসিয়াল বিষয় কোড লিখে খুব সহজেই একটি পেশাদার পরীক্ষার সময়সূচি তৈরি করুন।",
+    },
+    {
+      questionEn: "Can I customize the candidate examination rules and instructions?",
+      questionBn: "পরীক্ষার্থীদের জন্য নিয়মাবলী ও জরুরি নির্দেশনাবলী কি এডিট করা যাবে?",
+      answerEn: "Yes, you can edit or add official examination guidelines, including admit card presentation, OMR circle filling rules, prohibited items, and hall entry deadlines.",
+      answerBn: "হ্যাঁ, এডমিট কার্ড প্রদর্শন, OMR বৃত্ত ভরাট, মোবাইল বা ক্যালকুলেটর নিষেধাজ্ঞা এবং হলে প্রবেশের সময় সংক্রান্ত সকল নিয়মাবলী আপনার মতো করে কাস্টমাইজ করতে পারেন।",
+    },
+    {
+      questionEn: "Can I add the Controller of Examinations and Principal signatures?",
+      questionBn: "পরীক্ষা নিয়ন্ত্রক ও অধ্যক্ষের সিল-স্বাক্ষর কি যুক্ত করা যাবে?",
+      answerEn: "Yes. You can upload high-resolution digital signatures and institutional seals, or leave signature lines for manual endorsement after printing.",
+      answerBn: "হ্যাঁ। প্রতিষ্ঠানের সিল ও অধ্যক্ষের ডিজিটাল স্বাক্ষর আপলোড করতে পারেন, অথবা প্রিন্ট করার পর হাতে স্বাক্ষরের জন্য ফাঁকা দাগও রাখতে পারেন।",
+    },
+    {
+      questionEn: "Can students download this exam routine on mobile devices?",
+      questionBn: "শিক্ষার্থীরা কি মোবাইল থেকে এই পরীক্ষার রুটিন সরাসরি ডাউনলোড করতে পারবে?",
+      answerEn: "Absolutely! Mobile users can download the complete schedule as a high-resolution vector PDF in 1 click or share it directly to WhatsApp and Messenger study groups.",
+      answerBn: "অবশ্যই! যেকোনো স্মার্টফোন থেকে ১-ক্লিকে ঝকঝকে PDF ডাউনলোড করা যায় অথবা সরাসরি হোয়াটসঅ্যাপ ও ফেসবুক স্টাডি গ্রুপে শেয়ার করা যায়।",
+    },
+  ],
+  MedicalReceipt: [
+    {
+      questionEn: "Does this diagnostic test bill track specimen collection and delivery times?",
+      questionBn: "এই ডায়াগনস্টিক বিলে কি স্যাম্পল কালেকশন ও রিপোর্ট ডেলিভারির সময় উল্লেখ থাকে?",
+      answerEn: "Yes. It features dedicated fields for specimen collection timestamp, expected report delivery date/time, referring doctor name, and hospital bed/ward number.",
+      answerBn: "হ্যাঁ। এতে রক্ত/নমুনা সংগ্রহের সময়, রিপোর্ট ডেলিভারির সম্ভাব্য সময়, রেফার্ড চিকিৎসকের নাম এবং রোগীর বয়স/লিঙ্গ লেখার স্পষ্ট ফিল্ড রয়েছে।",
+    },
+    {
+      questionEn: "How does the advance payment, discount, and due balance calculation work?",
+      questionBn: "অগ্রিম জমা, ডিসকাউন্ট এবং বাকি টাকার হিসাব কীভাবে হয়?",
+      answerEn: "The billing engine automatically computes the investigation total, applies discounts or VAT, subtracts advance received, and highlights the net balance due in prominent tabular numbers.",
+      answerBn: "আমাদের বিলিং ইঞ্জিন স্বয়ংক্রিয়ভাবে মোট পরীক্ষা ফি, ছাড়, অগ্রিম জমা বাদ দিয়ে নিখুঁতভাবে বকেয়া টাকা বের করে দেয়।",
+    },
+    {
+      questionEn: "Can pathology labs add authorized medical technologist seals?",
+      questionBn: "প্যাথলজি ল্যাব বা ক্লিনিক কি মেডিকেল টেকনোলজিস্টের সিল যুক্ত করতে পারে?",
+      answerEn: "Yes. It includes authorized signatures for both cashier and certified medical laboratory technologist, ensuring compliance with DGDA and healthcare audit norms.",
+      answerBn: "হ্যাঁ। ক্যাশিয়ারের মানি রিসিট স্বাক্ষরের পাশাপাশি ল্যাব টেকনোলজিস্টের সত্যায়ন স্বাক্ষরের জায়গা রাখা হয়েছে।",
+    },
+    {
+      questionEn: "Is patient demographic data kept strictly private?",
+      questionBn: "রোগী ও টেস্টের তথ্যের গোপনীয়তা কি সুরক্ষিত থাকে?",
+      answerEn: "100% private. All processing occurs entirely in your browser memory. We never store or transmit patient health records or diagnostic test details to external cloud databases.",
+      answerBn: "১০০% নিরাপদ ও গোপন। সমস্ত বিল ও টেস্টের তথ্য সম্পূর্ণ আপনার ব্রাউজারে প্রক্রিয়াজাত হয়, কোনো সার্ভারে সংরক্ষিত বা শেয়ার করা হয় না।",
+    },
+  ],
+  CommercialReceipts: [
+    {
+      questionEn: "Is this invoice and cash memo template completely free for commercial use?",
+      questionBn: "এই ক্যাশ মেমো ও ইনভয়েস টেমপ্লেটটি কি বাণিজ্যিক ব্যবহারের জন্য সম্পূর্ণ ফ্রি?",
+      answerEn: "Yes, 100% free forever for all businesses, shops, and freelancers. FreeDocForge does not add watermarks or require credit cards.",
+      answerBn: "হ্যাঁ, যেকোনো ব্যবসা, দোকান ও ফ্রিল্যান্সারদের জন্য সম্পূর্ণ বিনামূল্যে আজীবনের জন্য ফ্রি। এতে কোনো ওয়াটারমার্ক থাকবে না।",
+    },
+    {
+      questionEn: "Can I print this on both standard A4 and 80mm POS thermal receipt rolls?",
+      questionBn: "এটি কি সাধারণ A4 এবং POS ৮০মিমি থার্মাল পেপার উভয়েই প্রিন্ট করা যাবে?",
+      answerEn: "Yes! Choose standard A4 for laser/inkjet letterheads, or select the POS 80mm format for thermal receipt printers widely used in retail and restaurants.",
+      answerBn: "হ্যাঁ! সাধারণ প্রিন্টারের জন্য A4 ফরম্যাট অথবা রেস্টুরেন্ট ও সুপারশপের জন্য POS ৮০মিমি থার্মাল স্লিপ ফরম্যাট বেছে নিয়ে প্রিন্ট করতে পারেন।",
     },
     {
       questionEn: "How does the Bengali Voice Typing feature work?",
       questionBn: "বাংলা ভয়েস টাইপিং ফিচারটি কীভাবে কাজ করে?",
-      answerEn: "Click on the microphone icon next to any input field and speak naturally in Bengali or English. Our speech engine automatically recognizes item names, amounts, and converts Bengali numbers into standardized figures.",
+      answerEn: "Click on the microphone icon next to any input field and speak naturally in Bengali or English. Our speech engine automatically types item names and amounts.",
       answerBn: "যেকোনো ইনপুট বক্সের পাশের মাইক আইকনে ক্লিক করে বাংলায় কথা বলুন। আমাদের স্মার্ট ভয়েস ইঞ্জিন স্বয়ংক্রিয়ভাবে পণ্য ও টাকার পরিমাণ বাংলায় টাইপ করে দেবে।",
     },
     {
-      questionEn: "How do I save my shop logo and address so I don't have to retype it every time?",
-      questionBn: "প্রতিবার নতুন করে না লিখে শপের লোগো ও ঠিকানা কীভাবে স্থায়ীভাবে সেভ রাখব?",
-      answerEn: "Simply enter your business details once and click 'Save Brand Preset'. You can also create a free account to sync your profile across all your computers and mobile devices.",
-      answerBn: "একবার শপের নাম ও লোগো বসিয়ে 'Save Brand Preset' বাটনে ক্লিক করুন। অথবা একটি ফ্রি অ্যাকাউন্ট খুললে যেকোনো ডিভাইস থেকে আপনার শপ প্রোফাইল অটো-লোড হবে।",
+      questionEn: "How do I share this invoice directly with customers on WhatsApp?",
+      questionBn: "গ্রাহককে হোয়াটসঅ্যাপে কীভাবে এই মেমো সরাসরি পাঠানো যায়?",
+      answerEn: "Click the 'Share to WhatsApp' button to instantly open a pre-formatted chat with invoice number, total amount, and item breakdown directly addressed to your customer.",
+      answerBn: "১-ক্লিকে 'Share to WhatsApp' বাটনে চাপলেই গ্রাহকের নম্বরে মোট টাকা ও মেমো নম্বরসহ সুন্দর ফরম্যাটেড মেসেজ চলে যাবে।",
     },
   ],
   Healthcare: [
@@ -85,15 +163,50 @@ const CATEGORY_FAQS: Record<string, FAQItem[]> = {
       answerBn: "হ্যাঁ। প্রতিষ্ঠানের লোগো এবং প্রধান শিক্ষকের ডিজিটাল সিল আপলোড করে সরাসরি A4 সাইজে ঝকঝকে কালার প্রিন্ট নিতে পারবেন।",
     },
   ],
-  Restaurant: [
-    {
-      questionEn: "Does this template support 80mm and 58mm thermal POS roll printers?",
-      questionBn: "এটি কি ৮০ মিমি ও ৫৮ মিমি থার্মাল রোল প্রিন্টারে সাপোর্ট করে?",
-      answerEn: "Yes, our POS billing templates are pixel-crafted specifically for 80mm thermal paper with high-contrast monochrome rendering for instant kitchen and customer tokens.",
-      answerBn: "হ্যাঁ, রেস্টুরেন্ট বিল টেমপ্লেটটি ৮০মিমি থার্মাল রোল প্রিন্টারের মাপে নিখুঁতভাবে তৈরি। এক ক্লিকে কিচেন টোকেন ও কাস্টমার কপি প্রিন্ট নেওয়া যায়।",
-    },
-  ],
 };
+
+function resolveFaqs(slug: string, category: string): FAQItem[] {
+  if (
+    (slug.includes("routine") || slug.includes("timetable")) &&
+    !slug.includes("exam")
+  ) {
+    return PILLAR_FAQS.ClassRoutine;
+  }
+  if (slug.includes("exam") || slug.includes("schedule")) {
+    return PILLAR_FAQS.ExamRoutine;
+  }
+  if (
+    slug.includes("diagnostic") ||
+    slug.includes("pathology") ||
+    slug.includes("radiology") ||
+    slug.includes("blood") ||
+    slug.includes("money-receipt") ||
+    slug.includes("pharmacy") ||
+    slug.includes("dental-procedure") ||
+    slug.includes("spectacle") ||
+    slug.includes("physiotherapy") ||
+    slug.includes("hospital-bed") ||
+    slug.includes("discharge-clearance")
+  ) {
+    return PILLAR_FAQS.MedicalReceipt;
+  }
+  if (
+    category === "Business" ||
+    category === "Restaurant" ||
+    slug.includes("invoice") ||
+    slug.includes("chalan") ||
+    slug.includes("quotation") ||
+    slug.includes("pos") ||
+    slug.includes("bill") ||
+    slug.includes("memo")
+  ) {
+    return PILLAR_FAQS.CommercialReceipts;
+  }
+  if (category === "Healthcare") {
+    return PILLAR_FAQS.Healthcare;
+  }
+  return PILLAR_FAQS.Education;
+}
 
 export default function TemplateEditorialGuide({
   slug,
@@ -105,9 +218,13 @@ export default function TemplateEditorialGuide({
   const { lang } = useGlobalSettings();
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
 
-  const faqs = CATEGORY_FAQS[category] || CATEGORY_FAQS["Business"];
+  const faqs = resolveFaqs(slug, category);
+  const siteUrl =
+    process.env.NEXTAUTH_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    "https://freedocforge.com";
 
-  // Schema.org FAQPage Microdata JSON-LD
+  // 1. Schema.org FAQPage JSON-LD
   const faqSchema = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -121,19 +238,73 @@ export default function TemplateEditorialGuide({
     })),
   };
 
-  // Schema.org SoftwareApplication JSON-LD
+  // 2. Schema.org SoftwareApplication JSON-LD
   const appSchema = {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
     name: `${title} - FreeDocForge Studio`,
-    operatingSystem: "All (Web Browser, Chrome, Safari, Edge)",
-    applicationCategory: "BusinessApplication",
+    operatingSystem: "All (Web Browser, Chrome, Safari, Edge, Firefox, Android, iOS)",
+    applicationCategory:
+      category === "Healthcare"
+        ? "HealthApplication"
+        : category === "Education"
+        ? "EducationalApplication"
+        : "BusinessApplication",
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "BDT",
+      availability: "https://schema.org/InStock",
+    },
+    description: description,
+  };
+
+  // 3. Schema.org WebApplication JSON-LD
+  const webAppSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name: `${title} Generator Online`,
+    url: `${siteUrl}/templates/${slug}`,
+    description: description,
+    browserRequirements: "Requires JavaScript. Requires HTML5.",
+    softwareVersion: "2.4.0",
     offers: {
       "@type": "Offer",
       price: "0",
       priceCurrency: "BDT",
     },
-    description: description,
+  };
+
+  // 4. Schema.org BreadcrumbList JSON-LD
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: siteUrl,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Templates",
+        item: `${siteUrl}/templates`,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: category,
+        item: `${siteUrl}/templates?category=${encodeURIComponent(category)}`,
+      },
+      {
+        "@type": "ListItem",
+        position: 4,
+        name: title,
+        item: `${siteUrl}/templates/${slug}`,
+      },
+    ],
   };
 
   return (
@@ -141,11 +312,19 @@ export default function TemplateEditorialGuide({
       {/* Schema.org Structured Data Injection for Googlebot Rich Snippets */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema).replace(/</g, "\\u003c") }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(appSchema) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(appSchema).replace(/</g, "\\u003c") }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(webAppSchema).replace(/</g, "\\u003c") }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema).replace(/</g, "\\u003c") }}
       />
 
       {/* 1. COMPREHENSIVE EDITORIAL GUIDE & HOW-TO */}

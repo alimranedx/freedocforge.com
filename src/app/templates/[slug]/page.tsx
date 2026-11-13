@@ -87,22 +87,67 @@ export async function generateMetadata({
   }
 
   const bnTitle = template.locales?.bn?.title || template.title;
+  const isProduction = process.env.NODE_ENV === "production";
+  const siteUrl =
+    isProduction && (!process.env.NEXTAUTH_URL || process.env.NEXTAUTH_URL.includes("localhost"))
+      ? "https://freedocforge.com"
+      : process.env.NEXTAUTH_URL ||
+        process.env.NEXT_PUBLIC_APP_URL ||
+        "https://freedocforge.com";
+  const canonicalUrl = `${siteUrl}/templates/${slug}`;
+
+  // Pillar-specific programmatic keywords for search CTR
+  const dynamicKeywords = [
+    template.title,
+    bnTitle,
+    `${template.category} template`,
+    "free printable template",
+    "bangla document maker",
+    "freedocforge",
+    ...(slug.includes("routine") || slug.includes("timetable")
+      ? ["class routine maker", "weekly timetable printable", "school routine bangladesh", "ক্লাস রুটিন"]
+      : []),
+    ...(slug.includes("exam") || slug.includes("schedule")
+      ? ["exam routine printable", "board exam schedule", "coaching test routine", "পরীক্ষার রুটিন"]
+      : []),
+    ...(slug.includes("bill") || slug.includes("diagnostic") || slug.includes("prescription")
+      ? ["diagnostic money receipt", "doctor prescription pad maker", "pathology bill", "প্রেসক্রিপশন প্যাড"]
+      : []),
+    ...(slug.includes("invoice") || slug.includes("receipt") || slug.includes("memo") || slug.includes("chalan")
+      ? ["cash memo maker", "f-commerce invoice", "pos 80mm thermal receipt", "ক্যাশ মেমো"]
+      : []),
+  ];
 
   return {
     title: `${template.title} | ${bnTitle} (Free Printable)`,
     description: `${template.description} 100% Free instant customization, Bengali voice typing, and A4/POS 80mm print without watermarks.`,
-    keywords: [
-      template.title,
-      bnTitle,
-      `${template.category} template`,
-      "free printable memo",
-      "bangla bill maker",
-      "freedocforge",
-    ],
+    alternates: {
+      canonical: canonicalUrl,
+    },
+    keywords: dynamicKeywords,
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+      },
+    },
     openGraph: {
-      title: `${template.title} - FreeDocForge Printable Studio`,
-      description: template.description,
+      title: `${template.title} | ${bnTitle} - FreeDocForge Studio`,
+      description: `${template.description} Customize online, print directly on A4/80mm POS or download vector PDF for free.`,
+      url: canonicalUrl,
+      siteName: "FreeDocForge.com",
+      locale: "en_US",
+      alternateLocale: "bn_BD",
       type: "article",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${template.title} | ${bnTitle}`,
+      description: `${template.description} 100% Free printable with zero watermarks.`,
     },
   };
 }

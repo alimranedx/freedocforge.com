@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const rawId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID || "pub-0000000000000000";
+  const rawId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID || "pub-XXXXXXXXXXXXXXXX";
   // Clean 'ca-' prefix if user entered 'ca-pub-XXXX'
   const pubId = rawId.replace(/^ca-/, "");
 
