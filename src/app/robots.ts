@@ -1,11 +1,7 @@
 import { MetadataRoute } from "next";
 
 export default function robots(): MetadataRoute.Robots {
-  const isProduction = process.env.NODE_ENV === "production";
-  const baseUrl =
-    isProduction && (!process.env.NEXTAUTH_URL || process.env.NEXTAUTH_URL.includes("localhost"))
-      ? "https://freedocforge.com"
-      : process.env.NEXTAUTH_URL || "https://freedocforge.com";
+  const baseUrl = "https://freedocforge.com";
 
   return {
     rules: [

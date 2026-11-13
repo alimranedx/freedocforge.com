@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import JsonLd from "@/components/JsonLd";
@@ -26,30 +26,37 @@ export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", subject: "", message: "" });
 
-  const breadcrumbs = getBreadcrumbListSchema([
-    { name: "Home", url: "/" },
-    { name: "Contact & Support", url: "/contact" },
-  ]);
+  const breadcrumbs = useMemo(
+    () =>
+      getBreadcrumbListSchema([
+        { name: "Home", url: "/" },
+        { name: "Contact & Support", url: "/contact" },
+      ]),
+    []
+  );
 
-  const contactSchema = {
-    "@context": "https://schema.org",
-    "@type": "ContactPage",
-    name: "Contact FreeDocForge Support & Editorial Team",
-    url: `${SITE_URL}/contact`,
-    description: "Reach the FreeDocForge support, engineering, and editorial team.",
-    mainEntity: {
-      "@type": "Organization",
-      name: "FreeDocForge.com",
-      url: SITE_URL,
-      email: "support@freedocforge.com",
-      contactPoint: {
-        "@type": "ContactPoint",
-        contactType: "Customer Support & Partnerships",
+  const contactSchema = useMemo(
+    () => ({
+      "@context": "https://schema.org",
+      "@type": "ContactPage",
+      name: "Contact FreeDocForge Support & Editorial Team",
+      url: `${SITE_URL}/contact`,
+      description: "Reach the FreeDocForge support, engineering, and editorial team.",
+      mainEntity: {
+        "@type": "Organization",
+        name: "FreeDocForge.com",
+        url: SITE_URL,
         email: "support@freedocforge.com",
-        availableLanguage: ["English", "Bengali"],
+        contactPoint: {
+          "@type": "ContactPoint",
+          contactType: "Customer Support & Partnerships",
+          email: "support@freedocforge.com",
+          availableLanguage: ["English", "Bengali"],
+        },
       },
-    },
-  };
+    }),
+    []
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

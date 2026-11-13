@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Shield, Lock, Eye, FileText } from "lucide-react";
@@ -11,10 +11,14 @@ import { getBreadcrumbListSchema } from "@/lib/seo";
 export default function PrivacyPolicyPage() {
   const { lang } = useGlobalSettings();
 
-  const breadcrumbs = getBreadcrumbListSchema([
-    { name: "Home", url: "/" },
-    { name: "Privacy Policy", url: "/privacy" },
-  ]);
+  const breadcrumbs = useMemo(
+    () =>
+      getBreadcrumbListSchema([
+        { name: "Home", url: "/" },
+        { name: "Privacy Policy", url: "/privacy" },
+      ]),
+    []
+  );
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200">

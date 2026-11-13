@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -29,20 +29,27 @@ import { useGlobalSettings } from "@/context/GlobalSettingsContext";
 export default function AboutPage() {
   const { lang } = useGlobalSettings();
 
-  const breadcrumbs = getBreadcrumbListSchema([
-    { name: "Home", url: "/" },
-    { name: "About Us", url: "/about" },
-  ]);
+  const breadcrumbs = useMemo(
+    () =>
+      getBreadcrumbListSchema([
+        { name: "Home", url: "/" },
+        { name: "About Us", url: "/about" },
+      ]),
+    []
+  );
 
-  const aboutSchema = {
-    "@context": "https://schema.org",
-    "@type": "AboutPage",
-    name: "About FreeDocForge.com",
-    url: `${SITE_URL}/about`,
-    description:
-      "FreeDocForge.com is a dedicated digital document publishing studio engineered to eliminate costly software subscriptions and formatting headaches for businesses, schools, and healthcare providers worldwide.",
-    mainEntity: getOrganizationSchema(SITE_URL),
-  };
+  const aboutSchema = useMemo(
+    () => ({
+      "@context": "https://schema.org",
+      "@type": "AboutPage",
+      name: "About FreeDocForge.com",
+      url: `${SITE_URL}/about`,
+      description:
+        "FreeDocForge.com is a dedicated digital document publishing studio engineered to eliminate costly software subscriptions and formatting headaches for businesses, schools, and healthcare providers worldwide.",
+      mainEntity: getOrganizationSchema(SITE_URL),
+    }),
+    []
+  );
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200">

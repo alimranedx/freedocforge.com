@@ -7,13 +7,11 @@ export interface FAQItem {
   answerBn: string;
 }
 
-const isProduction = process.env.NODE_ENV === "production";
-export const SITE_URL =
-  isProduction && (!process.env.NEXTAUTH_URL || process.env.NEXTAUTH_URL.includes("localhost"))
-    ? "https://freedocforge.com"
-    : process.env.NEXTAUTH_URL ||
-      process.env.NEXT_PUBLIC_APP_URL ||
-      "https://freedocforge.com";
+/**
+ * Canonical production domain for Schema.org structured data, sitemaps, and search engines.
+ * Must be a stable constant across both SSR and client hydration to prevent React hydration mismatch.
+ */
+export const SITE_URL = "https://freedocforge.com";
 
 /**
  * Schema.org WebSite structured data with SearchAction

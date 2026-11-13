@@ -5,11 +5,7 @@ import { GlobalSettingsProvider } from "@/context/GlobalSettingsContext";
 import JsonLd from "@/components/JsonLd";
 import { getWebsiteSchema, getWebApplicationSchema, getOrganizationSchema } from "@/lib/seo";
 
-const isProduction = process.env.NODE_ENV === "production";
-const siteUrl =
-  isProduction && (!process.env.NEXTAUTH_URL || process.env.NEXTAUTH_URL.includes("localhost"))
-    ? "https://freedocforge.com"
-    : process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "https://freedocforge.com";
+const siteUrl = "https://freedocforge.com";
 const adsenseClientId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
 const enableAds = process.env.NEXT_PUBLIC_ENABLE_ADS === "true";
 

@@ -73,8 +73,8 @@ const HOME_FAQS = [
 export default function HomePage() {
   const { lang, t } = useGlobalSettings();
 
-  const homeBreadcrumb = getBreadcrumbListSchema([{ name: "Home", url: "/" }]);
-  const homeFaq = getFaqPageSchema(HOME_FAQS, lang);
+  const homeBreadcrumb = useMemo(() => getBreadcrumbListSchema([{ name: "Home", url: "/" }]), []);
+  const homeFaq = useMemo(() => getFaqPageSchema(HOME_FAQS, "en"), []);
 
   // Active Hero Interactive Studio Preview Tab
   const [heroActiveTab, setHeroActiveTab] = useState<

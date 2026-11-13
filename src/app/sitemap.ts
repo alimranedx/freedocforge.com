@@ -2,11 +2,7 @@ import { MetadataRoute } from "next";
 import { INITIAL_TEMPLATES } from "@/lib/templates";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const isProduction = process.env.NODE_ENV === "production";
-  const baseUrl =
-    isProduction && (!process.env.NEXTAUTH_URL || process.env.NEXTAUTH_URL.includes("localhost"))
-      ? "https://freedocforge.com"
-      : process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "https://freedocforge.com";
+  const baseUrl = "https://freedocforge.com";
   const currentDate = new Date();
 
   // Core Static Marketing & Utility Routes

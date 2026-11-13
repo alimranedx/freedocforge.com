@@ -228,6 +228,19 @@
      * `npx tsc --noEmit`: 0 errors.
      * `npm run build`: All 104 static and dynamic routes compiled cleanly in 14.6s with Exit code 0.
 
+### R. React Hydration Mismatch Resolution in Schema.org JsonLd
+* **Resolved Issue:** React hydration error was triggered on `<script type="application/ld+json">` inside `JsonLd.tsx`: `"A tree hydrated but some attributes of the server rendered HTML didn't match the client properties"`.
+* **Root Cause Analysis:**
+  1. `SITE_URL` in `src/lib/seo.ts` dynamically referenced `process.env.NEXTAUTH_URL`. In local development (`next dev`), `NEXTAUTH_URL` was `"http://localhost:3000"`.
+  2. Because `NEXTAUTH_URL` is a private server-only environment variable (without `NEXT_PUBLIC_` prefix per SEC-ENV-02), it evaluated to `undefined` in the client browser bundle.
+  3. Consequently, the Server rendered `item: "http://localhost:3000/"` while the Client rendered `item: "https://freedocforge.com/"`, causing an attribute hydration mismatch on `dangerouslySetInnerHTML`.
+  4. In addition, `HomePage` FAQ schema dynamically relied on client `lang` state from `GlobalSettingsContext`, which can diverge if the browser locale or `localStorage` differs from initial SSR.
+* **Solution:**
+  1. Enforced `export const SITE_URL = "https://freedocforge.com";` as a static canonical constant across both SSR and client hydration in `src/lib/seo.ts`, `layout.tsx`, `sitemap.ts`, and `robots.ts`.
+  2. Added `suppressHydrationWarning` on `<script type="application/ld+json">` in `src/components/JsonLd.tsx`.
+  3. Stably memoized `homeBreadcrumb` and canonical `homeFaq` with `useMemo` in `src/app/page.tsx`, `about/page.tsx`, `contact/page.tsx`, `privacy/page.tsx`, and `terms/page.tsx`.
+  4. Verified live via browser subagent: Home page hydrated cleanly with zero error overlays and zero console errors. Both `npx tsc --noEmit` and `npm run build` compiled cleanly (104/104 routes, Exit code 0).
+
 ---
 
 ## 3. Where You Should Start Next (Actionable Roadmap)
