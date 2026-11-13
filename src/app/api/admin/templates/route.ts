@@ -310,6 +310,7 @@ export async function GET(req: Request) {
         title: t.title,
         description: t.description || "",
         category: (t.category?.name as any) || "Business",
+        subCategory: fieldSchema.subCategory || (t as any).subCategory || "invoice",
         paperSize: (t.paperSize as any) || "A4",
         badge: t.isFeatured ? "Featured" : "Custom Template",
         isCustom: true,
@@ -551,6 +552,7 @@ export async function POST(req: Request) {
           blocks,
           paperSize,
           category: categoryName,
+          subCategory: sanitizeText(body.subCategory || "invoice", 50),
           defaultData: defaultDataEn,
           locales: {
             en: {
@@ -653,6 +655,7 @@ export async function PUT(req: Request) {
         paperSize: body.paperSize === "POS_80MM" ? "POS_80MM" : "A4",
         fieldSchema: {
           blocks,
+          subCategory: sanitizeText(body.subCategory || (existing.fieldSchema as any)?.subCategory || "invoice", 50),
           defaultData: defaultDataEn,
           locales: {
             en: {

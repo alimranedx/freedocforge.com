@@ -16,6 +16,8 @@ import {
   Sparkles,
   Download,
   Plus,
+  Receipt,
+  Eye,
 } from "lucide-react";
 import { useUserDashboard } from "@/context/UserDashboardContext";
 
@@ -40,33 +42,44 @@ const DEFAULT_DEMO_HISTORY: HistoryItem[] = [
     documentNumber: "INV-2026-089",
     recipientName: "Md. Tanvir Ahmed (Dhanmondi)",
     amountOrDetails: "৳ 3,470 (COD Due)",
-    date: "2026-11-11",
+    date: "2026-11-12",
     status: "Printed",
   },
   {
     id: "hist-2",
-    templateSlug: "doctor-prescription",
-    templateTitle: "Doctor & Clinic Prescription Pad (Rx)",
-    category: "Healthcare",
-    documentNumber: "RX-5502",
-    recipientName: "Mrs. Nasrin Akter (42y)",
-    amountOrDetails: "Tab. Napa, Tab. Fexo",
-    date: "2026-11-10",
+    templateSlug: "school-class-routine",
+    templateTitle: "Primary / Elementary School Weekly Timetable",
+    category: "Education",
+    documentNumber: "ROUTINE-2026-09",
+    recipientName: "Class 9 (Science) - Morning Shift",
+    amountOrDetails: "6 Periods • Room 402",
+    date: "2026-11-11",
     status: "Printed",
   },
   {
     id: "hist-3",
-    templateSlug: "school-result-sheet",
-    templateTitle: "School & Coaching Result Sheet",
+    templateSlug: "school-exam-routine",
+    templateTitle: "School Annual & Term Final Exam Routine",
     category: "Education",
-    documentNumber: "MARKS-901",
-    recipientName: "Sadia Rahman (Class 9)",
-    amountOrDetails: "GPA: 5.00 (A+)",
-    date: "2026-11-09",
+    documentNumber: "EXAM-2026-T2",
+    recipientName: "Secondary Term Final Candidates",
+    amountOrDetails: "10 Subjects • Morning Shift",
+    date: "2026-11-10",
     status: "Saved",
   },
   {
     id: "hist-4",
+    templateSlug: "medical-money-receipt",
+    templateTitle: "Diagnostic Center Test Bill & Money Receipt",
+    category: "Healthcare",
+    documentNumber: "BILL-2026-904",
+    recipientName: "Md. Rafiqul Islam (48y)",
+    amountOrDetails: "৳ 3,400 (Advance ৳1,600)",
+    date: "2026-11-09",
+    status: "Paid",
+  },
+  {
+    id: "hist-5",
     templateSlug: "restaurant-pos-bill",
     templateTitle: "Restaurant POS Thermal Bill (80mm)",
     category: "Business",
@@ -82,7 +95,9 @@ export default function SavedDocumentsHistoryPage() {
   const { lang, t } = useUserDashboard();
   const [history, setHistory] = useState<HistoryItem[]>(DEFAULT_DEMO_HISTORY);
   const [searchQuery, setSearchQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<"all" | "Business" | "Education" | "Healthcare">("all");
+  const [pillarFilter, setPillarFilter] = useState<
+    "all" | "receipts" | "class-routines" | "exam-routines" | "medical-receipts"
+  >("all");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -119,7 +134,6 @@ export default function SavedDocumentsHistoryPage() {
         }
       })
       .catch(() => {
-        // Fallback to localStorage
         const saved = localStorage.getItem("freedocforge_history");
         if (saved) {
           try {
@@ -150,7 +164,26 @@ export default function SavedDocumentsHistoryPage() {
   };
 
   const filteredHistory = history.filter((item) => {
-    if (categoryFilter !== "all" && item.category !== categoryFilter) return false;
+    // Pillar Filter
+    if (pillarFilter === "receipts") {
+      if (item.category !== "Business" && !item.templateSlug.includes("invoice") && !item.templateSlug.includes("receipt") && !item.templateSlug.includes("bill")) {
+        return false;
+      }
+    } else if (pillarFilter === "class-routines") {
+      if (!item.templateSlug.includes("routine") || item.templateSlug.includes("exam")) {
+        return false;
+      }
+    } else if (pillarFilter === "exam-routines") {
+      if (!item.templateSlug.includes("exam") && !item.templateSlug.includes("test")) {
+        return false;
+      }
+    } else if (pillarFilter === "medical-receipts") {
+      if (item.category !== "Healthcare" && !item.templateSlug.includes("medical") && !item.templateSlug.includes("doctor")) {
+        return false;
+      }
+    }
+
+    // Search Query Filter
     if (searchQuery.trim() !== "") {
       const q = searchQuery.toLowerCase();
       return (
@@ -176,8 +209,8 @@ export default function SavedDocumentsHistoryPage() {
           </h1>
           <p className="text-blue-100 text-xs sm:text-sm mt-1 max-w-xl leading-relaxed">
             {lang === "bn"
-              ? "আপনার প্রিন্ট করা প্রতিটি ক্যাশ মেমো, প্রেসক্রিপশন ও মার্কশিট এখানে সংরক্ষিত থাকে। যেকোনো সময় রি-প্রিন্ট বা এডিট করুন।"
-              : "Review, re-print, and manage all your generated customer memos, doctor prescriptions, and student report cards."}
+              ? "আপনার প্রিন্ট করা প্রতিটি ক্যাশ মেমো, ক্লাস রুটিন, পরীক্ষার সূচি ও প্রেসক্রিপশন এখানে সংরক্ষিত থাকে। যেকোনো সময় রি-প্রিন্ট বা এডিট করুন।"
+              : "Review, re-print, and manage all your generated customer memos, class timetables, exam schedules, and diagnostic bills."}
           </p>
         </div>
 
@@ -190,22 +223,23 @@ export default function SavedDocumentsHistoryPage() {
         </Link>
       </div>
 
-      {/* Filter and Search Bar */}
+      {/* 4-Pillar Filter and Search Bar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
-        {/* Category Pills */}
+        {/* 4 Pillar Pills */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
           {[
             { id: "all", label: lang === "bn" ? "সকল (All)" : "All", icon: FileText },
-            { id: "Business", label: lang === "bn" ? "দোকান ও ব্যবসা" : "Shop", icon: ShoppingBag },
-            { id: "Education", label: lang === "bn" ? "স্কুল ও শিক্ষা" : "School", icon: GraduationCap },
-            { id: "Healthcare", label: lang === "bn" ? "চিকিৎসা" : "Medical", icon: Stethoscope },
+            { id: "receipts", label: lang === "bn" ? "ক্যাশ মেমো" : "Receipts", icon: Receipt },
+            { id: "class-routines", label: lang === "bn" ? "ক্লাস রুটিন" : "Class Routines", icon: Calendar },
+            { id: "exam-routines", label: lang === "bn" ? "পরীক্ষার সূচি" : "Exam Routines", icon: GraduationCap },
+            { id: "medical-receipts", label: lang === "bn" ? "চিকিৎসা রসিদ" : "Medical", icon: Stethoscope },
           ].map((cat) => {
             const Icon = cat.icon;
-            const isActive = categoryFilter === cat.id;
+            const isActive = pillarFilter === cat.id;
             return (
               <button
                 key={cat.id}
-                onClick={() => setCategoryFilter(cat.id as any)}
+                onClick={() => setPillarFilter(cat.id as any)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
                   isActive
                     ? "bg-blue-600 text-white shadow-xs"
@@ -241,9 +275,9 @@ export default function SavedDocumentsHistoryPage() {
         {filteredHistory.length > 0 ? (
           <div className="divide-y divide-slate-100 dark:divide-slate-800">
             {filteredHistory.map((item) => {
-              const isShop = item.category === "Business";
-              const isSchool = item.category === "Education";
-              const isMedical = item.category === "Healthcare";
+              const isShop = item.category === "Business" || item.templateSlug.includes("invoice") || item.templateSlug.includes("receipt");
+              const isSchool = item.category === "Education" || item.templateSlug.includes("routine") || item.templateSlug.includes("exam");
+              const isMedical = item.category === "Healthcare" || item.templateSlug.includes("medical") || item.templateSlug.includes("doctor");
 
               return (
                 <div
@@ -260,7 +294,7 @@ export default function SavedDocumentsHistoryPage() {
                           : "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300"
                       }`}
                     >
-                      {isShop && <ShoppingBag className="w-5 h-5" />}
+                      {isShop && <Receipt className="w-5 h-5" />}
                       {isSchool && <GraduationCap className="w-5 h-5" />}
                       {isMedical && <Stethoscope className="w-5 h-5" />}
                     </div>
@@ -295,6 +329,14 @@ export default function SavedDocumentsHistoryPage() {
                     >
                       <Printer className="w-3.5 h-3.5" />
                       <span>{lang === "bn" ? "রি-প্রিন্ট / এডিট" : "Re-Print / Edit"}</span>
+                    </Link>
+
+                    <Link
+                      href={`/templates/${item.templateSlug}`}
+                      className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800 rounded-xl transition cursor-pointer"
+                      title={lang === "bn" ? "টেমপ্লেট ওপেন করুন" : "Open Template"}
+                    >
+                      <Eye className="w-4 h-4" />
                     </Link>
 
                     <button

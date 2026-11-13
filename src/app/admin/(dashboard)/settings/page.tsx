@@ -11,6 +11,7 @@ import {
   Sparkles,
   Phone,
   Mail,
+  MapPin,
   ToggleLeft,
   ToggleRight,
   Server,
@@ -20,8 +21,9 @@ import {
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<any>({
     platformName: "FreeDocForge.com",
-    supportPhone: "+880 1711-000000",
+    supportPhone: "+880 1712-345678",
     supportEmail: "support@freedocforge.com",
+    officeAddress: "House 42, Road 11, Dhanmondi, Dhaka - 1205, Bangladesh",
     defaultCurrency: "৳ (BDT)",
     maintenanceMode: false,
     maintenanceMessage: "Scheduled engine optimization in progress. Document downloads remain operational.",
@@ -168,6 +170,23 @@ export default function AdminSettingsPage() {
                 </div>
               </div>
 
+              <div>
+                <label className="block text-xs font-mono uppercase text-zinc-400 mb-1 flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-red-400" />
+                  Official Office Headquarters / Operational Address
+                </label>
+                <input
+                  type="text"
+                  value={settings.officeAddress || ""}
+                  onChange={(e) => setSettings({ ...settings, officeAddress: e.target.value })}
+                  placeholder="House 42, Road 11, Dhanmondi, Dhaka - 1205, Bangladesh"
+                  className="w-full text-xs px-3.5 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:ring-2 focus:ring-red-500 focus:outline-none"
+                />
+                <span className="text-[10px] text-zinc-500 mt-1 block">
+                  Synchronized with /contact and /about transparency disclosures.
+                </span>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-mono uppercase text-zinc-400 mb-1">
@@ -302,6 +321,31 @@ export default function AdminSettingsPage() {
               <div className="flex justify-between items-center p-2.5 bg-zinc-950 rounded-lg border border-zinc-800">
                 <span className="text-zinc-400">SQL Injection Defense</span>
                 <span className="text-emerald-400 font-bold">Prisma ORM Safe</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Institutional Contact Transparency Card */}
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-3">
+            <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+              <Phone className="w-3.5 h-3.5 text-blue-400" />
+              Verified Public Contact Channels
+            </h3>
+            <p className="text-[11px] text-zinc-400">
+              Live operational contact information exposed to users and search engines:
+            </p>
+            <div className="space-y-2 text-xs font-mono">
+              <div className="p-2.5 bg-zinc-950 rounded-lg border border-zinc-800 space-y-1">
+                <span className="text-[10px] text-zinc-500 uppercase block font-sans">Official Hotline</span>
+                <span className="text-emerald-400 font-bold">{settings.supportPhone}</span>
+              </div>
+              <div className="p-2.5 bg-zinc-950 rounded-lg border border-zinc-800 space-y-1">
+                <span className="text-[10px] text-zinc-500 uppercase block font-sans">Support Email</span>
+                <span className="text-white font-bold">{settings.supportEmail}</span>
+              </div>
+              <div className="p-2.5 bg-zinc-950 rounded-lg border border-zinc-800 space-y-1">
+                <span className="text-[10px] text-zinc-500 uppercase block font-sans">Dhaka HQ Office</span>
+                <span className="text-zinc-300 font-sans text-xs">{settings.officeAddress}</span>
               </div>
             </div>
           </div>

@@ -15,6 +15,7 @@ import {
   Sun,
   Moon,
   Globe,
+  Layers,
 } from "lucide-react";
 import { UserDashboardProvider, useUserDashboard } from "@/context/UserDashboardContext";
 
@@ -50,6 +51,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
   const navItems = [
     { label: t("overviewQuickPrint"), href: "/dashboard", icon: Home },
+    { label: lang === "bn" ? "টেমপ্লেট লাইব্রেরি" : "Templates Library", href: "/templates", icon: Layers, badge: "60" },
     { label: t("myShopPreset"), href: "/dashboard/shop-profile", icon: Store },
     { label: t("savedDocuments"), href: "/dashboard/history", icon: FileText },
     { label: t("aiTemplateDesigner"), href: "/dashboard/ai-designer", icon: Sparkles, badge: "AI" },

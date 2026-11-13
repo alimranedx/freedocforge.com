@@ -19,7 +19,17 @@ export async function GET(req: Request) {
   try {
     const whereClause: any = {};
     if (category) {
-      whereClause.category = category;
+      if (category === "Receipts" || category === "Business") {
+        whereClause.category = { in: ["Receipts", "Business", "Retail", "F-Commerce", "POS"] };
+      } else if (category === "Class Routines" || category === "class-routines") {
+        whereClause.category = { in: ["Class Routines", "class-routines", "Routine", "Timetable", "Education"] };
+      } else if (category === "Exam Routines" || category === "exam-routines") {
+        whereClause.category = { in: ["Exam Routines", "exam-routines", "Exam", "Schedule"] };
+      } else if (category === "Medical Bills" || category === "Healthcare" || category === "medical-receipts") {
+        whereClause.category = { in: ["Medical Bills", "Healthcare", "Medical", "Clinic", "Diagnostic", "medical-receipts"] };
+      } else {
+        whereClause.category = category;
+      }
     }
     if (search) {
       whereClause.OR = [
@@ -64,7 +74,7 @@ export async function GET(req: Request) {
         documentNumber: "INV-2026-081",
         templateSlug: "f-commerce-invoice",
         templateTitle: "F-Commerce Cash Memo",
-        category: "Business",
+        category: "Receipts",
         recipientName: "Mehedi Hasan Niloy",
         amountOrDetails: "৳2,850",
         status: "Saved",
@@ -77,6 +87,60 @@ export async function GET(req: Request) {
       },
       {
         id: "doc-102",
+        documentNumber: "ROUT-2026-012",
+        templateSlug: "school-class-routine",
+        templateTitle: "Master Class Routine (Class 9-10)",
+        category: "Class Routines",
+        recipientName: "Section A & B (Morning Shift)",
+        amountOrDetails: "6 Periods / Day • Rm 302",
+        status: "Saved",
+        createdAt: new Date(Date.now() - 3600000 * 1).toISOString(),
+        creatorName: "Dhanmondi Govt. High School",
+        creatorEmail: "principal@dhanmondischool.edu.bd",
+        dataJson: {
+          shift: "Morning",
+          periods: 6,
+          className: "Class 10",
+        },
+      },
+      {
+        id: "doc-103",
+        documentNumber: "EXAM-2026-551",
+        templateSlug: "school-exam-routine",
+        templateTitle: "Annual Board Exam Routine 2026",
+        category: "Exam Routines",
+        recipientName: "Science & Commerce Batch",
+        amountOrDetails: "10:00 AM - 01:00 PM • Hall 01",
+        status: "Saved",
+        createdAt: new Date(Date.now() - 3600000 * 3).toISOString(),
+        creatorName: "Ideal College Campus",
+        creatorEmail: "admin@idealcollege.edu.bd",
+        dataJson: {
+          examTitle: "Annual Examination 2026",
+          hall: "Main Auditorium",
+        },
+      },
+      {
+        id: "doc-104",
+        documentNumber: "MED-BILL-7721",
+        templateSlug: "medical-money-receipt",
+        templateTitle: "Diagnostic Pathology Investigation Bill",
+        category: "Medical Bills",
+        recipientName: "Mrs. Salma Begum (42y/F)",
+        amountOrDetails: "৳3,600 (Paid: ৳3,000, Due: ৳600)",
+        status: "Saved",
+        createdAt: new Date(Date.now() - 3600000 * 4).toISOString(),
+        creatorName: "CarePoint Diagnostic Center",
+        creatorEmail: "accounts@carepointclinic.com",
+        dataJson: {
+          tests: ["CBC with ESR", "Ultrasonography of W/A", "Serum Creatinine"],
+          totalAmount: 3600,
+          paidAmount: 3000,
+          dueAmount: 600,
+        },
+      },
+      {
+        id: "doc-105",
         documentNumber: "RX-4091",
         templateSlug: "doctor-prescription-pad",
         templateTitle: "Doctor Rx Prescription Pad",
@@ -84,7 +148,7 @@ export async function GET(req: Request) {
         recipientName: "Begum Rowshan Ara (54y/F)",
         amountOrDetails: "Tab. Napa Extra, Tab. Seclo 20mg",
         status: "Saved",
-        createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+        createdAt: new Date(Date.now() - 3600000 * 6).toISOString(),
         creatorName: "Dr. Farhana Yasmin",
         creatorEmail: "demo.doctor@freedocforge.com",
         dataJson: {
@@ -92,7 +156,7 @@ export async function GET(req: Request) {
         },
       },
       {
-        id: "doc-103",
+        id: "doc-106",
         documentNumber: "ACAD-2026-104",
         templateSlug: "school-marksheet-result",
         templateTitle: "Academic Marksheet (GPA 5.00)",
@@ -100,7 +164,7 @@ export async function GET(req: Request) {
         recipientName: "Sadia Afrin (Class 10)",
         amountOrDetails: "GPA 5.00 (Golden A+)",
         status: "Saved",
-        createdAt: new Date(Date.now() - 3600000 * 5).toISOString(),
+        createdAt: new Date(Date.now() - 3600000 * 7).toISOString(),
         creatorName: "Ideal Coaching Center",
         creatorEmail: "demo.school@freedocforge.com",
         dataJson: {
@@ -109,7 +173,7 @@ export async function GET(req: Request) {
         },
       },
       {
-        id: "doc-104",
+        id: "doc-107",
         documentNumber: "POS-9902",
         templateSlug: "restaurant-pos-bill",
         templateTitle: "Restaurant Food POS Slip (80mm)",
@@ -117,7 +181,7 @@ export async function GET(req: Request) {
         recipientName: "Table 04 (Walk-in)",
         amountOrDetails: "৳1,420",
         status: "Saved",
-        createdAt: new Date(Date.now() - 3600000 * 8).toISOString(),
+        createdAt: new Date(Date.now() - 3600000 * 9).toISOString(),
         creatorName: "Kacchi Ghor Restaurant",
         creatorEmail: "kacchi@freedocforge.com",
         dataJson: {
@@ -127,7 +191,14 @@ export async function GET(req: Request) {
     ];
 
     const filtered = fallbackDocs.filter((d) => {
-      const matchCat = !category || d.category === category;
+      let matchCat = true;
+      if (category) {
+        if (category === "Receipts") matchCat = ["Receipts", "Business", "POS"].includes(d.category);
+        else if (category === "Class Routines") matchCat = ["Class Routines", "Education"].includes(d.category);
+        else if (category === "Exam Routines") matchCat = ["Exam Routines", "Education"].includes(d.category);
+        else if (category === "Medical Bills") matchCat = ["Medical Bills", "Healthcare"].includes(d.category);
+        else matchCat = d.category === category;
+      }
       const matchSearch =
         !search ||
         d.documentNumber.toLowerCase().includes(search) ||

@@ -57,7 +57,16 @@ import {
   Mail,
   Hash,
 } from "lucide-react";
-import { INITIAL_TEMPLATES, TemplateDefinition } from "@/lib/templates";
+import {
+  INITIAL_TEMPLATES,
+  TemplateDefinition,
+  RECEIPT_TEMPLATES,
+  CLASS_ROUTINE_TEMPLATES,
+  EXAM_ROUTINE_TEMPLATES,
+  MEDICAL_RECEIPT_TEMPLATES,
+  OTHER_EDUCATION_TEMPLATES,
+  OTHER_HEALTHCARE_TEMPLATES,
+} from "@/lib/templates";
 
 export interface TemplateBlock {
   id: string;
@@ -178,14 +187,124 @@ const DEFAULT_BLOCKS: TemplateBlock[] = [
   },
 ];
 
+const RECEIPT_SLUGS = new Set(RECEIPT_TEMPLATES.map((t) => t.slug));
+const CLASS_ROUTINE_SLUGS = new Set(CLASS_ROUTINE_TEMPLATES.map((t) => t.slug));
+const EXAM_ROUTINE_SLUGS = new Set(EXAM_ROUTINE_TEMPLATES.map((t) => t.slug));
+const MEDICAL_RECEIPT_SLUGS = new Set(MEDICAL_RECEIPT_TEMPLATES.map((t) => t.slug));
+const EDUCATION_OTHER_SLUGS = new Set(OTHER_EDUCATION_TEMPLATES.map((t) => t.slug));
+const HEALTHCARE_OTHER_SLUGS = new Set(OTHER_HEALTHCARE_TEMPLATES.map((t) => t.slug));
+
+export function getTemplateCategory(t: {
+  slug?: string;
+  isCustom?: boolean;
+  subCategory?: string;
+  category?: string;
+}): string {
+  if (t.isCustom) return "custom";
+  const s = t.slug || "";
+  const sub = (t.subCategory || "").toLowerCase();
+
+  // 1. Class Routines & Timetables (10)
+  if (CLASS_ROUTINE_SLUGS.has(s) || sub === "routine" || sub === "class-routine" || sub === "timetable") {
+    return "class-routines";
+  }
+
+  // 2. Exam Routines & Schedules (10)
+  if (EXAM_ROUTINE_SLUGS.has(s) || sub === "exam" || sub === "exam-routine") {
+    return "exam-routines";
+  }
+
+  // 3. Medical Receipts & Diagnostic Bills (10)
+  if (
+    MEDICAL_RECEIPT_SLUGS.has(s) ||
+    (t.category === "Healthcare" && (sub === "bill" || sub === "receipt"))
+  ) {
+    return "medical-receipts";
+  }
+
+  // 4. Academic Marksheets & Certificates (8)
+  if (
+    EDUCATION_OTHER_SLUGS.has(s) ||
+    (t.category === "Education" &&
+      (sub === "marksheet" || sub === "admit-card" || sub === "certificate" || sub === "id-card"))
+  ) {
+    return "education-other";
+  }
+
+  // 5. Clinical Prescriptions & Consultation Pads (9)
+  if (
+    HEALTHCARE_OTHER_SLUGS.has(s) ||
+    (t.category === "Healthcare" &&
+      (sub === "prescription" || sub === "serial" || sub === "discharge"))
+  ) {
+    return "healthcare-other";
+  }
+
+  // 6. Worldwide Commercial Receipts & POS (13)
+  if (RECEIPT_SLUGS.has(s) || t.category === "Business" || t.category === "Restaurant") {
+    return "receipts";
+  }
+
+  return "receipts";
+}
+
+export const CATEGORY_META: Record<
+  string,
+  { label: string; icon: any; color: string; subtitle: string }
+> = {
+  receipts: {
+    label: "Worldwide Receipts & Invoices",
+    icon: Receipt,
+    color: "text-blue-400",
+    subtitle: "Commercial invoices, cash memos & POS rolls (13)",
+  },
+  "class-routines": {
+    label: "Class Routines & Timetables",
+    icon: Calendar,
+    color: "text-emerald-400",
+    subtitle: "Weekly schedules, shifts & classroom grids (10)",
+  },
+  "exam-routines": {
+    label: "Exam Routines & Schedules",
+    icon: FileSignature,
+    color: "text-amber-400",
+    subtitle: "Term exams, seat plans & board schedules (10)",
+  },
+  "medical-receipts": {
+    label: "Medical Receipts & Diagnostic Bills",
+    icon: Stethoscope,
+    color: "text-rose-400",
+    subtitle: "Clinical investigations, hospital & pharmacy bills (10)",
+  },
+  "education-other": {
+    label: "Academic Marksheets & Certificates",
+    icon: GraduationCap,
+    color: "text-cyan-400",
+    subtitle: "Progress reports, admit cards, TC & student IDs (8)",
+  },
+  "healthcare-other": {
+    label: "Clinical Prescriptions & Pads",
+    icon: FileText,
+    color: "text-purple-400",
+    subtitle: "Doctor consultation pads, tokens & discharge sheets (9)",
+  },
+  custom: {
+    label: "Custom Admin Templates",
+    icon: Sparkles,
+    color: "text-pink-400",
+    subtitle: "Admin studio custom-built templates",
+  },
+};
+
 const CATEGORY_TABS = [
-  { id: "all", label: "All Templates", icon: Layers, color: "text-zinc-300" },
-  { id: "Business", label: "Business & Commerce", icon: ShoppingBag, color: "text-blue-400" },
-  { id: "Healthcare", label: "Healthcare & Clinics", icon: Stethoscope, color: "text-emerald-400" },
-  { id: "Education", label: "Education & Coaching", icon: GraduationCap, color: "text-amber-400" },
-  { id: "Restaurant", label: "Restaurant & Food POS", icon: UtensilsCrossed, color: "text-rose-400" },
-  { id: "Printables", label: "Printables & Legal", icon: FileText, color: "text-purple-400" },
-  { id: "custom", label: "Custom Templates", icon: Sparkles, color: "text-cyan-400" },
+  { id: "all", label: "All Templates", subtitle: "Full Catalog (60)", icon: Layers, color: "text-zinc-300" },
+  { id: "receipts", label: "Worldwide Receipts", subtitle: "Invoices & POS (13)", icon: Receipt, color: "text-blue-400" },
+  { id: "class-routines", label: "Class Routines", subtitle: "Weekly Timetables (10)", icon: Calendar, color: "text-emerald-400" },
+  { id: "exam-routines", label: "Exam Schedules", subtitle: "Exam Routines (10)", icon: FileSignature, color: "text-amber-400" },
+  { id: "medical-receipts", label: "Medical Receipts", subtitle: "Diagnostic Bills (10)", icon: Stethoscope, color: "text-rose-400" },
+  { id: "education-other", label: "Marksheets & TC", subtitle: "Academic Certs (8)", icon: GraduationCap, color: "text-cyan-400" },
+  { id: "healthcare-other", label: "Clinical Rx Pads", subtitle: "Prescriptions (9)", icon: FileText, color: "text-purple-400" },
+  { id: "custom", label: "Custom Templates", subtitle: "Admin Defined", icon: Sparkles, color: "text-pink-400" },
 ];
 
 export default function AdminTemplatesManagerPage() {
@@ -234,6 +353,7 @@ export default function AdminTemplatesManagerPage() {
     id: "",
     slug: "",
     category: "Business",
+    subCategory: "invoice",
     paperSize: "A4",
     isFeatured: false,
     en_title: "",
@@ -419,17 +539,19 @@ export default function AdminTemplatesManagerPage() {
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = {
       all: templates.length,
-      Business: 0,
-      Healthcare: 0,
-      Education: 0,
-      Restaurant: 0,
-      Printables: 0,
+      receipts: 0,
+      "class-routines": 0,
+      "exam-routines": 0,
+      "medical-receipts": 0,
+      "education-other": 0,
+      "healthcare-other": 0,
       custom: 0,
     };
 
     templates.forEach((t) => {
-      if (counts[t.category] !== undefined) {
-        counts[t.category] += 1;
+      const cat = getTemplateCategory(t);
+      if (counts[cat] !== undefined) {
+        counts[cat] += 1;
       }
       if (t.isCustom) {
         counts.custom += 1;
@@ -442,9 +564,10 @@ export default function AdminTemplatesManagerPage() {
   // Filtered Templates
   const filteredTemplates = useMemo(() => {
     return templates.filter((t) => {
+      const cat = getTemplateCategory(t);
       if (selectedCategory === "custom") {
         if (!t.isCustom) return false;
-      } else if (selectedCategory !== "all" && t.category !== selectedCategory) {
+      } else if (selectedCategory !== "all" && cat !== selectedCategory) {
         return false;
       }
 
@@ -476,18 +599,21 @@ export default function AdminTemplatesManagerPage() {
   // Grouped for sections view
   const groupedByCategory = useMemo(() => {
     const groups: Record<string, typeof templates> = {
-      Business: [],
-      Healthcare: [],
-      Education: [],
-      Restaurant: [],
-      Printables: [],
+      receipts: [],
+      "class-routines": [],
+      "exam-routines": [],
+      "medical-receipts": [],
+      "education-other": [],
+      "healthcare-other": [],
+      custom: [],
     };
 
     filteredTemplates.forEach((t) => {
-      if (groups[t.category]) {
-        groups[t.category].push(t);
+      const cat = getTemplateCategory(t);
+      if (groups[cat]) {
+        groups[cat].push(t);
       } else {
-        groups.Business.push(t);
+        groups.receipts.push(t);
       }
     });
 
@@ -503,6 +629,7 @@ export default function AdminTemplatesManagerPage() {
       id: "",
       slug: "",
       category: "Business",
+      subCategory: "invoice",
       paperSize: "A4",
       isFeatured: false,
       en_title: "",
@@ -554,6 +681,7 @@ export default function AdminTemplatesManagerPage() {
       id: t.id,
       slug: t.slug,
       category: t.category,
+      subCategory: t.subCategory || (t.category === "Education" ? "routine" : t.category === "Healthcare" ? "prescription" : "invoice"),
       paperSize: t.paperSize,
       isFeatured: Boolean(t.isFeatured),
       en_title: t.locales?.en?.title || t.title,
@@ -858,6 +986,7 @@ export default function AdminTemplatesManagerPage() {
         id: editingTemplate ? editingTemplate.id : undefined,
         slug: formData.slug.toLowerCase().replace(/\s+/g, "-"),
         category: formData.category,
+        subCategory: formData.subCategory,
         paperSize: formData.paperSize,
         isFeatured: formData.isFeatured,
         en_title: formData.en_title,
@@ -979,7 +1108,7 @@ export default function AdminTemplatesManagerPage() {
       )}
 
       {/* CATEGORY STATISTIC TILES */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5 sm:gap-3">
         {CATEGORY_TABS.map((cat) => {
           const Icon = cat.icon;
           const count = categoryCounts[cat.id] || 0;
@@ -989,7 +1118,7 @@ export default function AdminTemplatesManagerPage() {
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
-              className={`p-3.5 rounded-2xl border text-left transition relative cursor-pointer ${
+              className={`p-3 rounded-2xl border text-left transition relative cursor-pointer ${
                 isActive
                   ? "bg-zinc-800 border-red-500 shadow-md ring-1 ring-red-500/50"
                   : "bg-zinc-900/80 border-zinc-800 hover:bg-zinc-850 hover:border-zinc-700"
@@ -1006,8 +1135,8 @@ export default function AdminTemplatesManagerPage() {
                 </span>
               </div>
               <div className="text-xs font-bold text-white truncate">{cat.label}</div>
-              <div className="text-[10px] text-zinc-400 font-mono mt-0.5">
-                {cat.id === "all" ? "Full Catalog" : "Category Filter"}
+              <div className="text-[10px] text-zinc-400 font-mono mt-0.5 truncate">
+                {cat.subtitle || (cat.id === "all" ? "Full Catalog" : "Category Filter")}
               </div>
             </button>
           );
@@ -1100,7 +1229,7 @@ export default function AdminTemplatesManagerPage() {
         <div>
           Showing <span className="text-white font-bold">{filteredTemplates.length}</span> templates
           {selectedCategory !== "all" && (
-            <span> in <strong className="text-red-400 capitalize">{selectedCategory}</strong></span>
+            <span> in <strong className="text-red-400">{CATEGORY_META[selectedCategory]?.label || selectedCategory}</strong></span>
           )}
           {searchQuery && (
             <span> matching &ldquo;<strong className="text-zinc-200">{searchQuery}</strong>&rdquo;</span>
@@ -1162,21 +1291,31 @@ export default function AdminTemplatesManagerPage() {
                         </div>
                       </td>
                       <td className="py-4 font-sans">
-                        <span
-                          className={`px-2.5 py-1 rounded-md text-[10px] font-bold border ${
-                            t.category === "Business"
-                              ? "bg-blue-950/60 text-blue-400 border-blue-800/60"
-                              : t.category === "Healthcare"
-                              ? "bg-emerald-950/60 text-emerald-400 border-emerald-800/60"
-                              : t.category === "Education"
-                              ? "bg-amber-950/60 text-amber-400 border-amber-800/60"
-                              : t.category === "Restaurant"
-                              ? "bg-rose-950/60 text-rose-400 border-rose-800/60"
-                              : "bg-purple-950/60 text-purple-400 border-purple-800/60"
-                          }`}
-                        >
-                          {t.category}
-                        </span>
+                        {(() => {
+                          const catKey = getTemplateCategory(t);
+                          const meta = CATEGORY_META[catKey];
+                          return (
+                            <span
+                              className={`px-2.5 py-1 rounded-md text-[10px] font-bold border ${
+                                catKey === "receipts"
+                                  ? "bg-blue-950/60 text-blue-400 border-blue-800/60"
+                                  : catKey === "class-routines"
+                                  ? "bg-emerald-950/60 text-emerald-400 border-emerald-800/60"
+                                  : catKey === "exam-routines"
+                                  ? "bg-amber-950/60 text-amber-400 border-amber-800/60"
+                                  : catKey === "medical-receipts"
+                                  ? "bg-rose-950/60 text-rose-400 border-rose-800/60"
+                                  : catKey === "education-other"
+                                  ? "bg-cyan-950/60 text-cyan-400 border-cyan-800/60"
+                                  : catKey === "healthcare-other"
+                                  ? "bg-purple-950/60 text-purple-400 border-purple-800/60"
+                                  : "bg-pink-950/60 text-pink-400 border-pink-800/60"
+                              }`}
+                            >
+                              {meta ? meta.label.split("&")[0].trim() : t.category}
+                            </span>
+                          );
+                        })()}
                       </td>
                       <td className="py-4">
                         <span className="text-zinc-400 font-mono text-[11px] bg-zinc-950 px-2 py-0.5 rounded border border-zinc-800">
@@ -1232,29 +1371,32 @@ export default function AdminTemplatesManagerPage() {
       {/* 2. CATEGORY SECTIONS VIEW */}
       {viewMode === "sections" && (
         <div className="space-y-6">
-          {Object.entries(groupedByCategory).map(([catName, catTemplates]) => {
+          {Object.entries(groupedByCategory).map(([catKey, catTemplates]) => {
             if (catTemplates.length === 0) return null;
+            const meta = CATEGORY_META[catKey] || {
+              label: `${catKey} Templates`,
+              icon: Layers,
+              color: "text-zinc-400",
+              subtitle: `${catTemplates.length} templates available`,
+            };
+            const Icon = meta.icon;
 
             return (
-              <div key={catName} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-xl">
+              <div key={catKey} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-xl">
                 <div className="flex items-center justify-between border-b border-zinc-800 pb-3 mb-4">
                   <div className="flex items-center gap-2.5">
-                    <span className="p-2 rounded-xl bg-zinc-800 border border-zinc-700 text-red-400">
-                      {catName === "Business" && <ShoppingBag className="w-4 h-4 text-blue-400" />}
-                      {catName === "Healthcare" && <Stethoscope className="w-4 h-4 text-emerald-400" />}
-                      {catName === "Education" && <GraduationCap className="w-4 h-4 text-amber-400" />}
-                      {catName === "Restaurant" && <UtensilsCrossed className="w-4 h-4 text-rose-400" />}
-                      {catName === "Printables" && <FileText className="w-4 h-4 text-purple-400" />}
+                    <span className="p-2 rounded-xl bg-zinc-800 border border-zinc-700">
+                      <Icon className={`w-4 h-4 ${meta.color}`} />
                     </span>
                     <div>
-                      <h3 className="text-base font-bold text-white">{catName} Templates</h3>
+                      <h3 className="text-base font-bold text-white">{meta.label}</h3>
                       <p className="text-[11px] text-zinc-400 font-mono">
-                        {catTemplates.length} templates available in this category
+                        {catTemplates.length} templates • {meta.subtitle}
                       </p>
                     </div>
                   </div>
                   <span className="text-xs font-mono bg-zinc-800 text-zinc-300 px-2.5 py-1 rounded-full border border-zinc-700">
-                    Category: {catName}
+                    Category: {meta.label.split("&")[0].trim()}
                   </span>
                 </div>
 
@@ -1321,19 +1463,31 @@ export default function AdminTemplatesManagerPage() {
             >
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                      t.category === "Business"
-                        ? "bg-blue-950/60 text-blue-400"
-                        : t.category === "Healthcare"
-                        ? "bg-emerald-950/60 text-emerald-400"
-                        : t.category === "Education"
-                        ? "bg-amber-950/60 text-amber-400"
-                        : "bg-rose-950/60 text-rose-400"
-                    }`}
-                  >
-                    {t.category}
-                  </span>
+                  {(() => {
+                    const catKey = getTemplateCategory(t);
+                    const meta = CATEGORY_META[catKey];
+                    return (
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+                          catKey === "receipts"
+                            ? "bg-blue-950/60 text-blue-400 border-blue-800/60"
+                            : catKey === "class-routines"
+                            ? "bg-emerald-950/60 text-emerald-400 border-emerald-800/60"
+                            : catKey === "exam-routines"
+                            ? "bg-amber-950/60 text-amber-400 border-amber-800/60"
+                            : catKey === "medical-receipts"
+                            ? "bg-rose-950/60 text-rose-400 border-rose-800/60"
+                            : catKey === "education-other"
+                            ? "bg-cyan-950/60 text-cyan-400 border-cyan-800/60"
+                            : catKey === "healthcare-other"
+                            ? "bg-purple-950/60 text-purple-400 border-purple-800/60"
+                            : "bg-pink-950/60 text-pink-400 border-pink-800/60"
+                        }`}
+                      >
+                        {meta ? meta.label.split("&")[0].trim() : t.category}
+                      </span>
+                    );
+                  })()}
                   <span className="text-[10px] font-mono text-zinc-400 bg-zinc-950 px-2 py-0.5 rounded border border-zinc-800">
                     {t.paperSize}
                   </span>
@@ -2476,6 +2630,41 @@ export default function AdminTemplatesManagerPage() {
                         <option value="Restaurant">Restaurant & Food POS</option>
                         <option value="Printables">Printables & Legal</option>
                       </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-mono uppercase text-zinc-400 mb-1">
+                        Sub-Category / Specialized Document Type *
+                      </label>
+                      <select
+                        value={formData.subCategory}
+                        onChange={(e) => setFormData({ ...formData, subCategory: e.target.value })}
+                        className="w-full text-xs bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-2 text-white focus:outline-none focus:border-red-500"
+                      >
+                        <optgroup label="Worldwide Receipts & Billing (InvoiceEditor)">
+                          <option value="invoice">Commercial Tax Invoice / Memo</option>
+                          <option value="receipt">Money Receipt / Voucher</option>
+                          <option value="pos">80mm POS Thermal Receipt</option>
+                          <option value="chalan">Delivery Chalan & Transport</option>
+                        </optgroup>
+                        <optgroup label="Academic & Timetables (SchoolTemplateEditor)">
+                          <option value="routine">Class Routine & Timetable</option>
+                          <option value="exam">Exam Routine & Schedule</option>
+                          <option value="marksheet">Marksheet / Grade Progress</option>
+                          <option value="admit-card">Admit Card / Hall Pass</option>
+                          <option value="certificate">Character / Transfer Certificate</option>
+                          <option value="id-card">Student / Staff ID Card</option>
+                        </optgroup>
+                        <optgroup label="Healthcare & Clinical (MedicalPrescriptionEditor)">
+                          <option value="bill">Medical Diagnostic / Hospital Bill</option>
+                          <option value="prescription">Clinical Doctor Prescription Pad</option>
+                          <option value="serial">Chamber Serial / Token</option>
+                          <option value="discharge">Hospital Discharge Summary</option>
+                        </optgroup>
+                      </select>
+                      <p className="text-[10px] text-zinc-500 mt-1">
+                        Controls specialized editor routing: InvoiceEditor, SchoolTemplateEditor, or MedicalPrescriptionEditor.
+                      </p>
                     </div>
 
                     <div className="space-y-3 pt-2 border-t border-zinc-800">

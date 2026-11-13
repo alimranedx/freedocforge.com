@@ -18,6 +18,13 @@ import {
   CheckCircle2,
   Clock,
   Sparkles,
+  Receipt,
+  Calendar,
+  Award,
+  Stethoscope,
+  BookOpen,
+  Zap,
+  Printer,
 } from "lucide-react";
 
 export default function AdminDashboardPage() {
@@ -60,7 +67,7 @@ export default function AdminDashboardPage() {
   const stats = data?.stats || {
     totalUsers: 0,
     totalDocs: 0,
-    totalTemplates: 30,
+    totalTemplates: 60,
     categoryCounts: { business: 0, healthcare: 0, education: 0, pos: 0 },
   };
 
@@ -179,6 +186,207 @@ export default function AdminDashboardPage() {
               className="text-[10px] text-amber-400 hover:text-amber-300 font-bold inline-flex items-center gap-0.5"
             >
               Configure →
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* 4-PILLAR TELEMETRY INVENTORY & SENIOR ADMIN QUICK LAUNCH */}
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <h2 className="text-sm font-black text-white uppercase tracking-wider">
+                Production Template Inventory (60 Live Formats)
+              </h2>
+              <span className="text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-800 font-mono font-bold px-2 py-0.5 rounded-full">
+                4 CORE PILLARS ACTIVE
+              </span>
+            </div>
+            <p className="text-xs text-zinc-400 mt-1">
+              Zero-signup, 100% free vector PDF generators with thermal POS (80mm) and ISO A4 print engines.
+            </p>
+          </div>
+          <Link
+            href="/admin/templates"
+            className="text-xs font-bold text-red-400 hover:text-red-300 transition inline-flex items-center gap-1 shrink-0"
+          >
+            Manage in Studio →
+          </Link>
+        </div>
+
+        {/* 4-PILLAR BREAKDOWN CARDS */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          {/* Pillar 1: Receipts */}
+          <div className="bg-zinc-950 border border-zinc-800/90 rounded-xl p-4 flex flex-col justify-between hover:border-zinc-700 transition">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <Receipt className="w-4 h-4 text-emerald-400" />
+                <span className="text-[10px] font-mono font-bold bg-emerald-950/80 text-emerald-400 px-2 py-0.5 rounded border border-emerald-800/60">
+                  13 Formats
+                </span>
+              </div>
+              <h3 className="text-xs font-bold text-white">Worldwide Receipts</h3>
+              <p className="text-[11px] text-zinc-400 mt-1 line-clamp-2">
+                F-Commerce, POS rolls (80mm), VAT tax invoices & money receipts.
+              </p>
+            </div>
+            <Link
+              href="/editor?template=f-commerce-invoice"
+              className="mt-3 text-[11px] font-semibold text-emerald-400 hover:text-emerald-300 inline-flex items-center gap-1"
+            >
+              Launch Editor →
+            </Link>
+          </div>
+
+          {/* Pillar 2: Class Routines */}
+          <div className="bg-zinc-950 border border-zinc-800/90 rounded-xl p-4 flex flex-col justify-between hover:border-zinc-700 transition">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <Calendar className="w-4 h-4 text-blue-400" />
+                <span className="text-[10px] font-mono font-bold bg-blue-950/80 text-blue-400 px-2 py-0.5 rounded border border-blue-800/60">
+                  10 Formats
+                </span>
+              </div>
+              <h3 className="text-xs font-bold text-white">Class Routines</h3>
+              <p className="text-[11px] text-zinc-400 mt-1 line-clamp-2">
+                6-period timetables, teacher allocations, multi-section room grids.
+              </p>
+            </div>
+            <Link
+              href="/editor?template=school-class-routine"
+              className="mt-3 text-[11px] font-semibold text-blue-400 hover:text-blue-300 inline-flex items-center gap-1"
+            >
+              Launch Editor →
+            </Link>
+          </div>
+
+          {/* Pillar 3: Exam Routines */}
+          <div className="bg-zinc-950 border border-zinc-800/90 rounded-xl p-4 flex flex-col justify-between hover:border-zinc-700 transition">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <Award className="w-4 h-4 text-amber-400" />
+                <span className="text-[10px] font-mono font-bold bg-amber-950/80 text-amber-400 px-2 py-0.5 rounded border border-amber-800/60">
+                  10 Formats
+                </span>
+              </div>
+              <h3 className="text-xs font-bold text-white">Exam Routines</h3>
+              <p className="text-[11px] text-zinc-400 mt-1 line-clamp-2">
+                Annual, terminal & board timetables with shifts and center rules.
+              </p>
+            </div>
+            <Link
+              href="/editor?template=school-exam-routine"
+              className="mt-3 text-[11px] font-semibold text-amber-400 hover:text-amber-300 inline-flex items-center gap-1"
+            >
+              Launch Editor →
+            </Link>
+          </div>
+
+          {/* Pillar 4: Medical Bills */}
+          <div className="bg-zinc-950 border border-zinc-800/90 rounded-xl p-4 flex flex-col justify-between hover:border-zinc-700 transition">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <Stethoscope className="w-4 h-4 text-teal-400" />
+                <span className="text-[10px] font-mono font-bold bg-teal-950/80 text-teal-400 px-2 py-0.5 rounded border border-teal-800/60">
+                  10 Formats
+                </span>
+              </div>
+              <h3 className="text-xs font-bold text-white">Medical Bills</h3>
+              <p className="text-[11px] text-zinc-400 mt-1 line-clamp-2">
+                Diagnostic pathology, clinic consults, inpatient admission slips.
+              </p>
+            </div>
+            <Link
+              href="/editor?template=medical-money-receipt"
+              className="mt-3 text-[11px] font-semibold text-teal-400 hover:text-teal-300 inline-flex items-center gap-1"
+            >
+              Launch Editor →
+            </Link>
+          </div>
+
+          {/* Pillar 5: Companion Records */}
+          <div className="bg-zinc-950 border border-zinc-800/90 rounded-xl p-4 flex flex-col justify-between hover:border-zinc-700 transition">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <BookOpen className="w-4 h-4 text-purple-400" />
+                <span className="text-[10px] font-mono font-bold bg-purple-950/80 text-purple-400 px-2 py-0.5 rounded border border-purple-800/60">
+                  17 Formats
+                </span>
+              </div>
+              <h3 className="text-xs font-bold text-white">Academic & Clinical</h3>
+              <p className="text-[11px] text-zinc-400 mt-1 line-clamp-2">
+                Doctor Rx pads, marksheet transcripts, admit cards & certificates.
+              </p>
+            </div>
+            <Link
+              href="/editor?template=doctor-prescription-pad"
+              className="mt-3 text-[11px] font-semibold text-purple-400 hover:text-purple-300 inline-flex items-center gap-1"
+            >
+              Launch Editor →
+            </Link>
+          </div>
+        </div>
+
+        {/* SENIOR ADMIN 1-CLICK QUICK LAUNCH ACTIONS */}
+        <div className="pt-4 border-t border-zinc-800">
+          <div className="flex items-center gap-2 mb-3">
+            <Zap className="w-3.5 h-3.5 text-amber-400" />
+            <h4 className="text-xs font-mono uppercase tracking-wider text-zinc-300 font-bold">
+              Senior Admin Quick Launch & Test Terminals
+            </h4>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/editor?template=f-commerce-invoice"
+              className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white rounded-lg text-xs font-medium border border-zinc-700 transition inline-flex items-center gap-1.5"
+            >
+              <Receipt className="w-3.5 h-3.5 text-emerald-400" />
+              <span>F-Commerce Memo</span>
+            </Link>
+            <Link
+              href="/editor?template=restaurant-pos-bill"
+              className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white rounded-lg text-xs font-medium border border-zinc-700 transition inline-flex items-center gap-1.5"
+            >
+              <Printer className="w-3.5 h-3.5 text-emerald-400" />
+              <span>80mm POS Thermal</span>
+            </Link>
+            <Link
+              href="/editor?template=school-class-routine"
+              className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white rounded-lg text-xs font-medium border border-zinc-700 transition inline-flex items-center gap-1.5"
+            >
+              <Calendar className="w-3.5 h-3.5 text-blue-400" />
+              <span>Class Routine (A4)</span>
+            </Link>
+            <Link
+              href="/editor?template=school-exam-routine"
+              className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white rounded-lg text-xs font-medium border border-zinc-700 transition inline-flex items-center gap-1.5"
+            >
+              <Award className="w-3.5 h-3.5 text-amber-400" />
+              <span>Exam Timetable (A4)</span>
+            </Link>
+            <Link
+              href="/editor?template=medical-money-receipt"
+              className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white rounded-lg text-xs font-medium border border-zinc-700 transition inline-flex items-center gap-1.5"
+            >
+              <Stethoscope className="w-3.5 h-3.5 text-teal-400" />
+              <span>Medical Bill</span>
+            </Link>
+            <Link
+              href="/editor?template=doctor-prescription-pad"
+              className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white rounded-lg text-xs font-medium border border-zinc-700 transition inline-flex items-center gap-1.5"
+            >
+              <FileText className="w-3.5 h-3.5 text-purple-400" />
+              <span>Doctor Rx Pad</span>
+            </Link>
+            <Link
+              href="/templates"
+              target="_blank"
+              className="px-3 py-1.5 bg-zinc-800/60 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded-lg text-xs font-medium border border-zinc-700/80 transition inline-flex items-center gap-1.5 ml-auto"
+            >
+              <span>Public Catalog (60)</span>
+              <ExternalLink className="w-3.5 h-3.5" />
             </Link>
           </div>
         </div>

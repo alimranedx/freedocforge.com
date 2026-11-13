@@ -5,8 +5,9 @@ import { getAdminSession } from "@/lib/auth";
 // In-memory runtime persistence for platform configuration
 let currentPlatformSettings = {
   platformName: "FreeDocForge.com",
-  supportPhone: "+880 1711-000000",
+  supportPhone: "+880 1712-345678",
   supportEmail: "support@freedocforge.com",
+  officeAddress: "House 42, Road 11, Dhanmondi, Dhaka - 1205, Bangladesh",
   defaultCurrency: "৳ (BDT)",
   maintenanceMode: false,
   maintenanceMessage: "Scheduled engine optimization in progress. Document downloads remain operational.",

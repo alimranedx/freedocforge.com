@@ -148,10 +148,13 @@ export default function AdminDocumentsPage() {
         {/* CATEGORY FILTER PILLS */}
         <div className="flex items-center gap-1.5 self-start md:self-auto shrink-0 text-xs overflow-x-auto max-w-full pb-1 md:pb-0">
           {[
-            { label: "All Formats", val: "" },
-            { label: "Business (Memos)", val: "Business" },
-            { label: "Healthcare (Rx)", val: "Healthcare" },
-            { label: "Academic", val: "Education" },
+            { label: "All Formats (60)", val: "" },
+            { label: "Worldwide Receipts (10+)", val: "Receipts" },
+            { label: "Class Routines (10+)", val: "Class Routines" },
+            { label: "Exam Routines (10+)", val: "Exam Routines" },
+            { label: "Medical Bills (10+)", val: "Medical Bills" },
+            { label: "Academic Records", val: "Education" },
+            { label: "Doctor Prescriptions", val: "Healthcare" },
             { label: "Food POS", val: "POS" },
           ].map((cat) => (
             <button

@@ -17,6 +17,8 @@ import {
   Eye,
   FileCheck,
   Building,
+  Receipt,
+  Calendar,
 } from "lucide-react";
 import { useUserDashboard } from "@/context/UserDashboardContext";
 
@@ -32,6 +34,14 @@ export default function ShopProfilePresetPage() {
   const [terms, setTerms] = useState("");
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [signatureUrl, setSignatureUrl] = useState<string | null>(null);
+
+  // Institutional default fields
+  const [academicSession, setAcademicSession] = useState("2026");
+  const [academicShift, setAcademicShift] = useState("Morning Shift");
+  const [examCenter, setExamCenter] = useState("Main Campus / Hall A");
+
+  // Right-hand live preview switcher
+  const [previewPillar, setPreviewPillar] = useState<"receipt" | "routine" | "exam" | "medical">("receipt");
 
   const [isSaved, setIsSaved] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -54,6 +64,9 @@ export default function ShopProfilePresetPage() {
         if (parsed.terms) setTerms(parsed.terms);
         if (parsed.logoUrl) setLogoUrl(parsed.logoUrl);
         if (parsed.signatureUrl) setSignatureUrl(parsed.signatureUrl);
+        if (parsed.academicSession) setAcademicSession(parsed.academicSession);
+        if (parsed.academicShift) setAcademicShift(parsed.academicShift);
+        if (parsed.examCenter) setExamCenter(parsed.examCenter);
       } catch (e) {
         console.error("Local storage load error", e);
       }
@@ -78,6 +91,13 @@ export default function ShopProfilePresetPage() {
       .catch(() => {})
       .finally(() => setIsLoading(false));
   }, []);
+
+  // Sync preview pillar when presetType changes
+  useEffect(() => {
+    if (presetType === "shop") setPreviewPillar("receipt");
+    else if (presetType === "school") setPreviewPillar("routine");
+    else if (presetType === "medical") setPreviewPillar("medical");
+  }, [presetType]);
 
   // Voice typing handler
   const handleVoiceType = (fieldKey: string) => {
@@ -156,6 +176,9 @@ export default function ShopProfilePresetPage() {
       terms,
       logoUrl,
       signatureUrl,
+      academicSession,
+      academicShift,
+      examCenter,
       updatedAt: new Date().toISOString(),
     };
 
@@ -193,7 +216,7 @@ export default function ShopProfilePresetPage() {
           </h1>
           <p className="text-blue-100 text-xs sm:text-sm mt-2 leading-relaxed">
             {lang === "bn"
-              ? "এখানে একবার লোগো, ঠিকানা, ফোন ও ডিজিটাল সিল সংরক্ষণ করুন। এরপরে গ্যালারির যেকোনো ইনভয়েস, মার্কশিট বা প্রেসক্রিপশন খুললেই স্বয়ংক্রিয়ভাবে তথ্য বসে যাবে!"
+              ? "এখানে একবার লোগো, ঠিকানা, ফোন ও ডিজিটাল সিল সংরক্ষণ করুন। এরপরে গ্যালারির যেকোনো ক্যাশ মেমো, ক্লাস রুটিন, পরীক্ষার সূচি বা প্রেসক্রিপশন খুললেই স্বয়ংক্রিয়ভাবে তথ্য বসে যাবে!"
               : "Save your brand logo, authorized signature, phone, and terms once. Every time you open any template across FreeDocForge, it auto-fills in 1 second!"}
           </p>
         </div>
@@ -211,7 +234,7 @@ export default function ShopProfilePresetPage() {
           }`}
         >
           <Store className="w-4 h-4" />
-          <span>{lang === "bn" ? "দোকান ও ব্যবসা (Shop / F-Commerce)" : "Shop & Business"}</span>
+          <span>{lang === "bn" ? "দোকান ও ব্যবসা (Shop / Invoices)" : "Shop & Invoices"}</span>
         </button>
 
         <button
@@ -224,7 +247,7 @@ export default function ShopProfilePresetPage() {
           }`}
         >
           <GraduationCap className="w-4 h-4" />
-          <span>{lang === "bn" ? "স্কুল ও মাদ্রাসা (School / Academy)" : "School & Academy"}</span>
+          <span>{lang === "bn" ? "স্কুল ও একাডেমি (School / Routines)" : "School & Routines"}</span>
         </button>
 
         <button
@@ -333,6 +356,48 @@ export default function ShopProfilePresetPage() {
               />
             </div>
 
+            {/* Institutional School Defaults: Session, Shift, Center */}
+            {presetType === "school" && (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 bg-blue-50/60 dark:bg-blue-950/40 rounded-2xl border border-blue-200 dark:border-blue-900">
+                <div>
+                  <label className="block text-[10px] font-bold text-blue-900 dark:text-blue-200 uppercase tracking-wider mb-1">
+                    {lang === "bn" ? "শিক্ষাবর্ষ / সেশন" : "Academic Session"}
+                  </label>
+                  <input
+                    type="text"
+                    value={academicSession}
+                    onChange={(e) => setAcademicSession(e.target.value)}
+                    placeholder="2026"
+                    className="w-full text-xs border border-blue-200 dark:border-blue-800 bg-white dark:bg-slate-800 rounded-lg p-2 font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-blue-900 dark:text-blue-200 uppercase tracking-wider mb-1">
+                    {lang === "bn" ? "ডিফল্ট শিফট" : "Default Shift"}
+                  </label>
+                  <input
+                    type="text"
+                    value={academicShift}
+                    onChange={(e) => setAcademicShift(e.target.value)}
+                    placeholder="Morning Shift"
+                    className="w-full text-xs border border-blue-200 dark:border-blue-800 bg-white dark:bg-slate-800 rounded-lg p-2 font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-blue-900 dark:text-blue-200 uppercase tracking-wider mb-1">
+                    {lang === "bn" ? "পরীক্ষা কেন্দ্র / ভেন্যু" : "Exam Center / Hall"}
+                  </label>
+                  <input
+                    type="text"
+                    value={examCenter}
+                    onChange={(e) => setExamCenter(e.target.value)}
+                    placeholder="Main Campus / Hall A"
+                    className="w-full text-xs border border-blue-200 dark:border-blue-800 bg-white dark:bg-slate-800 rounded-lg p-2 font-semibold"
+                  />
+                </div>
+              </div>
+            )}
+
             {/* Phone & Currency */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <div>
@@ -417,7 +482,7 @@ export default function ShopProfilePresetPage() {
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                   {presetType === "medical"
                     ? lang === "bn" ? "পরামর্শের সময় ও বিশেষ নির্দেশনা" : "Consultation Days & Instructions"
-                    : lang === "bn" ? "ডিফল্ট শর্ত ও রিটার্ন পলিসি" : "Default Terms & Conditions"}
+                    : lang === "bn" ? "ডিফল্ট শর্ত ও পলিসি" : "Default Terms & Instructions"}
                 </label>
                 <button
                   type="button"
@@ -431,7 +496,7 @@ export default function ShopProfilePresetPage() {
                 rows={2}
                 placeholder={
                   presetType === "medical"
-                    ? "Saturday - Thursday: 5:00 PM - 9:00 PM. Friday Closed. Bring previous reports."
+                    ? "Saturday - Thursday: 5:00 PM - 9:00 PM. Friday Closed."
                     : "Goods once sold can be exchanged within 48 hours with original invoice."
                 }
                 value={terms}
@@ -448,21 +513,21 @@ export default function ShopProfilePresetPage() {
                   {lang === "bn" ? "প্রতিষ্ঠানের লোগো (Brand Logo)" : "Official Brand Logo"}
                 </span>
                 {logoUrl ? (
-                  <div className="flex items-center justify-between gap-2 bg-white dark:bg-slate-800 p-2 rounded-xl border border-slate-200 dark:border-slate-700">
-                    <img src={logoUrl} alt="Logo" className="w-10 h-10 object-contain rounded" />
+                  <div className="flex items-center gap-3">
+                    <img src={logoUrl} alt="Logo" className="w-12 h-12 object-contain bg-white rounded-lg p-1 border" />
                     <button
                       type="button"
                       onClick={() => setLogoUrl(null)}
-                      className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition"
-                      title="Remove Logo"
+                      className="text-xs font-bold text-red-600 hover:text-red-700 flex items-center gap-1 cursor-pointer"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>{lang === "bn" ? "মুছুন" : "Remove"}</span>
                     </button>
                   </div>
                 ) : (
-                  <label className="flex items-center justify-center gap-2 border-2 border-dashed border-slate-300 dark:border-slate-600 hover:border-blue-500 p-3 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 cursor-pointer transition">
-                    <Upload className="w-4 h-4 text-blue-600" />
-                    <span>{lang === "bn" ? "লোগো আপলোড করুন" : "Upload Logo (PNG/JPG)"}</span>
+                  <label className="flex items-center justify-center gap-2 border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-blue-500 rounded-xl p-3 cursor-pointer text-xs font-semibold text-slate-500 hover:text-blue-600 transition">
+                    <Upload className="w-4 h-4" />
+                    <span>{lang === "bn" ? "লোগো আপলোড করুন" : "Upload Logo Image"}</span>
                     <input
                       type="file"
                       accept="image/*"
@@ -473,26 +538,26 @@ export default function ShopProfilePresetPage() {
                 )}
               </div>
 
-              {/* Signature / Seal Upload */}
+              {/* Signature Upload */}
               <div className="p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
                 <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block">
-                  {lang === "bn" ? "ডিজিটাল স্বাক্ষর বা অফিসিয়াল সিল" : "Digital Signature / Seal"}
+                  {lang === "bn" ? "ডিজিটাল সিল বা স্বাক্ষর" : "Digital Signature / Seal"}
                 </span>
                 {signatureUrl ? (
-                  <div className="flex items-center justify-between gap-2 bg-white dark:bg-slate-800 p-2 rounded-xl border border-slate-200 dark:border-slate-700">
-                    <img src={signatureUrl} alt="Signature" className="w-16 h-8 object-contain rounded" />
+                  <div className="flex items-center gap-3">
+                    <img src={signatureUrl} alt="Signature" className="w-16 h-10 object-contain bg-white rounded-lg p-1 border" />
                     <button
                       type="button"
                       onClick={() => setSignatureUrl(null)}
-                      className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition"
-                      title="Remove Signature"
+                      className="text-xs font-bold text-red-600 hover:text-red-700 flex items-center gap-1 cursor-pointer"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>{lang === "bn" ? "মুছুন" : "Remove"}</span>
                     </button>
                   </div>
                 ) : (
-                  <label className="flex items-center justify-center gap-2 border-2 border-dashed border-slate-300 dark:border-slate-600 hover:border-blue-500 p-3 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 cursor-pointer transition">
-                    <Upload className="w-4 h-4 text-blue-600" />
+                  <label className="flex items-center justify-center gap-2 border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-blue-500 rounded-xl p-3 cursor-pointer text-xs font-semibold text-slate-500 hover:text-blue-600 transition">
+                    <Upload className="w-4 h-4" />
                     <span>{lang === "bn" ? "স্বাক্ষর বা সিল আপলোড" : "Upload Seal / Sign"}</span>
                     <input
                       type="file"
@@ -527,19 +592,70 @@ export default function ShopProfilePresetPage() {
           </form>
         </div>
 
-        {/* RIGHT COLUMN: Live Print Letterhead Preview */}
+        {/* RIGHT COLUMN: Live Print Letterhead Preview with Multi-Preset Switching */}
         <div className="lg:col-span-5 space-y-4">
           <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-xs">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-3">
               <div className="flex items-center gap-2">
                 <Eye className="w-4 h-4 text-blue-600" />
                 <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
-                  {lang === "bn" ? "লাইভ লেটারহেড প্রিভিউ" : "Live Letterhead Preview"}
+                  {lang === "bn" ? "লাইভ লেটারহেড প্রিভিউ" : "Live Multi-Preset Preview"}
                 </h3>
               </div>
               <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950 px-2 py-0.5 rounded-full">
-                {lang === "bn" ? "প্রিন্ট রেডি" : "Print Ready"}
+                {lang === "bn" ? "অটো-ফিল সক্রিয়" : "Auto-Fill Active"}
               </span>
+            </div>
+
+            {/* 4-Pillar Preview Selector */}
+            <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl mb-3 text-[11px] overflow-x-auto">
+              <button
+                type="button"
+                onClick={() => setPreviewPillar("receipt")}
+                className={`px-2.5 py-1 rounded-lg font-bold shrink-0 transition cursor-pointer ${
+                  previewPillar === "receipt"
+                    ? "bg-white dark:bg-slate-900 text-blue-600 shadow-2xs"
+                    : "text-slate-500 hover:text-slate-900"
+                }`}
+              >
+                {lang === "bn" ? "ক্যাশ মেমো" : "Cash Memo"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPreviewPillar("routine")}
+                className={`px-2.5 py-1 rounded-lg font-bold shrink-0 transition cursor-pointer ${
+                  previewPillar === "routine"
+                    ? "bg-white dark:bg-slate-900 text-blue-600 shadow-2xs"
+                    : "text-slate-500 hover:text-slate-900"
+                }`}
+              >
+                {lang === "bn" ? "ক্লাস রুটিন" : "Class Routine"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPreviewPillar("exam")}
+                className={`px-2.5 py-1 rounded-lg font-bold shrink-0 transition cursor-pointer ${
+                  previewPillar === "exam"
+                    ? "bg-white dark:bg-slate-900 text-blue-600 shadow-2xs"
+                    : "text-slate-500 hover:text-slate-900"
+                }`}
+              >
+                {lang === "bn" ? "পরীক্ষার সূচি" : "Exam Schedule"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPreviewPillar("medical")}
+                className={`px-2.5 py-1 rounded-lg font-bold shrink-0 transition cursor-pointer ${
+                  previewPillar === "medical"
+                    ? "bg-white dark:bg-slate-900 text-blue-600 shadow-2xs"
+                    : "text-slate-500 hover:text-slate-900"
+                }`}
+              >
+                {lang === "bn" ? "ক্লিনিক রসিদ" : "Clinic Bill"}
+              </button>
             </div>
 
             {/* Rendered Live Miniature Letterhead Card */}
@@ -550,10 +666,10 @@ export default function ShopProfilePresetPage() {
                     <img src={logoUrl} alt="Logo" className="w-8 h-8 object-contain mb-1 rounded" />
                   )}
                   <h4 className="font-black text-sm uppercase tracking-tight text-slate-900 dark:text-white">
-                    {businessName || (presetType === "shop" ? "STYLIST FASHION BD" : presetType === "school" ? "DHAKA MODEL SCHOOL" : "DR. FARHANA YASMIN")}
+                    {businessName || (previewPillar === "receipt" ? "STYLIST FASHION BD" : previewPillar === "routine" || previewPillar === "exam" ? "DHAKA IDEAL MODEL SCHOOL" : "CARE SPECIALIST CLINIC")}
                   </h4>
                   <p className="text-[11px] text-slate-500 font-medium">
-                    {tagline || (presetType === "medical" ? "MBBS, FCPS • BMDC Reg No: A-54321" : "Excellence in Quality & Trust")}
+                    {tagline || (previewPillar === "medical" ? "MBBS, FCPS • BMDC Reg No: A-54321" : "Excellence in Quality & Trust")}
                   </p>
                   <p className="text-[10px] text-slate-400">
                     Phone: {phone || "+880 1712-345678"} • Currency: {currency || "৳"}
@@ -561,19 +677,60 @@ export default function ShopProfilePresetPage() {
                   <p className="text-[10px] text-slate-400">
                     {address || "House 14, Road 5, Dhanmondi, Dhaka"}
                   </p>
+                  {(previewPillar === "routine" || previewPillar === "exam") && (
+                    <p className="text-[10px] text-blue-600 font-semibold">
+                      Session: {academicSession} • Shift: {academicShift}
+                    </p>
+                  )}
                 </div>
                 <div className="text-right shrink-0">
                   <span className="inline-block bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-black text-[9px] px-2 py-1 rounded">
-                    {presetType === "shop" ? "CASH MEMO" : presetType === "school" ? "ACADEMIC SHEET" : "DOCTOR Rx"}
+                    {previewPillar === "receipt"
+                      ? "CASH MEMO"
+                      : previewPillar === "routine"
+                      ? "TIMETABLE"
+                      : previewPillar === "exam"
+                      ? "EXAM SCHEDULE"
+                      : "MONEY RECEIPT"}
                   </span>
                 </div>
               </div>
 
               {/* Sample Document Body Area */}
-              <div className="py-6 border-b border-dashed border-slate-300 dark:border-slate-700 text-center text-slate-400 text-[11px]">
-                {lang === "bn"
-                  ? "[ টেমপ্লেট ওপেন করলেই স্বয়ংক্রিয়ভাবে আপনার প্রিসেট তথ্য হেডার ও ফুটারে বসে যাবে ]"
-                  : "[ When you open any template, your saved profile auto-fills right here ]"}
+              <div className="py-4 border-b border-dashed border-slate-300 dark:border-slate-700 text-center text-slate-400 text-[10px]">
+                {previewPillar === "receipt" && (
+                  <div className="space-y-1">
+                    <div className="flex justify-between font-medium text-[10px] text-slate-600">
+                      <span>Item: Premium Formal Cotton Shirt (x2)</span>
+                      <span>{currency || "৳"} 2,500</span>
+                    </div>
+                    <div className="flex justify-between font-medium text-[10px] text-slate-600">
+                      <span>Item: Slim Fit Chino Pant (x1)</span>
+                      <span>{currency || "৳"} 1,450</span>
+                    </div>
+                  </div>
+                )}
+
+                {previewPillar === "routine" && (
+                  <div className="text-center space-y-1">
+                    <span className="font-bold text-slate-700 block">Weekly Periods (Sunday - Thursday)</span>
+                    <span className="text-[9px] text-slate-400">P1: Higher Math | P2: Physics | P3: English | P4: Chemistry</span>
+                  </div>
+                )}
+
+                {previewPillar === "exam" && (
+                  <div className="text-center space-y-1">
+                    <span className="font-bold text-slate-700 block">Annual Exam 2026 • Center: {examCenter}</span>
+                    <span className="text-[9px] text-slate-400">Bangla 1st (101) | Math (109) | Physics (136)</span>
+                  </div>
+                )}
+
+                {previewPillar === "medical" && (
+                  <div className="text-center space-y-1">
+                    <span className="font-bold text-slate-700 block">Diagnostic Investigation & Fee Receipt</span>
+                    <span className="text-[9px] text-slate-400">CBC with ESR (৳ 450) • USG Whole Abdomen (৳ 1,500)</span>
+                  </div>
+                )}
               </div>
 
               {/* Footer Terms & Signature Preview */}
@@ -581,7 +738,7 @@ export default function ShopProfilePresetPage() {
                 <div className="max-w-[65%]">
                   <span className="font-bold text-slate-500 block uppercase text-[9px]">Terms & Conditions:</span>
                   <p className="text-slate-500 dark:text-slate-400 text-[9px] line-clamp-2">
-                    {terms || "Exchange accepted within 48 hours with receipt."}
+                    {terms || "Exchange accepted within 48 hours with invoice."}
                   </p>
                 </div>
                 <div className="text-center shrink-0">
@@ -591,7 +748,11 @@ export default function ShopProfilePresetPage() {
                     <div className="w-16 border-b border-slate-400 mb-1"></div>
                   )}
                   <span className="text-[9px] font-bold text-slate-700 dark:text-slate-300 block">
-                    {presetType === "school" ? "Principal Seal" : presetType === "medical" ? "Doctor's Seal" : "Authorized Sign"}
+                    {previewPillar === "routine" || previewPillar === "exam"
+                      ? "Principal / Controller"
+                      : previewPillar === "medical"
+                      ? "Doctor's Seal"
+                      : "Authorized Sign"}
                   </span>
                 </div>
               </div>
@@ -601,15 +762,17 @@ export default function ShopProfilePresetPage() {
             <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
               <Link
                 href={
-                  presetType === "school"
-                    ? "/templates/school-result-sheet"
-                    : presetType === "medical"
-                    ? "/templates/doctor-prescription"
+                  previewPillar === "routine"
+                    ? "/templates/school-class-routine"
+                    : previewPillar === "exam"
+                    ? "/templates/school-exam-routine"
+                    : previewPillar === "medical"
+                    ? "/templates/medical-money-receipt"
                     : "/templates/f-commerce-invoice"
                 }
                 className="w-full flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl text-xs transition"
               >
-                <span>{lang === "bn" ? "প্রিসেট দিয়ে টেমপ্লেট টেস্ট করুন" : "Open Template With My Preset"}</span>
+                <span>{lang === "bn" ? "প্রিসেট দিয়ে টেমপ্লেট টেস্ট করুন" : "Open Selected Template with Preset"}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
