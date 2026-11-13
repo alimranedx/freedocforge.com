@@ -177,6 +177,35 @@
      * `npx tsc --noEmit` verified with 0 errors.
      * `npm run build` verified: All 74 routes compiled with Exit code 0.
 
+### O. Worldwide 4-Pillar Template Expansion (60 Templates) & Sticky Visitor Retention Engine
+* **Resolved User Request:** Swarm coordination to analyze worldwide receipt, class routine, exam routine, and medical receipt templates. Deliver minimum 10 distinct, world-class templates for each type with irresistible visitor retention ("when a user lands, they can't leave").
+* **Architectural Modules Engineered:**
+  1. **Worldwide Receipts Pillar (13 Templates - `src/lib/templates-receipts.ts`):**
+     * F-Commerce cash memo, Toast/Square 80mm thermal POS restaurant bill, Walmart/Shwapno barcode supermarket slip, Mushak-6.3 corporate VAT/tax invoice, Freight cargo dispatch chalan, Enterprise CPQ quotation, Haute couture jewelry memo, Stripe/Wise USD freelance invoice, Residential/commercial rent receipt, Bosch-grade auto workshop bill, NGO/Zakat donation receipt, Logistics courier AWB consignment note, Flagship tech warranty invoice.
+  2. **Class Routines Pillar (10 Templates - `src/lib/templates-routines.ts` & `src/lib/templates/classRoutines.ts`):**
+     * Primary school 6-period timetable, High school/college 7-period master routine with double lab blocks, University semester credit schedule (lecture hall, course codes, consultation hours), Madrasah Tahfeez/Dakhil Islamic schedule (Hifz dawr, Arabic, Fiqh, prayer times), Coaching center admission batch routine (Alpha batch, 50-mark OMR tests), Kindergarten early childhood activity schedule, Teacher individual faculty workload matrix, Private home tutor 7-day plan, Central science lab & computer practical schedule, Virtual online class & remote learning timetable (Zoom/Meet links).
+  3. **Exam Routines Pillar (10 Templates - `src/lib/examRoutineTemplates.ts`):**
+     * School annual & term final exam routine (morning/day shifts, hall rules), Secondary & Higher Secondary Board exam schedule (SSC/HSC/GCSE date sheet, OMR instructions), University semester final timetable (credit hours, auditoriums, Dean approval), Coaching center model test schedule (negative marking, chapter syllabus), Madrasah Board Dakhil/Alim exam timetable (Hijri calendar 1447 AH), Practical & viva voce exam schedule, Faculty invigilation duty roster, Student personal exam countdown planner, Competitive recruitment job admission schedule, Weekly class test quick schedule.
+  4. **Medical Receipts & Healthcare Pillar (10 Templates - `src/lib/templates-medical.ts`):**
+     * Diagnostic center money receipt & test bill (specimen collection/delivery times, advance/due), Hospital inpatient admission & bed charge bill, DGDA model pharmacy cash memo (batch/expiry/pharmacist), Doctor specialist consultation fee receipt (BMDC reg, serial #, 14-day free review), Dental clinic procedure bill (tooth #, Zirconia crown 10-yr warranty), Optical & eye care spectacle bill (OD/OS power, BlueCut UV420), Physiotherapy session card & bill (10-session rehab package), Pathology & blood bank investigation bill (cross-matching, TTI screening), ICU emergency ambulance transport slip, Hospital discharge financial clearance slip (zero dues gate pass).
+  5. **Rendering & Export Engine Upgrades (`SchoolTemplateEditor.tsx`, `InvoiceEditor.tsx`, `TemplateCardPreview.tsx`, `templates/[slug]/page.tsx`):**
+     * Dynamic period columns (P1-P7) with time slots, teacher directory/legend, candidate rules callout, clinical demographic badges (Age, Gender, PID, Bed/Ward), cashier/technologist seals, and live preview rendering for all 60 templates.
+  6. **Visitor Retention & Conversion Overhaul (`src/app/page.tsx` & `/templates`):**
+     * Zero-friction trust ribbon (100% Free, Zero Watermark, 1-Click Vector PDF, No Signup), instant hero live as-you-type search with autocomplete dropdown, 4-pillar interactive live studio preview switcher, quick-access category navigation, and 4 dedicated bento showcases.
+  7. **Verification & Build:**
+     * `npx tsc --noEmit`: 0 errors.
+     * `npm run build`: All 104 static routes compiled with Exit code 0.
+     * 100% bilingual parity (both `en` and `bn` locales fully populated with realistic cultural data).
+
+### P. Client-Side PDF Export Engine: html2canvas-pro Modern Color Space Resolution
+* **Resolved Issue:** Alert dialog popped up stating: `"Failed to download PDF. Please use the Print option instead."` when clicking the 1-Click PDF download button on `http://localhost:3000/templates/school-class-routine`.
+* **Root Cause Analysis:** Browser console threw `Error: Attempting to parse an unsupported color function "lab"`. Tailwind CSS v4 compiles design themes and utility colors into modern CSS color functions (`lab(...)` / `oklch(...)`). The legacy `html2canvas` 1.4.1 package fails when parsing modern CSS color spaces.
+* **Solution:**
+  1. Installed `html2canvas-pro` (v2.6.4), which provides native support for `lab()`, `oklch()`, `oklab()`, and modern CSS functions.
+  2. Updated `src/lib/pdfExport.ts`: Swapped dynamic imports to `html2canvas-pro` with resilient default export detection and reset scroll coordinates (`scrollX: 0, scrollY: 0`).
+  3. Verified directly via browser subagent: Successfully downloaded `academic-sheet.pdf` (11.27 MB) with 0 errors and zero alert popups.
+  4. Both `npx tsc --noEmit` and `npm run build` verified cleanly (Exit code 0, 104/104 routes).
+
 ---
 
 ## 3. Where You Should Start Next (Actionable Roadmap)

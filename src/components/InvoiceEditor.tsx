@@ -198,8 +198,10 @@ export default function InvoiceEditor({
   );
   const delivery = Number(data.deliveryCharge || 0);
   const discount = Number(data.discount || 0);
-  const grandTotal = Math.max(0, subtotal + delivery - discount);
-  const paid = Number(data.paidAmount || 0);
+  const vatTaxPercent = Number(data.vatTaxPercent || data.taxPercent || 0);
+  const vatTaxAmount = vatTaxPercent > 0 ? Math.round((subtotal * vatTaxPercent) / 100) : Number(data.taxAmount || 0);
+  const grandTotal = Math.max(0, subtotal + delivery - discount + vatTaxAmount);
+  const paid = Number(data.paidAmount || data.advancePaid || 0);
   const due = Math.max(0, grandTotal - paid);
 
   const handleAddItem = () => {
@@ -378,13 +380,27 @@ export default function InvoiceEditor({
   const isMedicalReceipt =
     templateSlug.includes("medical") ||
     templateSlug.includes("diagnostic") ||
-    templateSlug.includes("money-receipt");
+    templateSlug.includes("hospital") ||
+    templateSlug.includes("pharmacy") ||
+    templateSlug.includes("doctor-consultation") ||
+    templateSlug.includes("dental-procedure") ||
+    templateSlug.includes("optical-eyecare") ||
+    templateSlug.includes("physiotherapy") ||
+    templateSlug.includes("pathology") ||
+    templateSlug.includes("ambulance") ||
+    templateSlug.includes("discharge") ||
+    templateSlug.includes("money-receipt") ||
+    data.patientName !== undefined ||
+    data.patientAge !== undefined ||
+    data.referredBy !== undefined;
 
   const handleSaveDocument = async () => {
     setDocSaveLoading(true);
     setDocSaveMessage(null);
 
-    const recipient = data.customerName || data.clientName || data.name || "Customer";
+    const recipient = isMedicalReceipt
+      ? data.patientName || data.customerName || "Patient"
+      : data.customerName || data.clientName || data.name || "Customer";
     const docNum = data.invoiceNumber || data.memoNumber || data.billNumber || `INV-${Date.now().toString().slice(-6)}`;
     const amountStr = `${currency} ${grandTotal.toLocaleString("en-US")}`;
 
@@ -846,14 +862,14 @@ export default function InvoiceEditor({
                       : "Delivery Address"
                   }
                   className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-9 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"
-                  value={data.customerAddress || ""}
-                  onChange={(e) => setData({ ...data, customerAddress: e.target.value })}
+                  value={data.customerAddress || data.referredBy || ""}
+                  onChange={(e) => setData({ ...data, customerAddress: e.target.value, referredBy: e.target.value })}
                 />
                 <div className="absolute right-2">
                   <VoiceInputButton
                     lang={voiceLang}
                     title={voiceLang === "bn" ? "ঠিকানা বা রেফারেন্স মুখে বলুন" : "Speak Ref"}
-                    onTranscript={(txt) => setData({ ...data, customerAddress: txt })}
+                    onTranscript={(txt) => setData({ ...data, customerAddress: txt, referredBy: txt })}
                   />
                 </div>
               </div>
@@ -872,14 +888,14 @@ export default function InvoiceEditor({
                       : "Courier Partner"
                   }
                   className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"
-                  value={data.courierPartner || ""}
-                  onChange={(e) => setData({ ...data, courierPartner: e.target.value })}
+                  value={data.courierPartner || data.deliveryTime || ""}
+                  onChange={(e) => setData({ ...data, courierPartner: e.target.value, deliveryTime: e.target.value })}
                 />
                 <div className="absolute right-1">
                   <VoiceInputButton
                     lang={voiceLang}
                     title={voiceLang === "bn" ? "ডেলিভারি সময় মুখে বলুন" : "Speak Delivery Time"}
-                    onTranscript={(txt) => setData({ ...data, courierPartner: txt })}
+                    onTranscript={(txt) => setData({ ...data, courierPartner: txt, deliveryTime: txt })}
                   />
                 </div>
               </div>
@@ -894,6 +910,79 @@ export default function InvoiceEditor({
                   onChange={(e) => setData({ ...data, date: e.target.value })}
                 />
               </div>
+
+              {/* Specialized Medical Demographics Fields */}
+              {isMedicalReceipt && (
+                <>
+                  <div className="relative flex items-center">
+                    <input
+                      type="text"
+                      placeholder={docLang === "bn" ? "বয়স ও লিঙ্গ (যেমন: ৪৫ বছর / পুরুষ)" : "Age & Gender (e.g. 45 Yrs / Male)"}
+                      className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"
+                      value={data.patientAge || ""}
+                      onChange={(e) => setData({ ...data, patientAge: e.target.value })}
+                    />
+                    <div className="absolute right-1">
+                      <VoiceInputButton
+                        lang={voiceLang}
+                        title="Speak Age"
+                        onTranscript={(txt) => setData({ ...data, patientAge: txt })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="relative flex items-center">
+                    <input
+                      type="text"
+                      placeholder={docLang === "bn" ? "পেশেন্ট আইডি / UHID নং" : "Patient ID / UHID #"}
+                      className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"
+                      value={data.patientId || ""}
+                      onChange={(e) => setData({ ...data, patientId: e.target.value })}
+                    />
+                    <div className="absolute right-1">
+                      <VoiceInputButton
+                        lang={voiceLang}
+                        title="Speak Patient ID"
+                        onTranscript={(txt) => setData({ ...data, patientId: txt })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="relative flex items-center">
+                    <input
+                      type="text"
+                      placeholder={docLang === "bn" ? "কেবিন / বেড / ওয়ার্ড নং" : "Cabin / Bed / Ward #"}
+                      className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"
+                      value={data.bedWard || ""}
+                      onChange={(e) => setData({ ...data, bedWard: e.target.value })}
+                    />
+                    <div className="absolute right-1">
+                      <VoiceInputButton
+                        lang={voiceLang}
+                        title="Speak Bed"
+                        onTranscript={(txt) => setData({ ...data, bedWard: txt })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="relative flex items-center">
+                    <input
+                      type="text"
+                      placeholder={docLang === "bn" ? "নমুনা সংগ্রহের সময় (Sample Time)" : "Sample Time (e.g. 10:30 AM)"}
+                      className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"
+                      value={data.sampleTime || ""}
+                      onChange={(e) => setData({ ...data, sampleTime: e.target.value })}
+                    />
+                    <div className="absolute right-1">
+                      <VoiceInputButton
+                        lang={voiceLang}
+                        title="Speak Sample Time"
+                        onTranscript={(txt) => setData({ ...data, sampleTime: txt })}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
 
               {/* Quick Bangladeshi Courier Chips */}
               <div className="col-span-2 flex flex-wrap items-center gap-1.5 pt-0.5">
@@ -1419,10 +1508,40 @@ export default function InvoiceEditor({
                       ? docLang === "bn" ? "ডেলিভারি চালান" : "DELIVERY CHALAN"
                       : templateSlug.includes("quotation")
                       ? docLang === "bn" ? "কোটেশন ও এস্টিমেট" : "QUOTATION"
+                      : templateSlug.includes("tax") || templateSlug.includes("vat")
+                      ? docLang === "bn" ? "মূসক-৬.৩ কর চালানপত্র" : "TAX INVOICE (MUSHAK-6.3)"
+                      : templateSlug.includes("donation") || templateSlug.includes("charity")
+                      ? docLang === "bn" ? "দান ও অনুদান রসিদ" : "DONATION RECEIPT"
+                      : templateSlug.includes("consignment") || templateSlug.includes("courier")
+                      ? docLang === "bn" ? "কুরিয়ার চালানপত্র" : "CONSIGNMENT NOTE"
+                      : templateSlug.includes("auto") || templateSlug.includes("repair")
+                      ? docLang === "bn" ? "ওয়ার্কশপ সার্ভিস বিল" : "AUTO REPAIR BILL"
                       : templateSlug.includes("warranty")
                       ? docLang === "bn" ? "ওয়ারেন্টি ইনভয়েস" : "WARRANTY INVOICE"
                       : templateSlug.includes("rent")
                       ? docLang === "bn" ? "ভাড়া রসিদ" : "RENT RECEIPT"
+                      : templateSlug.includes("freelance")
+                      ? docLang === "bn" ? "সার্ভিস ইনভয়েস" : "SERVICE INVOICE"
+                      : templateSlug.includes("hospital-admission")
+                      ? docLang === "bn" ? "ভর্তি ও বেড চার্জ বিল" : "ADMISSION BILL"
+                      : templateSlug.includes("hospital-discharge")
+                      ? docLang === "bn" ? "ছাড়পত্র ও ফাইনাল ক্লিয়ারেন্স" : "DISCHARGE CLEARANCE"
+                      : templateSlug.includes("pharmacy")
+                      ? docLang === "bn" ? "ফার্মেসি ক্যাশ মেমো" : "PHARMACY BILL"
+                      : templateSlug.includes("doctor-consultation")
+                      ? docLang === "bn" ? "ডাক্তার ফি রসিদ" : "CONSULTATION RECEIPT"
+                      : templateSlug.includes("dental")
+                      ? docLang === "bn" ? "ডেন্টাল চিকিৎসা বিল" : "DENTAL PROCEDURE BILL"
+                      : templateSlug.includes("optical")
+                      ? docLang === "bn" ? "চশমা ও অপটিক্যাল বিল" : "OPTICAL BILL"
+                      : templateSlug.includes("physio")
+                      ? docLang === "bn" ? "থেরাপি সেশন রসিদ" : "PHYSIOTHERAPY BILL"
+                      : templateSlug.includes("pathology")
+                      ? docLang === "bn" ? "প্যাথলজি বিল" : "PATHOLOGY BILL"
+                      : templateSlug.includes("ambulance")
+                      ? docLang === "bn" ? "অ্যাম্বুলেন্স স্লিপ" : "AMBULANCE SLIP"
+                      : isMedicalReceipt
+                      ? docLang === "bn" ? "মানি রিসিট ও টেস্ট বিল" : "MONEY RECEIPT"
                       : templateSlug.includes("pos")
                       ? docLang === "bn" ? "পিওএস রসিদ" : "POS RECEIPT"
                       : templateSlug.includes("boutique")
@@ -1457,7 +1576,7 @@ export default function InvoiceEditor({
                       : "BILLED TO / CUSTOMER:"}
                   </span>
                   <h3 className="text-sm sm:text-base font-extrabold text-slate-900">
-                    {data.customerName ||
+                    {data.patientName || data.customerName ||
                       (docLang === "bn"
                         ? isMedicalReceipt
                           ? "রোগীর নাম"
@@ -1466,8 +1585,24 @@ export default function InvoiceEditor({
                         ? "Patient Name"
                         : "Customer Name")}
                   </h3>
-                  <p className="text-xs text-slate-600 font-medium">{data.customerPhone}</p>
-                  <p className="text-xs text-slate-500 leading-tight mt-0.5">{data.customerAddress}</p>
+                  <div className="text-xs text-slate-600 font-medium flex flex-wrap gap-x-2 gap-y-0.5">
+                    {data.customerPhone && <span>{data.customerPhone}</span>}
+                    {data.patientAge && <span>• {docLang === "bn" ? "বয়স:" : "Age:"} {data.patientAge}</span>}
+                    {data.gender && <span>• {data.gender}</span>}
+                    {data.patientId && <span>• ID: {data.patientId}</span>}
+                    {data.bedWard && <span>• {data.bedWard}</span>}
+                  </div>
+                  {(data.referredBy || data.customerAddress) && (
+                    <p className="text-xs text-slate-500 leading-tight mt-0.5">
+                      {isMedicalReceipt ? (docLang === "bn" ? "রেফারেল:" : "Ref:") : ""} {data.referredBy || data.customerAddress}
+                    </p>
+                  )}
+                  {isMedicalReceipt && (data.sampleTime || data.deliveryTime) && (
+                    <div className="flex flex-wrap gap-2 pt-1 text-[10px] text-slate-500 font-medium">
+                      {data.sampleTime && <span>🕒 {docLang === "bn" ? "নমুনা:" : "Sample:"} {data.sampleTime}</span>}
+                      {data.deliveryTime && <span>🚚 {docLang === "bn" ? "ডেলিভারি:" : "Delivery:"} {data.deliveryTime}</span>}
+                    </div>
+                  )}
                 </div>
                 <div className="col-span-4 flex flex-col justify-between items-end text-right">
                   <span className="text-[9.5px] uppercase font-bold text-slate-400 tracking-widest block mb-1">
@@ -1520,10 +1655,19 @@ export default function InvoiceEditor({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-xs">
-                  {itemsList.map((item: InvoiceItem, idx: number) => (
+                  {itemsList.map((item: any, idx: number) => (
                     <tr key={idx} className={`hover:bg-slate-50/60 transition-colors ${activeTheme.tableRowClass}`}>
                       <td className="py-3 px-3 text-slate-400 font-medium tabular-nums">{idx + 1}</td>
-                      <td className="py-3 px-3 font-semibold text-slate-800">{item.name}</td>
+                      <td className="py-3 px-3 font-semibold text-slate-800">
+                        {item.name}
+                        {(item.batchNo || item.expiry || item.specimen) && (
+                          <span className="block text-[10px] font-normal text-slate-500 mt-0.5">
+                            {item.batchNo && `Batch: ${item.batchNo} `}
+                            {item.expiry && `• Exp: ${item.expiry} `}
+                            {item.specimen && `• Sample: ${item.specimen}`}
+                          </span>
+                        )}
+                      </td>
                       <td className="py-3 px-3 text-center text-slate-700 tabular-nums">{item.quantity}</td>
                       <td className="py-3 px-3 text-right text-slate-700 tabular-nums">
                         {currency} {Number(item.price).toLocaleString()}
@@ -1589,6 +1733,14 @@ export default function InvoiceEditor({
                       </span>
                     </div>
                   )}
+                  {vatTaxAmount > 0 && (
+                    <div className="flex justify-between text-xs text-slate-600 font-medium">
+                      <span>{docLang === "bn" ? `ভ্যাট / ট্যাক্স (${vatTaxPercent}%):` : `VAT / Tax (${vatTaxPercent}%):`}</span>
+                      <span className="tabular-nums">
+                        +{currency} {vatTaxAmount.toLocaleString()}
+                      </span>
+                    </div>
+                  )}
                   {/* Grand Total Box */}
                   <div className={`flex justify-between text-sm font-black pt-3 pb-3 px-3.5 my-2 rounded-xl text-slate-900 border ${activeTheme.totalBoxClass}`}>
                     <span className="uppercase tracking-wider">{docLang === "bn" ? "সর্বমোট বিল:" : "Grand Total:"}</span>
@@ -1631,7 +1783,9 @@ export default function InvoiceEditor({
                 )}
                 <span className="text-[11px] font-bold text-gray-700">
                   {data.signatoryTitle ||
-                    (docLang === "bn" ? "অনুমোদিত স্বাক্ষর" : "Authorized Signature")}
+                    (isMedicalReceipt
+                      ? docLang === "bn" ? "ক্যাশিয়ার / অথরাইজড মেডিকেল টেকনোলজিস্ট" : "Cashier / Medical Technologist"
+                      : docLang === "bn" ? "অনুমোদিত স্বাক্ষর" : "Authorized Signature")}
                 </span>
               </div>
             </div>

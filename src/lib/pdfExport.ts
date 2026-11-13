@@ -16,7 +16,8 @@ export async function exportElementToPdf({
   paperSize = "A4",
   scale = 2,
 }: ExportPdfOptions): Promise<void> {
-  const html2canvas = (await import("html2canvas")).default;
+  const html2canvasModule = await import("html2canvas-pro");
+  const html2canvas = html2canvasModule.default || html2canvasModule.html2canvas;
   const { jsPDF } = await import("jspdf");
 
   const canvas = await html2canvas(element, {
@@ -24,8 +25,8 @@ export async function exportElementToPdf({
     useCORS: true,
     logging: false,
     backgroundColor: "#ffffff",
-    windowWidth: element.scrollWidth,
-    windowHeight: element.scrollHeight,
+    scrollX: 0,
+    scrollY: 0,
   });
 
   const imgData = canvas.toDataURL("image/png");
@@ -81,12 +82,15 @@ export async function exportElementToJpg(
   filename: string,
   scale = 2
 ): Promise<void> {
-  const html2canvas = (await import("html2canvas")).default;
+  const html2canvasModule = await import("html2canvas-pro");
+  const html2canvas = html2canvasModule.default || html2canvasModule.html2canvas;
   const canvas = await html2canvas(element, {
     scale,
     useCORS: true,
     logging: false,
     backgroundColor: "#ffffff",
+    scrollX: 0,
+    scrollY: 0,
   });
   const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
   const link = document.createElement("a");

@@ -120,37 +120,48 @@ async function TemplateContent({
   }
 
   // Production-Grade Specialized Editor Dispatcher:
-  // 1. Any template with itemized line items (products, services, diagnostic tests, goods) MUST use InvoiceEditor
-  const isInvoiceBill =
-    Array.isArray(template.defaultData?.items) ||
-    slug === "medical-money-receipt" ||
-    template.subCategory === "invoice" ||
-    template.subCategory === "receipt" ||
-    template.subCategory === "chalan" ||
-    template.subCategory === "quotation" ||
-    template.subCategory === "bill";
-
-  // 2. Specialized Medical Prescriptions, Clinical Tokens & Discharge Records
-  const isMedicalClinical =
-    !isInvoiceBill &&
-    (template.category === "Healthcare" ||
-      slug.startsWith("doctor-") ||
-      slug.startsWith("medical-") ||
-      slug.startsWith("dental-") ||
-      slug.startsWith("pediatric-") ||
-      slug.startsWith("eye-") ||
-      slug.startsWith("radiology-") ||
-      slug.startsWith("hospital-") ||
-      slug.startsWith("physiotherapy-"));
-
-  // 3. Specialized Education & Academic Documents (Marksheets, Routines, Admit Cards, Certificates)
+  // 1. Specialized Education & Academic Documents (Class Routines, Exam Schedules, Marksheets, Admit Cards, Certificates, ID Cards)
   const isSchoolAcademic =
-    !isInvoiceBill &&
-    (template.category === "Education" ||
-      slug.startsWith("school-") ||
-      slug.startsWith("coaching-") ||
-      slug.startsWith("madrasah-") ||
-      slug.startsWith("student-"));
+    template.category === "Education" ||
+    slug.includes("routine") ||
+    slug.includes("timetable") ||
+    slug.includes("schedule") ||
+    slug.includes("marksheet") ||
+    slug.includes("result-sheet") ||
+    slug.includes("admit-card") ||
+    slug.includes("progress-report") ||
+    slug.includes("certificate") ||
+    slug.startsWith("school-") ||
+    slug.startsWith("student-") ||
+    slug.startsWith("highschool-") ||
+    slug.startsWith("university-") ||
+    slug.startsWith("kindergarten-") ||
+    slug.startsWith("teacher-") ||
+    slug.startsWith("private-tutor-") ||
+    slug.startsWith("lab-practical-") ||
+    slug.startsWith("online-class-");
+
+  // 2. Specialized Medical Prescriptions, Clinical Tokens & Discharge Records (Clinical Rx, Non-Billing)
+  const isMedicalClinical =
+    !isSchoolAcademic &&
+    (slug === "doctor-prescription" ||
+      slug === "medical-appointment-token" ||
+      slug === "medical-discharge-slip" ||
+      slug === "dental-treatment-record" ||
+      slug === "pediatric-vaccine-card" ||
+      slug === "eye-prescription-pad" ||
+      slug === "radiology-report-pad" ||
+      slug === "hospital-admission-slip" ||
+      (template.category === "Healthcare" &&
+        !slug.includes("bill") &&
+        !slug.includes("receipt") &&
+        !slug.includes("money") &&
+        !slug.includes("fee") &&
+        !slug.includes("pharmacy") &&
+        !slug.includes("ambulance")));
+
+  // 3. Commercial Invoices, Receipts, and Healthcare Financial Receipts (Cash Memos, POS Slips, Diagnostic Bills, Pharmacy Memos)
+  const isInvoiceBill = !isSchoolAcademic && !isMedicalClinical;
 
   return (
     <>

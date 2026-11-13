@@ -117,39 +117,73 @@ export default function TemplateCardPreview({
     );
 
     // -------------------------------------------------------------------------
-    // 1. DIAGNOSTIC CENTER TEST BILL & MONEY RECEIPT (CLINICAL TEAL / INVOICE)
+    // 1. MEDICAL BILLING INVOICES & MONEY RECEIPTS (CLINICAL TEAL / INVOICE)
     // -------------------------------------------------------------------------
-    if (slug === "medical-money-receipt") {
+    const isMedicalBill =
+      slug === "medical-money-receipt" ||
+      slug === "hospital-admission-bill" ||
+      slug === "pharmacy-medicine-bill" ||
+      slug === "doctor-consultation-receipt" ||
+      slug === "dental-procedure-bill" ||
+      slug === "optical-eyecare-bill" ||
+      slug === "physiotherapy-session-bill" ||
+      slug === "pathology-lab-bill" ||
+      slug === "ambulance-emergency-slip" ||
+      slug === "hospital-discharge-bill" ||
+      (isMedical && sub === "receipt");
+
+    if (isMedicalBill) {
+      const billTitle =
+        slug === "hospital-admission-bill"
+          ? "ADMISSION BILL"
+          : slug === "pharmacy-medicine-bill"
+          ? "PHARMACY BILL"
+          : slug === "doctor-consultation-receipt"
+          ? "CONSULTATION RECEIPT"
+          : slug === "dental-procedure-bill"
+          ? "DENTAL BILL"
+          : slug === "optical-eyecare-bill"
+          ? "OPTICAL BILL"
+          : slug === "physiotherapy-session-bill"
+          ? "PHYSIO BILL"
+          : slug === "pathology-lab-bill"
+          ? "PATHOLOGY BILL"
+          : slug === "ambulance-emergency-slip"
+          ? "AMBULANCE SLIP"
+          : slug === "hospital-discharge-bill"
+          ? "DISCHARGE BILL"
+          : "TEST MONEY RECEIPT";
+
       return (
         <div className="w-full h-full bg-white text-slate-800 p-3.5 flex flex-col justify-between text-[8px] select-none rounded-xl relative overflow-hidden shadow-xs border-2 border-teal-600/40 font-sans">
           <div className="border-b-2 border-teal-700 pb-1.5 flex justify-between items-start">
             <div className="max-w-[70%]">
               <h4 className="font-extrabold text-[9.5px] text-teal-950 uppercase tracking-tight truncate">
-                {data.businessName || "Popular Diagnostic Center"}
+                {data.businessName || "Hospital & Diagnostic Center"}
               </h4>
               <p className="text-[6.5px] text-slate-500 font-medium truncate">
-                {data.tagline || "Pathology & Radiology Services"}
+                {data.tagline || "Clinical & Laboratory Services"}
               </p>
               <p className="text-[6px] text-teal-700 font-semibold">{data.phone || "+880 2-9669480"}</p>
             </div>
             <div className="text-right">
               <span className="bg-teal-700 text-white font-black text-[6.5px] px-1.5 py-0.5 rounded-xs uppercase">
-                TEST MONEY RECEIPT
+                {billTitle}
               </span>
               <p className="text-[6px] font-bold text-slate-700 mt-0.5">{data.invoiceNumber || "MR-2026-904"}</p>
             </div>
           </div>
 
           <div className="bg-teal-50/70 border border-teal-200/80 rounded px-2 py-1 flex justify-between text-[7px] my-1 font-medium text-slate-700">
-            <span><strong>Patient:</strong> {data.customerName?.split(" ")[0] || "Mohammad"}</span>
-            <span><strong>Ref:</strong> {data.tagline?.split(" ")[0] || "Self"}</span>
-            <span className="text-teal-800 font-bold">Delivery: Today 7PM</span>
+            <span><strong>Patient:</strong> {data.patientName?.split(" ")[0] || data.customerName?.split(" ")[0] || "Mohammad"}</span>
+            <span><strong>Age:</strong> {data.patientAge || "48 Y"}</span>
+            <span className="text-teal-800 font-bold">PID: {data.patientId || "PID-904"}</span>
           </div>
 
           <table className="w-full text-[6.5px] border-collapse my-0.5">
             <thead>
               <tr className="border-b border-teal-200 font-extrabold text-teal-900 uppercase bg-teal-50/50">
-                <th className="text-left py-0.5 px-1">Diagnostic Test Description</th>
+                <th className="text-left py-0.5 px-1">Service / Test / Medication</th>
                 <th className="text-right py-0.5 px-1">Fee (BDT)</th>
               </tr>
             </thead>
@@ -841,7 +875,29 @@ export default function TemplateCardPreview({
           </div>
           <div className="text-right">
             <span className="inline-block bg-blue-600 text-white font-black text-[7px] px-1.5 py-0.5 uppercase rounded-xs">
-              {sub === "chalan" ? "CHALAN" : sub === "quotation" ? "QUOTATION" : sub === "receipt" ? "MONEY RECEIPT" : "CASH MEMO"}
+              {slug === "donation-charity-receipt"
+                ? "DONATION RECEIPT"
+                : slug === "courier-consignment-receipt"
+                ? "CONSIGNMENT NOTE"
+                : slug === "rent-payment-receipt"
+                ? "RENT RECEIPT"
+                : slug === "auto-repair-service-bill"
+                ? "AUTO REPAIR BILL"
+                : slug === "freelance-service-invoice"
+                ? "SERVICE INVOICE"
+                : slug === "commercial-tax-invoice"
+                ? "TAX / VAT INVOICE"
+                : slug === "grocery-supermarket-receipt"
+                ? "SUPERMARKET POS"
+                : slug === "restaurant-pos-bill"
+                ? "RESTAURANT BILL"
+                : sub === "chalan"
+                ? "CHALAN"
+                : sub === "quotation"
+                ? "QUOTATION"
+                : sub === "receipt"
+                ? "MONEY RECEIPT"
+                : "CASH MEMO"}
             </span>
             <p className="text-[6.5px] font-bold text-slate-700 mt-0.5">{data.invoiceNumber || "INV-2026-089"}</p>
             <span className="text-[6px] text-blue-600 font-semibold truncate block max-w-[80px]">

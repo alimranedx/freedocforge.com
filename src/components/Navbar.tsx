@@ -216,6 +216,15 @@ export default function Navbar() {
                     </Link>
                   ))}
                 </div>
+                <div className="p-2 border-t border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-850 px-3 py-2">
+                  <Link
+                    href="/templates?category=receipts"
+                    onClick={() => setActiveDropdown(null)}
+                    className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center justify-between"
+                  >
+                    <span>{lang === "bn" ? "সকল ১০+ ক্যাশ মেমো ও রসিদ →" : "View All 10+ Invoices & Receipts →"}</span>
+                  </Link>
+                </div>
               </div>
             )}
           </div>
@@ -261,6 +270,22 @@ export default function Navbar() {
                     </Link>
                   ))}
                 </div>
+                <div className="p-2 border-t border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-850 px-3 py-2 flex flex-col gap-1">
+                  <Link
+                    href="/templates?category=class-routines"
+                    onClick={() => setActiveDropdown(null)}
+                    className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center justify-between"
+                  >
+                    <span>{lang === "bn" ? "সকল ১০+ ক্লাস রুটিন →" : "View All 10+ Class Routines →"}</span>
+                  </Link>
+                  <Link
+                    href="/templates?category=exam-routines"
+                    onClick={() => setActiveDropdown(null)}
+                    className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center justify-between"
+                  >
+                    <span>{lang === "bn" ? "সকল ১০+ পরীক্ষার সময়সূচি →" : "View All 10+ Exam Routines →"}</span>
+                  </Link>
+                </div>
               </div>
             )}
           </div>
@@ -305,6 +330,15 @@ export default function Navbar() {
                       </span>
                     </Link>
                   ))}
+                </div>
+                <div className="p-2 border-t border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-850 px-3 py-2">
+                  <Link
+                    href="/templates?category=medical-receipts"
+                    onClick={() => setActiveDropdown(null)}
+                    className="text-xs font-bold text-rose-600 dark:text-rose-400 hover:underline flex items-center justify-between"
+                  >
+                    <span>{lang === "bn" ? "সকল ১০+ ক্লিনিক ও ডায়াগনস্টিক রসিদ →" : "View All 10+ Medical Receipts →"}</span>
+                  </Link>
                 </div>
               </div>
             )}
@@ -436,6 +470,15 @@ export default function Navbar() {
                       <p className="text-[10px] text-slate-400 mt-0.5">{item.desc}</p>
                     </Link>
                   ))}
+                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <Link
+                      href="/templates?category=receipts"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block p-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
+                    >
+                      {lang === "bn" ? "সকল ১০+ ক্যাশ মেমো ও রসিদ →" : "View All 10+ Invoices & Receipts →"}
+                    </Link>
+                  </div>
                 </div>
               )}
             </div>
@@ -471,6 +514,22 @@ export default function Navbar() {
                       <p className="text-[10px] text-slate-400 mt-0.5">{item.desc}</p>
                     </Link>
                   ))}
+                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1">
+                    <Link
+                      href="/templates?category=class-routines"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block p-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline"
+                    >
+                      {lang === "bn" ? "সকল ১০+ ক্লাস রুটিন →" : "View All 10+ Class Routines →"}
+                    </Link>
+                    <Link
+                      href="/templates?category=exam-routines"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block p-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+                    >
+                      {lang === "bn" ? "সকল ১০+ পরীক্ষার সময়সূচি →" : "View All 10+ Exam Routines →"}
+                    </Link>
+                  </div>
                 </div>
               )}
             </div>
@@ -506,6 +565,15 @@ export default function Navbar() {
                       <p className="text-[10px] text-slate-400 mt-0.5">{item.desc}</p>
                     </Link>
                   ))}
+                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <Link
+                      href="/templates?category=medical-receipts"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block p-1.5 text-xs font-bold text-rose-600 dark:text-rose-400 hover:underline"
+                    >
+                      {lang === "bn" ? "সকল ১০+ ক্লিনিক ও ডায়াগনস্টিক রসিদ →" : "View All 10+ Medical Receipts →"}
+                    </Link>
+                  </div>
                 </div>
               )}
             </div>

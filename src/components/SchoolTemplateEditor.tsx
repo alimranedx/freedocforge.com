@@ -23,6 +23,14 @@ import {
   Loader2,
   MessageCircle,
   Image as ImageIcon,
+  Users,
+  AlertCircle,
+  Building,
+  CheckCircle2,
+  MapPin,
+  Layers,
+  LayoutGrid,
+  CalendarCheck,
 } from "lucide-react";
 import AdSenseSlot from "@/components/AdSenseSlot";
 import VoiceInputButton from "@/components/VoiceInputButton";
@@ -247,9 +255,27 @@ export default function SchoolTemplateEditor({
     setDocSaveLoading(true);
     setDocSaveMessage(null);
 
-    const recipient = data.studentName ? `${data.studentName} (Roll: ${data.rollNumber || "1"})` : "Student";
-    const docNum = data.rollNumber ? `ROLL-${data.rollNumber}` : `ACAD-${Date.now().toString().slice(-5)}`;
-    const details = data.examName || "Academic Report Card";
+    const recipient = isClassRoutine
+      ? data.classGrade || "Class Timetable"
+      : isExamRoutine
+      ? data.examTitle || "Examination Routine"
+      : data.studentName
+      ? `${data.studentName} (Roll: ${data.rollNo || data.rollNumber || "1"})`
+      : "Academic Document";
+
+    const docNum = isClassRoutine
+      ? `ROUTINE-${Date.now().toString().slice(-5)}`
+      : isExamRoutine
+      ? `EXAM-${Date.now().toString().slice(-5)}`
+      : data.rollNo || data.rollNumber
+      ? `ROLL-${data.rollNo || data.rollNumber}`
+      : `ACAD-${Date.now().toString().slice(-5)}`;
+
+    const details = isClassRoutine
+      ? `${data.classGrade || "Class Routine"} - ${data.academicYear || "Session 2026"}`
+      : isExamRoutine
+      ? `${data.examTitle || "Exam Routine"} - ${data.academicYear || "Session 2026"}`
+      : data.examTitle || data.examName || "Academic Report Card";
 
     const docPayload = {
       templateSlug,
@@ -299,7 +325,7 @@ export default function SchoolTemplateEditor({
       } else {
         setDocSaveMessage(
           docLang === "bn"
-            ? "মার্কশিট সফলভাবে ক্লাউডে সংরক্ষিত হয়েছে!"
+            ? "ডকুমেন্ট সফলভাবে ক্লাউডে সংরক্ষিত হয়েছে!"
             : "Academic document saved to your cloud history!"
         );
       }
@@ -359,34 +385,196 @@ export default function SchoolTemplateEditor({
   );
   const percentage = totalFullMarks > 0 ? ((totalMarks / totalFullMarks) * 100).toFixed(1) : "0";
 
-  // Template Type Determination
-  const isMarksheet =
-    templateSlug === "school-result-sheet" ||
-    templateSlug === "coaching-monthly-progress" ||
-    templateSlug === "madrasah-progress-report" ||
-    templateSlug === "school-fee-slip" ||
-    (Array.isArray(data.subjects) && data.subjects.length > 0);
+  // 2. Class Routine Handlers
+  const routineList = Array.isArray(data.routine) ? data.routine : [];
+  const handleAddRoutineDay = () => {
+    const days = docLang === "bn"
+      ? ["শনিবার", "রবিবার", "সোমবার", "মঙ্গলবার", "বুধবার", "বৃহস্পতিবার", "শুক্রবার"]
+      : ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+    const nextDay = days[routineList.length % days.length] || (docLang === "bn" ? `দিন ${routineList.length + 1}` : `Day ${routineList.length + 1}`);
+    setData({
+      ...data,
+      routine: [
+        ...routineList,
+        {
+          day: nextDay,
+          p1: docLang === "bn" ? "বাংলা" : "Bangla",
+          p2: docLang === "bn" ? "ইংরেজি" : "English",
+          p3: docLang === "bn" ? "গণিত" : "Math",
+          p4: docLang === "bn" ? "বিজ্ঞান" : "Science",
+          p5: docLang === "bn" ? "ধর্ম" : "Religion",
+          p6: docLang === "bn" ? "আইসিটি" : "ICT",
+        },
+      ],
+    });
+  };
 
+  const handleRemoveRoutineDay = (index: number) => {
+    if (routineList.length <= 1) return;
+    setData({
+      ...data,
+      routine: routineList.filter((_: any, i: number) => i !== index),
+    });
+  };
+
+  const handleRoutineChange = (index: number, field: string, val: string) => {
+    const updated = [...routineList];
+    updated[index] = { ...updated[index], [field]: val };
+    setData({ ...data, routine: updated });
+  };
+
+  // 3. Teachers Directory Handlers
+  const teachersList = Array.isArray(data.teachers) ? data.teachers : [];
+  const handleAddTeacher = () => {
+    const count = teachersList.length + 1;
+    setData({
+      ...data,
+      teachers: [
+        ...teachersList,
+        {
+          code: `T${count}`,
+          name: docLang === "bn" ? `শিক্ষক ${count}` : `Teacher ${count}`,
+          subject: docLang === "bn" ? "বিষয়" : "Subject",
+        },
+      ],
+    });
+  };
+
+  const handleRemoveTeacher = (index: number) => {
+    setData({
+      ...data,
+      teachers: teachersList.filter((_: any, i: number) => i !== index),
+    });
+  };
+
+  const handleTeacherChange = (index: number, field: string, val: string) => {
+    const updated = [...teachersList];
+    updated[index] = { ...updated[index], [field]: val };
+    setData({ ...data, teachers: updated });
+  };
+
+  // 4. Exam Routine Handlers
+  const examsList = Array.isArray(data.exams) ? data.exams : [];
+  const handleAddExam = () => {
+    setData({
+      ...data,
+      exams: [
+        ...examsList,
+        {
+          date: "15/06/2026",
+          day: docLang === "bn" ? "রবিবার" : "Sunday",
+          time: docLang === "bn" ? "সকাল ১০:০০ - দুপুর ১:০০" : "10:00 AM - 1:00 PM",
+          subject: docLang === "bn" ? "নতুন পরীক্ষা বিষয়" : "New Exam Subject",
+          code: `${100 + examsList.length + 1}`,
+          room: docLang === "bn" ? "হল-এ" : "Hall A",
+          invigilator: "",
+        },
+      ],
+    });
+  };
+
+  const handleRemoveExam = (index: number) => {
+    if (examsList.length <= 1) return;
+    setData({
+      ...data,
+      exams: examsList.filter((_: any, i: number) => i !== index),
+    });
+  };
+
+  const handleExamChange = (index: number, field: string, val: string) => {
+    const updated = [...examsList];
+    updated[index] = { ...updated[index], [field]: val };
+    setData({ ...data, exams: updated });
+  };
+
+  // 5. Exam Rules / Instructions Handlers
+  const instructionsList = Array.isArray(data.instructions)
+    ? data.instructions
+    : Array.isArray(data.rules)
+    ? data.rules
+    : [];
+
+  const handleAddInstruction = () => {
+    setData({
+      ...data,
+      instructions: [
+        ...instructionsList,
+        docLang === "bn"
+          ? "পরীক্ষার হলে নির্ধারিত সময়ের ১৫ মিনিট পূর্বে উপস্থিত হতে হবে।"
+          : "Candidates must report to the examination hall 15 minutes before the exam.",
+      ],
+    });
+  };
+
+  const handleRemoveInstruction = (index: number) => {
+    setData({
+      ...data,
+      instructions: instructionsList.filter((_: any, i: number) => i !== index),
+    });
+  };
+
+  const handleInstructionChange = (index: number, val: string) => {
+    const updated = [...instructionsList];
+    updated[index] = val;
+    setData({ ...data, instructions: updated });
+  };
+
+  // Template Type Determination
   const isClassRoutine =
     templateSlug === "school-class-routine" ||
+    templateSlug === "highschool-weekly-routine" ||
+    templateSlug === "university-semester-timetable" ||
+    templateSlug === "madrasah-class-routine" ||
+    templateSlug === "coaching-batch-routine" ||
+    templateSlug === "kindergarten-activity-schedule" ||
+    templateSlug === "teacher-master-schedule" ||
+    templateSlug === "private-tutor-routine" ||
+    templateSlug === "lab-practical-schedule" ||
+    templateSlug === "online-class-timetable" ||
+    templateSlug.includes("routine") ||
+    templateSlug.includes("timetable") ||
     Array.isArray(data.routine);
 
   const isExamRoutine =
-    templateSlug === "school-exam-routine" ||
-    Array.isArray(data.exams);
+    !isClassRoutine &&
+    (templateSlug === "school-exam-routine" ||
+      templateSlug === "board-exam-schedule" ||
+      templateSlug === "university-exam-timetable" ||
+      templateSlug === "coaching-model-test-schedule" ||
+      templateSlug === "madrasah-exam-routine" ||
+      templateSlug === "practical-viva-exam-schedule" ||
+      templateSlug === "teacher-invigilation-roster" ||
+      templateSlug === "revision-study-timetable" ||
+      templateSlug === "semester-midterm-schedule" ||
+      templateSlug === "admit-card-exam-schedule" ||
+      templateSlug.includes("exam") ||
+      Array.isArray(data.exams));
+
+  const isMarksheet =
+    !isClassRoutine &&
+    !isExamRoutine &&
+    (templateSlug === "school-result-sheet" ||
+      templateSlug === "coaching-monthly-progress" ||
+      templateSlug === "madrasah-progress-report" ||
+      templateSlug === "school-fee-slip" ||
+      (Array.isArray(data.subjects) && data.subjects.length > 0));
 
   const isAdmitCard =
-    templateSlug === "school-admit-card" ||
-    !!data.rules ||
-    !!data.examCenter;
+    !isClassRoutine &&
+    !isExamRoutine &&
+    (templateSlug === "school-admit-card" || !!data.rules || !!data.examCenter);
 
   const isIdCard =
+    !isClassRoutine &&
+    !isExamRoutine &&
     templateSlug === "student-id-card-layout";
 
   const isCertificate =
-    templateSlug === "student-transfer-certificate" ||
-    templateSlug === "school-character-certificate" ||
-    (!isMarksheet && !isClassRoutine && !isExamRoutine && !isAdmitCard && !isIdCard);
+    !isMarksheet &&
+    !isClassRoutine &&
+    !isExamRoutine &&
+    !isAdmitCard &&
+    !isIdCard;
 
   return (
     <div className="space-y-6">
@@ -574,106 +762,30 @@ export default function SchoolTemplateEditor({
             </div>
           </div>
 
-          {/* 2. Student & Examination Details */}
-          <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
-              {docLang === "bn" ? "২. শিক্ষার্থী ও পরীক্ষার বিবরণ" : "2. Student & Examination Details"}
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2 relative flex items-center">
-                <input
-                  type="text"
-                  placeholder={docLang === "bn" ? "পরীক্ষার নাম (যেমন: বার্ষিক পরীক্ষা - ২০২৬)" : "Examination Title"}
-                  className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-9 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  value={data.examTitle || ""}
-                  onChange={(e) => setData({ ...data, examTitle: e.target.value })}
-                />
-                <div className="absolute right-2">
-                  <VoiceInputButton
-                    lang={voiceLang}
-                    title="Speak Exam Title"
-                    onTranscript={(txt) => setData({ ...data, examTitle: txt })}
-                  />
-                </div>
-              </div>
-
-              <div className="relative flex items-center">
-                <input
-                  type="text"
-                  placeholder={docLang === "bn" ? "শিক্ষার্থীর নাম" : "Student Name"}
-                  className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  value={data.studentName || ""}
-                  onChange={(e) => setData({ ...data, studentName: e.target.value })}
-                />
-                <div className="absolute right-1">
-                  <VoiceInputButton
-                    lang={voiceLang}
-                    title="Speak Student Name"
-                    onTranscript={(txt) => setData({ ...data, studentName: txt })}
-                  />
-                </div>
-              </div>
-
-              <div className="relative flex items-center">
-                <input
-                  type="text"
-                  placeholder={docLang === "bn" ? "রোল নং (যেমন: ১২)" : "Roll No"}
-                  className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  value={data.rollNo || ""}
-                  onChange={(e) => setData({ ...data, rollNo: e.target.value })}
-                />
-                <div className="absolute right-1">
-                  <VoiceInputButton
-                    lang={voiceLang}
-                    title="Speak Roll No"
-                    onTranscript={(txt) => setData({ ...data, rollNo: txt })}
-                  />
-                </div>
-              </div>
-
-              <div className="relative flex items-center">
-                <input
-                  type="text"
-                  placeholder={docLang === "bn" ? "শ্রেণি ও শাখা (নবম শ্রেণি - বিজ্ঞান)" : "Class / Grade"}
-                  className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  value={data.classGrade || ""}
-                  onChange={(e) => setData({ ...data, classGrade: e.target.value })}
-                />
-                <div className="absolute right-1">
-                  <VoiceInputButton
-                    lang={voiceLang}
-                    title="Speak Class"
-                    onTranscript={(txt) => setData({ ...data, classGrade: txt })}
-                  />
-                </div>
-              </div>
-
-              {/* Date Input: Explicitly NO voice input */}
-              <div>
-                <input
-                  type="date"
-                  className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  value={data.date || "2026-11-11"}
-                  onChange={(e) => setData({ ...data, date: e.target.value })}
-                />
-              </div>
-
-              {/* Admit Card Specific Inputs */}
-              {isAdmitCard && (
-                <>
+          {/* ========================================================================= */}
+          {/* 2. CLASS ROUTINE EDITOR SECTION */}
+          {/* ========================================================================= */}
+          {isClassRoutine && (
+            <>
+              {/* Routine Class & Shift Info */}
+              <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
+                  {docLang === "bn" ? "২. শ্রেণি ও রুটিনের বিবরণ" : "2. Class & Routine Overview"}
+                </label>
+                <div className="grid grid-cols-2 gap-3">
                   <div className="relative flex items-center">
                     <input
                       type="text"
-                      placeholder={docLang === "bn" ? "রেজিস্ট্রেশন নম্বর (যেমন: REG-2024-98432)" : "Registration No"}
+                      placeholder={docLang === "bn" ? "শ্রেণি ও বিভাগ (যেমন: দশম শ্রেণি - বিজ্ঞান)" : "Class / Program (e.g. Class 10 - Science)"}
                       className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                      value={data.regNo || ""}
-                      onChange={(e) => setData({ ...data, regNo: e.target.value })}
+                      value={data.classGrade || ""}
+                      onChange={(e) => setData({ ...data, classGrade: e.target.value })}
                     />
                     <div className="absolute right-1">
                       <VoiceInputButton
                         lang={voiceLang}
-                        title="Speak Reg No"
-                        onTranscript={(txt) => setData({ ...data, regNo: txt })}
+                        title="Speak Class"
+                        onTranscript={(txt) => setData({ ...data, classGrade: txt })}
                       />
                     </div>
                   </div>
@@ -681,7 +793,285 @@ export default function SchoolTemplateEditor({
                   <div className="relative flex items-center">
                     <input
                       type="text"
-                      placeholder={docLang === "bn" ? "পরীক্ষা কেন্দ্র ও হল নম্বর" : "Exam Center & Hall"}
+                      placeholder={docLang === "bn" ? "শাখা / ব্যাচ / কক্ষ (যেমন: শাখা-ক, কক্ষ ৩০৪)" : "Section / Batch / Room (e.g. Sec A, Room 304)"}
+                      className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      value={data.section || ""}
+                      onChange={(e) => setData({ ...data, section: e.target.value })}
+                    />
+                    <div className="absolute right-1">
+                      <VoiceInputButton
+                        lang={voiceLang}
+                        title="Speak Section"
+                        onTranscript={(txt) => setData({ ...data, section: txt })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="relative flex items-center">
+                    <input
+                      type="text"
+                      placeholder={docLang === "bn" ? "শিফট / সময় (যেমন: প্রভাতী শিফট: ৭:৩০ - ১২:০০)" : "Shift / Timing (e.g. Morning: 7:30 AM - 12:00 PM)"}
+                      className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      value={data.shift || ""}
+                      onChange={(e) => setData({ ...data, shift: e.target.value })}
+                    />
+                    <div className="absolute right-1">
+                      <VoiceInputButton
+                        lang={voiceLang}
+                        title="Speak Shift"
+                        onTranscript={(txt) => setData({ ...data, shift: txt })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="relative flex items-center">
+                    <input
+                      type="text"
+                      placeholder={docLang === "bn" ? "শিক্ষাবর্ষ / সেশন (যেমন: শিক্ষাবর্ষ ২০২৬)" : "Academic Session (e.g. Session 2026)"}
+                      className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      value={data.academicYear || ""}
+                      onChange={(e) => setData({ ...data, academicYear: e.target.value })}
+                    />
+                    <div className="absolute right-1">
+                      <VoiceInputButton
+                        lang={voiceLang}
+                        title="Speak Session"
+                        onTranscript={(txt) => setData({ ...data, academicYear: txt })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="relative flex items-center">
+                    <input
+                      type="text"
+                      placeholder={docLang === "bn" ? "কার্যকর তারিখ (যেমন: ০১ জানুয়ারি ২০২৬)" : "Effective Date (e.g. 01 Jan 2026)"}
+                      className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      value={data.effectiveDate || data.date || ""}
+                      onChange={(e) => setData({ ...data, effectiveDate: e.target.value, date: e.target.value })}
+                    />
+                    <div className="absolute right-1">
+                      <VoiceInputButton
+                        lang={voiceLang}
+                        title="Speak Date"
+                        onTranscript={(txt) => setData({ ...data, effectiveDate: txt, date: txt })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="relative flex items-center">
+                    <input
+                      type="text"
+                      placeholder={docLang === "bn" ? "কক্ষ নম্বর / ভবন" : "Room / Hall Number"}
+                      className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      value={data.roomNo || ""}
+                      onChange={(e) => setData({ ...data, roomNo: e.target.value })}
+                    />
+                    <div className="absolute right-1">
+                      <VoiceInputButton
+                        lang={voiceLang}
+                        title="Speak Room"
+                        onTranscript={(txt) => setData({ ...data, roomNo: txt })}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Weekly Timetable Grid Editor */}
+              <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    {docLang === "bn" ? "৩. সাপ্তাহিক ক্লাস রুটিন সময়সূচি" : "3. Weekly Timetable Schedule"}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleAddRoutineDay}
+                    className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline font-semibold cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> {docLang === "bn" ? "+ দিন যোগ করুন" : "+ Add Day"}
+                  </button>
+                </div>
+
+                <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
+                  {routineList.map((r: any, rIdx: number) => (
+                    <div
+                      key={rIdx}
+                      className="bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 space-y-2"
+                    >
+                      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-1.5">
+                        <div className="w-36 relative flex items-center">
+                          <input
+                            type="text"
+                            placeholder="Day Name"
+                            className="w-full text-xs font-bold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-2 py-1 pr-6 text-blue-900 dark:text-blue-300 focus:outline-none"
+                            value={r.day || ""}
+                            onChange={(e) => handleRoutineChange(rIdx, "day", e.target.value)}
+                          />
+                          <div className="absolute right-0.5">
+                            <VoiceInputButton
+                              lang={voiceLang}
+                              title="Speak Day"
+                              onTranscript={(txt) => handleRoutineChange(rIdx, "day", txt)}
+                            />
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveRoutineDay(rIdx)}
+                          className="text-slate-400 hover:text-red-500 p-1 cursor-pointer"
+                          title="Remove Day"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-1.5 text-xs">
+                        {["p1", "p2", "p3", "p4", "p5", "p6"].map((periodKey, pIdx) => (
+                          <div key={periodKey} className="relative flex items-center">
+                            <input
+                              type="text"
+                              placeholder={`P-${pIdx + 1}`}
+                              className="w-full text-[11px] bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-1.5 py-1 pr-5 text-slate-900 dark:text-white focus:outline-none"
+                              value={r[periodKey] || ""}
+                              onChange={(e) => handleRoutineChange(rIdx, periodKey, e.target.value)}
+                            />
+                            <div className="absolute right-0.5">
+                              <VoiceInputButton
+                                lang={voiceLang}
+                                title={`P${pIdx + 1}`}
+                                onTranscript={(txt) => handleRoutineChange(rIdx, periodKey, txt)}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Faculty / Teacher Directory (Optional) */}
+              <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    {docLang === "bn" ? "৪. শিক্ষক ও বিষয় তালিকা (অপশনাল)" : "4. Faculty Roster & Legend"}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleAddTeacher}
+                    className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline font-semibold cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> {docLang === "bn" ? "+ শিক্ষক যোগ" : "+ Add Teacher"}
+                  </button>
+                </div>
+
+                <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                  {teachersList.map((t: any, tIdx: number) => (
+                    <div
+                      key={tIdx}
+                      className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/60 p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs"
+                    >
+                      <input
+                        type="text"
+                        placeholder="Code"
+                        className="w-14 text-center font-bold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-1 py-1"
+                        value={t.code || ""}
+                        onChange={(e) => handleTeacherChange(tIdx, "code", e.target.value)}
+                      />
+                      <input
+                        type="text"
+                        placeholder="Teacher Name"
+                        className="flex-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-2 py-1"
+                        value={t.name || ""}
+                        onChange={(e) => handleTeacherChange(tIdx, "name", e.target.value)}
+                      />
+                      <input
+                        type="text"
+                        placeholder="Subject"
+                        className="w-24 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-2 py-1"
+                        value={t.subject || ""}
+                        onChange={(e) => handleTeacherChange(tIdx, "subject", e.target.value)}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveTeacher(tIdx)}
+                        className="text-slate-400 hover:text-red-500 p-1 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ========================================================================= */}
+          {/* 2. EXAM ROUTINE EDITOR SECTION */}
+          {/* ========================================================================= */}
+          {isExamRoutine && (
+            <>
+              {/* Exam Overview Details */}
+              <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
+                  {docLang === "bn" ? "২. পরীক্ষার সাধারণ বিবরণ" : "2. Examination Overview"}
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2 relative flex items-center">
+                    <input
+                      type="text"
+                      placeholder={docLang === "bn" ? "পরীক্ষার নাম (যেমন: বার্ষিক পরীক্ষা - ২০২৬)" : "Examination Title (e.g. Annual Examination 2026)"}
+                      className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      value={data.examTitle || ""}
+                      onChange={(e) => setData({ ...data, examTitle: e.target.value })}
+                    />
+                    <div className="absolute right-1">
+                      <VoiceInputButton
+                        lang={voiceLang}
+                        title="Speak Exam Title"
+                        onTranscript={(txt) => setData({ ...data, examTitle: txt })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="relative flex items-center">
+                    <input
+                      type="text"
+                      placeholder={docLang === "bn" ? "শ্রেণি / বিভাগ (যেমন: ৬ষ্ঠ থেকে ১০ম শ্রেণি)" : "Class / Group (e.g. Classes 6 to 10)"}
+                      className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      value={data.classGrade || ""}
+                      onChange={(e) => setData({ ...data, classGrade: e.target.value })}
+                    />
+                    <div className="absolute right-1">
+                      <VoiceInputButton
+                        lang={voiceLang}
+                        title="Speak Class"
+                        onTranscript={(txt) => setData({ ...data, classGrade: txt })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="relative flex items-center">
+                    <input
+                      type="text"
+                      placeholder={docLang === "bn" ? "পরীক্ষার সেশন (যেমন: জুন ২০২৬)" : "Exam Session (e.g. June 2026)"}
+                      className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      value={data.academicYear || ""}
+                      onChange={(e) => setData({ ...data, academicYear: e.target.value })}
+                    />
+                    <div className="absolute right-1">
+                      <VoiceInputButton
+                        lang={voiceLang}
+                        title="Speak Session"
+                        onTranscript={(txt) => setData({ ...data, academicYear: txt })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="relative flex items-center">
+                    <input
+                      type="text"
+                      placeholder={docLang === "bn" ? "পরীক্ষা কেন্দ্র / হল (যেমন: মূল ক্যাম্পাস হল-এ)" : "Exam Center / Hall (e.g. Main Auditorium)"}
                       className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                       value={data.examCenter || ""}
                       onChange={(e) => setData({ ...data, examCenter: e.target.value })}
@@ -689,74 +1079,365 @@ export default function SchoolTemplateEditor({
                     <div className="absolute right-1">
                       <VoiceInputButton
                         lang={voiceLang}
-                        title="Speak Exam Center"
+                        title="Speak Center"
                         onTranscript={(txt) => setData({ ...data, examCenter: txt })}
                       />
                     </div>
                   </div>
-                </>
-              )}
 
-              {/* Certificate Specific Session Input */}
-              {isCertificate && (
+                  <div className="relative flex items-center">
+                    <input
+                      type="text"
+                      placeholder={docLang === "bn" ? "পরীক্ষার শিফট / সময় (যেমন: সকাল ১০:০০ - ১:০০)" : "Exam Time / Shift (e.g. 10:00 AM - 1:00 PM)"}
+                      className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      value={data.shift || ""}
+                      onChange={(e) => setData({ ...data, shift: e.target.value })}
+                    />
+                    <div className="absolute right-1">
+                      <VoiceInputButton
+                        lang={voiceLang}
+                        title="Speak Shift"
+                        onTranscript={(txt) => setData({ ...data, shift: txt })}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Exam Schedule Table Editor */}
+              <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    {docLang === "bn" ? "৩. পরীক্ষার তারিখ ও বিষয় তালিকা" : "3. Exam Date Sheet & Subjects"}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleAddExam}
+                    className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline font-semibold cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> {docLang === "bn" ? "+ পরীক্ষা বিষয় যোগ" : "+ Add Exam"}
+                  </button>
+                </div>
+
+                <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
+                  {examsList.map((ex: any, exIdx: number) => (
+                    <div
+                      key={exIdx}
+                      className="bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 space-y-2 text-xs"
+                    >
+                      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-1.5">
+                        <span className="font-bold text-blue-900 dark:text-blue-300">#{exIdx + 1}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveExam(exIdx)}
+                          className="text-slate-400 hover:text-red-500 p-1 cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="relative flex items-center">
+                          <input
+                            type="text"
+                            placeholder="Date (e.g. 15/06/2026)"
+                            className="w-full text-[11px] bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-2 py-1 pr-6"
+                            value={ex.date || ""}
+                            onChange={(e) => handleExamChange(exIdx, "date", e.target.value)}
+                          />
+                          <div className="absolute right-0.5">
+                            <VoiceInputButton
+                              lang={voiceLang}
+                              title="Date"
+                              onTranscript={(txt) => handleExamChange(exIdx, "date", txt)}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="relative flex items-center">
+                          <input
+                            type="text"
+                            placeholder="Day (e.g. Sunday)"
+                            className="w-full text-[11px] bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-2 py-1 pr-6"
+                            value={ex.day || ""}
+                            onChange={(e) => handleExamChange(exIdx, "day", e.target.value)}
+                          />
+                          <div className="absolute right-0.5">
+                            <VoiceInputButton
+                              lang={voiceLang}
+                              title="Day"
+                              onTranscript={(txt) => handleExamChange(exIdx, "day", txt)}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="col-span-2 relative flex items-center">
+                          <input
+                            type="text"
+                            placeholder="Subject Description (e.g. Bangla 1st Paper)"
+                            className="w-full text-[11px] font-semibold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-2 py-1 pr-6"
+                            value={ex.subject || ""}
+                            onChange={(e) => handleExamChange(exIdx, "subject", e.target.value)}
+                          />
+                          <div className="absolute right-0.5">
+                            <VoiceInputButton
+                              lang={voiceLang}
+                              title="Subject"
+                              onTranscript={(txt) => handleExamChange(exIdx, "subject", txt)}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="relative flex items-center">
+                          <input
+                            type="text"
+                            placeholder="Code (e.g. 101)"
+                            className="w-full text-[11px] text-center bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-2 py-1"
+                            value={ex.code || ""}
+                            onChange={(e) => handleExamChange(exIdx, "code", e.target.value)}
+                          />
+                        </div>
+
+                        <div className="relative flex items-center">
+                          <input
+                            type="text"
+                            placeholder="Room / Hall"
+                            className="w-full text-[11px] bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-2 py-1"
+                            value={ex.room || ""}
+                            onChange={(e) => handleExamChange(exIdx, "room", e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Instructions to Candidates */}
+              <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    {docLang === "bn" ? "৪. পরীক্ষার্থীদের জন্য নিয়মাবলী" : "4. Instructions to Examinees"}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleAddInstruction}
+                    className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline font-semibold cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> {docLang === "bn" ? "+ নিয়ম যোগ" : "+ Add Rule"}
+                  </button>
+                </div>
+
+                <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                  {instructionsList.map((inst: string, iIdx: number) => (
+                    <div key={iIdx} className="flex items-center gap-1.5 text-xs">
+                      <input
+                        type="text"
+                        className="flex-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-[11px]"
+                        value={inst}
+                        onChange={(e) => handleInstructionChange(iIdx, e.target.value)}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveInstruction(iIdx)}
+                        className="text-slate-400 hover:text-red-500 p-1 cursor-pointer shrink-0"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ========================================================================= */}
+          {/* 2. STUDENT DEMOGRAPHICS (FOR MARKSHEETS, ADMIT CARDS & CERTIFICATES) */}
+          {/* ========================================================================= */}
+          {!isClassRoutine && !isExamRoutine && (
+            <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
+                {docLang === "bn" ? "২. শিক্ষার্থী ও পরীক্ষার বিবরণ" : "2. Student & Examination Details"}
+              </label>
+              <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2 relative flex items-center">
                   <input
                     type="text"
-                    placeholder={docLang === "bn" ? "শিক্ষা সেশন / পাসের সাল (যেমন: ২০২৬)" : "Academic Session / Passing Year"}
+                    placeholder={docLang === "bn" ? "পরীক্ষার নাম (যেমন: বার্ষিক পরীক্ষা - ২০২৬)" : "Examination Title"}
+                    className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-9 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    value={data.examTitle || ""}
+                    onChange={(e) => setData({ ...data, examTitle: e.target.value })}
+                  />
+                  <div className="absolute right-2">
+                    <VoiceInputButton
+                      lang={voiceLang}
+                      title="Speak Exam Title"
+                      onTranscript={(txt) => setData({ ...data, examTitle: txt })}
+                    />
+                  </div>
+                </div>
+
+                <div className="relative flex items-center">
+                  <input
+                    type="text"
+                    placeholder={docLang === "bn" ? "শিক্ষার্থীর নাম" : "Student Name"}
                     className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                    value={data.academicYear || ""}
-                    onChange={(e) => setData({ ...data, academicYear: e.target.value })}
+                    value={data.studentName || ""}
+                    onChange={(e) => setData({ ...data, studentName: e.target.value })}
                   />
                   <div className="absolute right-1">
                     <VoiceInputButton
                       lang={voiceLang}
-                      title="Speak Session"
-                      onTranscript={(txt) => setData({ ...data, academicYear: txt })}
+                      title="Speak Student Name"
+                      onTranscript={(txt) => setData({ ...data, studentName: txt })}
                     />
                   </div>
                 </div>
-              )}
 
-              {/* Student ID Card Specific Inputs */}
-              {isIdCard && (
-                <>
-                  <div className="relative flex items-center">
+                <div className="relative flex items-center">
+                  <input
+                    type="text"
+                    placeholder={docLang === "bn" ? "রোল নং (যেমন: ১২)" : "Roll No"}
+                    className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    value={data.rollNo || ""}
+                    onChange={(e) => setData({ ...data, rollNo: e.target.value })}
+                  />
+                  <div className="absolute right-1">
+                    <VoiceInputButton
+                      lang={voiceLang}
+                      title="Speak Roll No"
+                      onTranscript={(txt) => setData({ ...data, rollNo: txt })}
+                    />
+                  </div>
+                </div>
+
+                <div className="relative flex items-center">
+                  <input
+                    type="text"
+                    placeholder={docLang === "bn" ? "শ্রেণি ও শাখা (নবম শ্রেণি - বিজ্ঞান)" : "Class / Grade"}
+                    className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    value={data.classGrade || ""}
+                    onChange={(e) => setData({ ...data, classGrade: e.target.value })}
+                  />
+                  <div className="absolute right-1">
+                    <VoiceInputButton
+                      lang={voiceLang}
+                      title="Speak Class"
+                      onTranscript={(txt) => setData({ ...data, classGrade: txt })}
+                    />
+                  </div>
+                </div>
+
+                {/* Date Input: Explicitly NO voice input */}
+                <div>
+                  <input
+                    type="date"
+                    className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    value={data.date || "2026-11-11"}
+                    onChange={(e) => setData({ ...data, date: e.target.value })}
+                  />
+                </div>
+
+                {/* Admit Card Specific Inputs */}
+                {isAdmitCard && (
+                  <>
+                    <div className="relative flex items-center">
+                      <input
+                        type="text"
+                        placeholder={docLang === "bn" ? "রেজিস্ট্রেশন নম্বর (যেমন: REG-2024-98432)" : "Registration No"}
+                        className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                        value={data.regNo || ""}
+                        onChange={(e) => setData({ ...data, regNo: e.target.value })}
+                      />
+                      <div className="absolute right-1">
+                        <VoiceInputButton
+                          lang={voiceLang}
+                          title="Speak Reg No"
+                          onTranscript={(txt) => setData({ ...data, regNo: txt })}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="relative flex items-center">
+                      <input
+                        type="text"
+                        placeholder={docLang === "bn" ? "পরীক্ষা কেন্দ্র ও হল নম্বর" : "Exam Center & Hall"}
+                        className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                        value={data.examCenter || ""}
+                        onChange={(e) => setData({ ...data, examCenter: e.target.value })}
+                      />
+                      <div className="absolute right-1">
+                        <VoiceInputButton
+                          lang={voiceLang}
+                          title="Speak Exam Center"
+                          onTranscript={(txt) => setData({ ...data, examCenter: txt })}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Certificate Specific Session Input */}
+                {isCertificate && (
+                  <div className="col-span-2 relative flex items-center">
                     <input
                       type="text"
-                      placeholder={docLang === "bn" ? "রক্তের গ্রুপ (যেমন: O+)" : "Blood Group (e.g. O+)"}
+                      placeholder={docLang === "bn" ? "শিক্ষা সেশন / পাসের সাল (যেমন: ২০২৬)" : "Academic Session / Passing Year"}
                       className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                      value={data.bloodGroup || ""}
-                      onChange={(e) => setData({ ...data, bloodGroup: e.target.value })}
+                      value={data.academicYear || ""}
+                      onChange={(e) => setData({ ...data, academicYear: e.target.value })}
                     />
                     <div className="absolute right-1">
                       <VoiceInputButton
                         lang={voiceLang}
-                        title="Speak Blood Group"
-                        onTranscript={(txt) => setData({ ...data, bloodGroup: txt })}
+                        title="Speak Session"
+                        onTranscript={(txt) => setData({ ...data, academicYear: txt })}
                       />
                     </div>
                   </div>
+                )}
 
-                  <div className="relative flex items-center">
-                    <input
-                      type="text"
-                      placeholder={docLang === "bn" ? "জরুরি মোবাইল নং" : "Emergency Contact Phone"}
-                      className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                      value={data.phone || ""}
-                      onChange={(e) => setData({ ...data, phone: e.target.value })}
-                    />
-                    <div className="absolute right-1">
-                      <VoiceInputButton
-                        lang={voiceLang}
-                        title="Speak Emergency Contact"
-                        onTranscript={(txt) => setData({ ...data, phone: txt })}
+                {/* Student ID Card Specific Inputs */}
+                {isIdCard && (
+                  <>
+                    <div className="relative flex items-center">
+                      <input
+                        type="text"
+                        placeholder={docLang === "bn" ? "রক্তের গ্রুপ (যেমন: O+)" : "Blood Group (e.g. O+)"}
+                        className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                        value={data.bloodGroup || ""}
+                        onChange={(e) => setData({ ...data, bloodGroup: e.target.value })}
                       />
+                      <div className="absolute right-1">
+                        <VoiceInputButton
+                          lang={voiceLang}
+                          title="Speak Blood Group"
+                          onTranscript={(txt) => setData({ ...data, bloodGroup: txt })}
+                        />
+                      </div>
                     </div>
-                  </div>
-                </>
-              )}
+
+                    <div className="relative flex items-center">
+                      <input
+                        type="text"
+                        placeholder={docLang === "bn" ? "জরুরি মোবাইল নং" : "Emergency Contact Phone"}
+                        className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                        value={data.phone || ""}
+                        onChange={(e) => setData({ ...data, phone: e.target.value })}
+                      />
+                      <div className="absolute right-1">
+                        <VoiceInputButton
+                          lang={voiceLang}
+                          title="Speak Emergency Contact"
+                          onTranscript={(txt) => setData({ ...data, phone: txt })}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* 3. Subjects Table & Marks (For Marksheets) */}
           {isMarksheet && (
@@ -839,12 +1520,34 @@ export default function SchoolTemplateEditor({
           {/* Remarks & Signatures */}
           <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800">
             <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
-              {docLang === "bn" ? "৪. শিক্ষকের মন্তব্য ও স্বাক্ষর" : "4. Remarks & Signatures"}
+              {isClassRoutine
+                ? docLang === "bn"
+                  ? "৫. ক্লাস রুটিন নির্দেশিকা ও স্বাক্ষর"
+                  : "5. Routine Notes & Signatures"
+                : isExamRoutine
+                ? docLang === "bn"
+                  ? "৫. পরীক্ষা সংক্রান্ত নোট ও স্বাক্ষর"
+                  : "5. Exam Notes & Signatures"
+                : docLang === "bn"
+                ? "৪. শিক্ষকের মন্তব্য ও স্বাক্ষর"
+                : "4. Remarks & Signatures"}
             </label>
             <div className="relative flex items-start">
               <textarea
                 rows={2}
-                placeholder={docLang === "bn" ? "শিক্ষকের মূল্যায়ন বা মন্তব্য" : "Teacher's remarks..."}
+                placeholder={
+                  isClassRoutine
+                    ? docLang === "bn"
+                      ? "অ্যাসেম্বলি সময়, ড্রেসকোড ও উপস্থিতি নির্দেশিকা..."
+                      : "Assembly timing, uniform and attendance guidelines..."
+                    : isExamRoutine
+                    ? docLang === "bn"
+                      ? "প্রবেশপত্র ও বিশেষ পরীক্ষা নির্দেশিকা..."
+                      : "Admit card and examination guidelines..."
+                    : docLang === "bn"
+                    ? "শিক্ষকের মূল্যায়ন বা মন্তব্য"
+                    : "Teacher's remarks..."
+                }
                 className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 pr-9 focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none"
                 value={data.remarks || ""}
                 onChange={(e) => setData({ ...data, remarks: e.target.value })}
@@ -1021,38 +1724,129 @@ export default function SchoolTemplateEditor({
                 </p>
                 <div className="pt-2">
                   <span className="inline-block bg-blue-900 text-white font-bold text-xs uppercase px-4 py-1 rounded">
-                    {data.examTitle || (docLang === "bn" ? "ফলাফল ও নম্বরপত্র" : "Academic Progress Report")}
+                    {isClassRoutine
+                      ? docLang === "bn"
+                        ? "সাপ্তাহিক শ্রেণি কার্যক্রম ও ক্লাস রুটিন"
+                        : "WEEKLY CLASS ROUTINE & TIMETABLE"
+                      : isExamRoutine
+                      ? data.examTitle || (docLang === "bn" ? "পরীক্ষার সময়সূচি ও নির্দেশিকা" : "EXAMINATION SCHEDULE & TIMETABLE")
+                      : data.examTitle || (docLang === "bn" ? "ফলাফল ও নম্বরপত্র" : "Academic Progress Report")}
                   </span>
                 </div>
               </div>
 
-              {/* Student Demographics Bento Card */}
-              <div className="grid grid-cols-4 gap-3 my-5 bg-slate-50/80 border border-slate-200/90 rounded-2xl p-4 sm:p-5 text-xs shadow-2xs">
-                <div>
-                  <span className="text-[9.5px] uppercase font-bold text-slate-400 tracking-wider block mb-0.5">
-                    {docLang === "bn" ? "শিক্ষার্থীর নাম:" : "STUDENT NAME:"}
-                  </span>
-                  <span className="font-extrabold text-slate-900 text-sm block truncate">{data.studentName}</span>
+              {/* 1. CLASS ROUTINE METADATA BENTO STRIP */}
+              {isClassRoutine && (
+                <div className="grid grid-cols-4 gap-3 my-5 bg-blue-50/80 border border-blue-200/90 rounded-2xl p-4 sm:p-5 text-xs shadow-2xs">
+                  <div>
+                    <span className="text-[9.5px] uppercase font-bold text-blue-900/60 tracking-wider block mb-0.5">
+                      {docLang === "bn" ? "শ্রেণি ও বিভাগ:" : "CLASS / PROGRAM:"}
+                    </span>
+                    <span className="font-extrabold text-blue-950 text-sm block truncate">
+                      {data.classGrade || (docLang === "bn" ? "দশম শ্রেণি (ক)" : "Class 10 (A)")}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[9.5px] uppercase font-bold text-blue-900/60 tracking-wider block mb-0.5">
+                      {docLang === "bn" ? "শাখা ও কক্ষ:" : "SECTION / ROOM:"}
+                    </span>
+                    <span className="font-bold text-blue-900 block truncate">
+                      {data.section || "A"} {data.roomNo ? `• ${data.roomNo}` : ""}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[9.5px] uppercase font-bold text-blue-900/60 tracking-wider block mb-0.5">
+                      {docLang === "bn" ? "শিফট ও সময়সূচি:" : "SHIFT & TIMING:"}
+                    </span>
+                    <span className="font-semibold text-slate-800 block truncate">
+                      {data.shift || (docLang === "bn" ? "প্রভাতী শিফট" : "Morning Shift")}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[9.5px] uppercase font-bold text-blue-900/60 tracking-wider block mb-0.5">
+                      {docLang === "bn" ? "শিক্ষাবর্ষ ও তারিখ:" : "SESSION & DATE:"}
+                    </span>
+                    <span className="font-semibold text-slate-800 tabular-nums block">
+                      {data.academicYear || "Session 2026"}
+                    </span>
+                  </div>
                 </div>
-                <div>
-                  <span className="text-[9.5px] uppercase font-bold text-slate-400 tracking-wider block mb-0.5">
-                    {docLang === "bn" ? "রোল নম্বর:" : "ROLL NUMBER:"}
-                  </span>
-                  <span className="font-bold text-blue-900 tabular-nums block">{data.rollNo}</span>
+              )}
+
+              {/* 2. EXAM ROUTINE METADATA BENTO STRIP */}
+              {isExamRoutine && (
+                <div className="space-y-3 my-5">
+                  <div className="grid grid-cols-4 gap-3 bg-indigo-50/80 border border-indigo-200/90 rounded-2xl p-4 sm:p-5 text-xs shadow-2xs">
+                    <div>
+                      <span className="text-[9.5px] uppercase font-bold text-indigo-900/60 tracking-wider block mb-0.5">
+                        {docLang === "bn" ? "পরীক্ষার নাম:" : "EXAMINATION:"}
+                      </span>
+                      <span className="font-extrabold text-indigo-950 text-sm block truncate">
+                        {data.examTitle || (docLang === "bn" ? "বার্ষিক পরীক্ষা ২০২৬" : "Annual Exam 2026")}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[9.5px] uppercase font-bold text-indigo-900/60 tracking-wider block mb-0.5">
+                        {docLang === "bn" ? "অংশগ্রহণকারী শ্রেণি:" : "CLASS / BATCH:"}
+                      </span>
+                      <span className="font-bold text-indigo-900 block truncate">
+                        {data.classGrade || (docLang === "bn" ? "সকল শ্রেণি" : "All Classes")}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[9.5px] uppercase font-bold text-indigo-900/60 tracking-wider block mb-0.5">
+                        {docLang === "bn" ? "পরীক্ষা কেন্দ্র / হল:" : "EXAM VENUE / HALL:"}
+                      </span>
+                      <span className="font-semibold text-slate-800 block truncate">
+                        {data.examCenter || (docLang === "bn" ? "মূল ক্যাম্পাস হল" : "Main Campus Hall")}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[9.5px] uppercase font-bold text-indigo-900/60 tracking-wider block mb-0.5">
+                        {docLang === "bn" ? "শিক্ষাবর্ষ / সেশন:" : "ACADEMIC SESSION:"}
+                      </span>
+                      <span className="font-semibold text-slate-800 tabular-nums block">
+                        {data.academicYear || "Session 2026"}
+                      </span>
+                    </div>
+                  </div>
+                  {(data.shiftInfo || data.shift) && (
+                    <div className="bg-slate-50 border border-slate-200 rounded-lg py-1 px-3 text-center text-[10.5px] font-semibold text-slate-700">
+                      ⏰ {data.shiftInfo || data.shift}
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <span className="text-[9.5px] uppercase font-bold text-slate-400 tracking-wider block mb-0.5">
-                    {docLang === "bn" ? "শ্রেণি ও বিভাগ:" : "CLASS / GRADE:"}
-                  </span>
-                  <span className="font-semibold text-slate-800 block truncate">{data.classGrade}</span>
+              )}
+
+              {/* 3. STUDENT DEMOGRAPHICS BENTO CARD (FOR MARKSHEETS, ADMIT CARDS & CERTIFICATES ONLY) */}
+              {!isClassRoutine && !isExamRoutine && (
+                <div className="grid grid-cols-4 gap-3 my-5 bg-slate-50/80 border border-slate-200/90 rounded-2xl p-4 sm:p-5 text-xs shadow-2xs">
+                  <div>
+                    <span className="text-[9.5px] uppercase font-bold text-slate-400 tracking-wider block mb-0.5">
+                      {docLang === "bn" ? "শিক্ষার্থীর নাম:" : "STUDENT NAME:"}
+                    </span>
+                    <span className="font-extrabold text-slate-900 text-sm block truncate">{data.studentName}</span>
+                  </div>
+                  <div>
+                    <span className="text-[9.5px] uppercase font-bold text-slate-400 tracking-wider block mb-0.5">
+                      {docLang === "bn" ? "রোল নম্বর:" : "ROLL NUMBER:"}
+                    </span>
+                    <span className="font-bold text-blue-900 tabular-nums block">{data.rollNo}</span>
+                  </div>
+                  <div>
+                    <span className="text-[9.5px] uppercase font-bold text-slate-400 tracking-wider block mb-0.5">
+                      {docLang === "bn" ? "শ্রেণি ও বিভাগ:" : "CLASS / GRADE:"}
+                    </span>
+                    <span className="font-semibold text-slate-800 block truncate">{data.classGrade}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[9.5px] uppercase font-bold text-slate-400 tracking-wider block mb-0.5">
+                      {docLang === "bn" ? "ইস্যু তারিখ:" : "DATE OF ISSUE:"}
+                    </span>
+                    <span className="font-semibold text-slate-800 tabular-nums block">{data.date}</span>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <span className="text-[9.5px] uppercase font-bold text-slate-400 tracking-wider block mb-0.5">
-                    {docLang === "bn" ? "ইস্যু তারিখ:" : "DATE OF ISSUE:"}
-                  </span>
-                  <span className="font-semibold text-slate-800 tabular-nums block">{data.date}</span>
-                </div>
-              </div>
+              )}
 
               {/* Subjects & Marks Table with Tabular Numbers */}
               {isMarksheet && (
@@ -1094,61 +1888,142 @@ export default function SchoolTemplateEditor({
                 </table>
               )}
 
-              {/* Class Routine Table (For Class Routine) */}
+              {/* WORLD-CLASS CLASS ROUTINE WEEKLY GRID TABLE */}
               {isClassRoutine && data.routine && (
-                <div className="my-6">
-                  <table className="w-full text-center border-collapse border border-gray-300 text-xs">
-                    <thead>
-                      <tr className="bg-blue-50 text-blue-900 font-bold border-b border-gray-300">
-                        <th className="p-2 border-r border-gray-300">Day</th>
-                        <th className="p-2 border-r border-gray-300">Period 1</th>
-                        <th className="p-2 border-r border-gray-300">Period 2</th>
-                        <th className="p-2 border-r border-gray-300">Period 3</th>
-                        <th className="p-2 border-r border-gray-300">Period 4</th>
-                        <th className="p-2">Period 5</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {data.routine.map((r: any, idx: number) => (
-                        <tr key={idx} className="hover:bg-gray-50">
-                          <td className="p-2 font-bold text-left border-r border-gray-300">{r.day}</td>
-                          <td className="p-2 border-r border-gray-300">{r.p1}</td>
-                          <td className="p-2 border-r border-gray-300">{r.p2}</td>
-                          <td className="p-2 border-r border-gray-300">{r.p3}</td>
-                          <td className="p-2 border-r border-gray-300">{r.p4}</td>
-                          <td className="p-2">{r.p5}</td>
+                <div className="my-6 space-y-4">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-center border-collapse border border-slate-300 text-xs shadow-2xs">
+                      <thead>
+                        <tr className="bg-slate-900 text-white font-bold uppercase text-[10px] tracking-wider">
+                          <th className="p-2.5 border-r border-slate-700 w-24 text-left">
+                            {docLang === "bn" ? "দিন / বার" : "Day"}
+                          </th>
+                          {(Array.isArray(data.periods) && data.periods.length > 0
+                            ? data.periods
+                            : [
+                                docLang === "bn" ? "১ম পিরিয়ড" : "Period 1",
+                                docLang === "bn" ? "২য় পিরিয়ড" : "Period 2",
+                                docLang === "bn" ? "৩য় পিরিয়ড" : "Period 3",
+                                docLang === "bn" ? "৪র্থ পিরিয়ড" : "Period 4",
+                                docLang === "bn" ? "৫ম পিরিয়ড" : "Period 5",
+                                docLang === "bn" ? "৬ষ্ঠ পিরিয়ড" : "Period 6",
+                              ]
+                          ).slice(0, 6).map((pLabel: string, pIdx: number) => (
+                            <th key={pIdx} className="p-2.5 border-r border-slate-700 last:border-r-0">
+                              <span className="block font-black">{pLabel.split("(")[0]?.trim()}</span>
+                              {pLabel.includes("(") && (
+                                <span className="text-[8px] font-normal opacity-80 block tracking-normal">
+                                  {pLabel.substring(pLabel.indexOf("("))}
+                                </span>
+                              )}
+                            </th>
+                          ))}
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200 text-[11px]">
+                        {data.routine.map((r: any, idx: number) => (
+                          <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50/70"}>
+                            <td className="p-2.5 font-extrabold text-left border-r border-slate-300 bg-slate-100/70 text-slate-900">
+                              {r.day}
+                            </td>
+                            {["p1", "p2", "p3", "p4", "p5", "p6"].map((pKey, cIdx) => (
+                              <td key={pKey} className="p-2 border-r border-slate-200 last:border-r-0">
+                                <div className="font-bold text-slate-900 leading-tight">
+                                  {r[pKey] || "—"}
+                                </div>
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Teacher Directory & Roster Legend */}
+                  {Array.isArray(data.teachers) && data.teachers.length > 0 && (
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-[10.5px]">
+                      <h4 className="font-bold uppercase tracking-wider text-slate-700 text-[9.5px] mb-1.5 border-b border-slate-200 pb-1">
+                        {docLang === "bn" ? "শিক্ষক ও বিষয় নির্দেশিকা:" : "FACULTY DIRECTORY & SUBJECT CODES:"}
+                      </h4>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {data.teachers.map((t: any, tIdx: number) => (
+                          <div key={tIdx} className="flex items-center gap-1.5 text-slate-800">
+                            <span className="font-mono font-bold bg-blue-100 text-blue-900 px-1 py-0.5 rounded text-[9px]">
+                              [{t.code}]
+                            </span>
+                            <span className="font-semibold">{t.name}</span>
+                            <span className="text-slate-500">({t.subject})</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Exam Routine Table (For Exam Routine) */}
+              {/* WORLD-CLASS EXAM SCHEDULE DATE SHEET TABLE */}
               {isExamRoutine && data.exams && (
-                <div className="my-6">
-                  <table className="w-full text-left border-collapse border border-gray-300 text-xs">
+                <div className="my-6 space-y-4">
+                  <table className="w-full text-left border-collapse border border-slate-300 text-xs shadow-2xs">
                     <thead>
-                      <tr className="bg-blue-50 text-blue-900 font-bold border-b border-gray-300">
-                        <th className="p-2 border-r border-gray-300">Date & Day</th>
-                        <th className="p-2 border-r border-gray-300">Exam Time</th>
-                        <th className="p-2 border-r border-gray-300">Subject Description</th>
-                        <th className="p-2 border-r border-gray-300 text-center">Code</th>
-                        <th className="p-2 text-right">Hall / Room</th>
+                      <tr className="bg-slate-900 text-white font-bold uppercase text-[10px] tracking-wider">
+                        <th className="p-2.5 border-r border-slate-700 w-36">
+                          {docLang === "bn" ? "তারিখ ও বার" : "Date & Day"}
+                        </th>
+                        <th className="p-2.5 border-r border-slate-700 w-36">
+                          {docLang === "bn" ? "পরীক্ষার সময় / শিফট" : "Exam Time / Shift"}
+                        </th>
+                        <th className="p-2.5 border-r border-slate-700">
+                          {docLang === "bn" ? "বিষয় ও পত্র বিবরণ" : "Subject Description"}
+                        </th>
+                        <th className="p-2.5 border-r border-slate-700 text-center w-20">
+                          {docLang === "bn" ? "বিষয় কোড" : "Code"}
+                        </th>
+                        <th className="p-2.5 text-right w-32">
+                          {docLang === "bn" ? "পরীক্ষা কক্ষ / হল" : "Hall / Room"}
+                        </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-200">
+                    <tbody className="divide-y divide-slate-200 text-[11px]">
                       {data.exams.map((ex: any, idx: number) => (
-                        <tr key={idx} className="hover:bg-gray-50">
-                          <td className="p-2 font-bold border-r border-gray-300">{ex.date} ({ex.day})</td>
-                          <td className="p-2 border-r border-gray-300">{ex.time}</td>
-                          <td className="p-2 font-semibold border-r border-gray-300">{ex.subject}</td>
-                          <td className="p-2 text-center border-r border-gray-300">{ex.code}</td>
-                          <td className="p-2 text-right">{ex.room}</td>
+                        <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50/70"}>
+                          <td className="p-2.5 font-bold border-r border-slate-300 text-slate-900">
+                            {ex.date} {ex.day ? `(${ex.day})` : ""}
+                          </td>
+                          <td className="p-2.5 font-medium border-r border-slate-200 text-slate-700 tabular-nums">
+                            {ex.time}
+                          </td>
+                          <td className="p-2.5 font-bold border-r border-slate-200 text-slate-900">
+                            {ex.subject}
+                            {ex.syllabus && (
+                              <span className="block text-[9.5px] font-normal text-slate-500">{ex.syllabus}</span>
+                            )}
+                          </td>
+                          <td className="p-2.5 text-center font-mono font-bold border-r border-slate-200 text-blue-900">
+                            {ex.code}
+                          </td>
+                          <td className="p-2.5 text-right font-medium text-slate-800">
+                            {ex.room}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
+
+                  {/* General Instructions for Examinees */}
+                  {(Array.isArray(data.rules) && data.rules.length > 0 || Array.isArray(data.instructions) && data.instructions.length > 0) && (
+                    <div className="bg-amber-50/60 border border-amber-200 rounded-xl p-3.5 text-xs">
+                      <div className="flex items-center gap-1.5 font-bold text-amber-950 uppercase text-[10px] tracking-wider mb-1.5 border-b border-amber-200 pb-1">
+                        <ShieldCheck className="w-3.5 h-3.5 text-amber-700" />
+                        <span>{docLang === "bn" ? "পরীক্ষার্থীদের জন্য বিশেষ নির্দেশনাবলী:" : "EXAMINATION RULES & INSTRUCTIONS:"}</span>
+                      </div>
+                      <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[10.5px] text-amber-900 list-disc list-inside leading-relaxed">
+                        {(data.rules || data.instructions).map((rule: string, rIdx: number) => (
+                          <li key={rIdx}>{rule}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1338,7 +2213,12 @@ export default function SchoolTemplateEditor({
               <div className="text-center">
                 <div className="w-36 border-b border-gray-400 mb-1 mx-auto"></div>
                 <span className="text-[11px] font-bold text-gray-700 block">
-                  {data.signatory1 || (docLang === "bn" ? "শ্রেণি শিক্ষক" : "Class Teacher")}
+                  {data.signatory1 ||
+                    (isClassRoutine
+                      ? docLang === "bn" ? "রুটিন প্রণয়ন কমিটি" : "Routine Committee"
+                      : isExamRoutine
+                      ? docLang === "bn" ? "পরীক্ষা নিয়ন্ত্রণ কমিটি" : "Exam Committee"
+                      : docLang === "bn" ? "শ্রেণি শিক্ষক" : "Class Teacher")}
                 </span>
               </div>
 
