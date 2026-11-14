@@ -16,6 +16,15 @@ interface GlobalSettingsContextType {
 
 const GlobalSettingsContext = createContext<GlobalSettingsContextType | undefined>(undefined);
 
+const applyThemeClass = (th: "light" | "dark") => {
+  if (typeof document === "undefined") return;
+  if (th === "dark") {
+    document.documentElement.classList.add("dark");
+  } else {
+    document.documentElement.classList.remove("dark");
+  }
+};
+
 export function GlobalSettingsProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [lang, setLangState] = useState<Language>("en");
@@ -26,12 +35,12 @@ export function GlobalSettingsProvider({ children }: { children: React.ReactNode
     const savedTheme = localStorage.getItem("app_theme") as "light" | "dark" | null;
     if (savedTheme) {
       setTheme(savedTheme);
-      applyTheme(savedTheme);
+      applyThemeClass(savedTheme);
     } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
       setTheme("dark");
-      applyTheme("dark");
+      applyThemeClass("dark");
     } else {
-      applyTheme("light");
+      applyThemeClass("light");
     }
 
     // 2. Language sync (Check localStorage first, otherwise detect system/browser language)
@@ -52,20 +61,12 @@ export function GlobalSettingsProvider({ children }: { children: React.ReactNode
     setMounted(true);
   }, []);
 
-  const applyTheme = (th: "light" | "dark") => {
-    if (th === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  };
-
   const toggleTheme = () => {
     const nextTheme = theme === "light" ? "dark" : "light";
     setTheme(nextTheme);
     localStorage.setItem("app_theme", nextTheme);
     localStorage.setItem("user_theme", nextTheme);
-    applyTheme(nextTheme);
+    applyThemeClass(nextTheme);
   };
 
   const toggleLang = () => {

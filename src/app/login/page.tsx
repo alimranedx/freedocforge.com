@@ -55,6 +55,18 @@ function LoginForm() {
             ? "গুগল সাইন-ইন টোকেন ভেরিফিকেশন ব্যর্থ হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।"
             : "Google authentication token exchange failed. Please try again."
         );
+      } else if (errorParam === "database_connection_failed") {
+        setError(
+          lang === "bn"
+            ? "ডাটাবেজ সংযোগ ব্যর্থ হয়েছে। অনুগ্রহ করে নিশ্চিত করুন Laragon বা MySQL সার্ভার চালু (Start All) করা আছে।"
+            : "Cannot connect to the database. Please ensure Laragon / MySQL is running (click 'Start All' in Laragon)."
+        );
+      } else if (errorParam === "oauth_internal_error") {
+        setError(
+          lang === "bn"
+            ? "সাইন ইন করার সময় সার্ভার বা ডাটাবেজে সমস্যা হয়েছে। অনুগ্রহ করে MySQL চালু আছে কি না পরীক্ষা করুন।"
+            : "An internal server/database error occurred during sign-in. Please ensure your MySQL server is running."
+        );
       } else {
         setError(
           lang === "bn"

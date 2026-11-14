@@ -12,11 +12,16 @@ import {
   FileText,
   Settings,
   LogOut,
+  Menu,
+  X,
+  ExternalLink,
 } from "lucide-react";
 
 export default function AdminDashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [admin, setAdmin] = useState<any>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [dbStatus, setDbStatus] = useState<"checking" | "online" | "offline">("checking");
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -27,6 +32,14 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
         }
       })
       .catch(() => {});
+
+    // Check real-time database telemetry
+    fetch("/api/admin/stats")
+      .then((res) => res.json())
+      .then((data) => {
+        setDbStatus(data?.dbOnline ? "online" : "offline");
+      })
+      .catch(() => setDbStatus("offline"));
   }, []);
 
   const handleLogout = async () => {
@@ -45,8 +58,21 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
 
   return (
     <div className="min-h-screen flex bg-zinc-950 text-zinc-100 font-sans">
-      {/* ADMIN SIDEBAR (Dedicated Dark High-Tech Theme) */}
-      <aside className="w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col justify-between shrink-0">
+      {/* MOBILE BACKDROP OVERLAY */}
+      {mobileMenuOpen && (
+        <div
+          onClick={() => setMobileMenuOpen(false)}
+          className="fixed inset-0 bg-black/70 z-40 md:hidden backdrop-blur-xs transition-opacity"
+          aria-hidden="true"
+        />
+      )}
+
+      {/* ADMIN SIDEBAR (Dedicated Dark High-Tech Theme, Fully Responsive) */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col justify-between shrink-0 transform transition-transform duration-300 md:static md:translate-x-0 ${
+          mobileMenuOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
+        }`}
+      >
         <div>
           {/* Header */}
           <div className="p-5 border-b border-zinc-800 flex items-center justify-between">
@@ -63,6 +89,14 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
                 </span>
               </div>
             </div>
+
+            <button
+              onClick={() => setMobileMenuOpen(false)}
+              className="p-1.5 rounded-lg text-zinc-400 hover:text-white md:hidden cursor-pointer"
+              title="Close Menu"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
 
           {/* Admin Identity Card */}
@@ -83,6 +117,7 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
                 <Link
                   key={item.href}
                   href={item.href}
+                  onClick={() => setMobileMenuOpen(false)}
                   className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-semibold transition ${
                     isActive
                       ? "bg-red-600 text-white shadow-sm"
@@ -114,21 +149,50 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
 
       {/* ADMIN CONTENT */}
       <div className="flex-1 flex flex-col min-w-0 bg-zinc-950">
-        <header className="h-16 bg-zinc-900 border-b border-zinc-800 px-8 flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-bold text-white tracking-wide uppercase">
-              DocForge Platform Management Console
-            </h2>
-            <p className="text-[11px] text-zinc-400">Manage categories, templates, ads, and system health.</p>
-          </div>
+        <header className="h-16 bg-zinc-900 border-b border-zinc-800 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-30">
           <div className="flex items-center gap-3">
-            <span className="inline-flex items-center gap-1 text-[11px] bg-emerald-950 text-emerald-400 border border-emerald-800 px-2.5 py-1 rounded-md font-mono">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> MySQL Engine Online
-            </span>
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="p-2 -ml-2 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 md:hidden cursor-pointer"
+              aria-label="Open navigation menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <div>
+              <h2 className="text-xs sm:text-sm font-bold text-white tracking-wide uppercase">
+                DocForge Platform Management Console
+              </h2>
+              <p className="hidden sm:block text-[11px] text-zinc-400">
+                Manage merchants, templates, ads, and platform compliance.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Live Database Status Indicator */}
+            {dbStatus === "checking" ? (
+              <span className="inline-flex items-center gap-1.5 text-[11px] bg-zinc-800 text-zinc-400 border border-zinc-700 px-2.5 py-1 rounded-md font-mono">
+                <span className="w-1.5 h-1.5 rounded-full bg-zinc-500 animate-pulse"></span>
+                <span className="hidden sm:inline">Checking DB...</span>
+              </span>
+            ) : dbStatus === "online" ? (
+              <span className="inline-flex items-center gap-1.5 text-[11px] bg-emerald-950 text-emerald-400 border border-emerald-800 px-2.5 py-1 rounded-md font-mono">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>MySQL Engine Online</span>
+              </span>
+            ) : (
+              <span
+                className="inline-flex items-center gap-1.5 text-[11px] bg-amber-950 text-amber-400 border border-amber-800 px-2.5 py-1 rounded-md font-mono"
+                title="MySQL service is stopped or in local fallback"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                <span>MySQL Offline (Fallback)</span>
+              </span>
+            )}
           </div>
         </header>
 
-        <main className="flex-1 p-8 overflow-y-auto">{children}</main>
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">{children}</main>
       </div>
     </div>
   );

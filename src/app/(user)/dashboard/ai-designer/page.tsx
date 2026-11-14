@@ -9,14 +9,7 @@ import {
   ArrowRight,
   Printer,
   CheckCircle,
-  Layers,
-  Copy,
   RefreshCw,
-  FileCheck,
-  Calendar,
-  GraduationCap,
-  Stethoscope,
-  Receipt,
 } from "lucide-react";
 import { useUserDashboard } from "@/context/UserDashboardContext";
 
@@ -54,7 +47,7 @@ const SAMPLE_PROMPTS = [
 ];
 
 export default function AiTemplateDesignerPage() {
-  const { lang, t } = useUserDashboard();
+  const { lang } = useUserDashboard();
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedResult, setGeneratedResult] = useState<any | null>(null);

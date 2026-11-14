@@ -160,8 +160,13 @@ export async function GET(req: Request) {
     return response;
   } catch (err: any) {
     console.error("Google OAuth callback exception:", err);
+    const isDbError =
+      err?.code === "P1001" ||
+      err?.name === "PrismaClientInitializationError" ||
+      err?.message?.includes("Can't reach database server");
+    const errorCode = isDbError ? "database_connection_failed" : "oauth_internal_error";
     return NextResponse.redirect(
-      new URL("/login?error=oauth_internal_error", origin)
+      new URL(`/login?error=${errorCode}`, origin)
     );
   }
 }

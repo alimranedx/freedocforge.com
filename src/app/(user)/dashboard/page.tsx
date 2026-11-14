@@ -5,15 +5,10 @@ import Link from "next/link";
 import {
   Store,
   Printer,
-  Sparkles,
   ArrowRight,
-  Save,
-  Check,
   GraduationCap,
   Stethoscope,
-  ShoppingBag,
   FileText,
-  Clock,
   Layers,
   Zap,
   Mic,
@@ -38,10 +33,10 @@ export default function UserDashboardOverviewPage() {
   const [docCount, setDocCount] = useState<number>(4);
 
   const [profile, setProfile] = useState({
-    businessName: "Stylist Fashion BD",
-    tagline: "Quality Products Delivered to Your Doorstep",
-    phone: "+880 1712-345678",
-    address: "House 14, Road 5, Dhanmondi, Dhaka",
+    businessName: "",
+    tagline: "Quality Documents Delivered in Seconds",
+    phone: "",
+    address: "",
     currency: "৳",
     logoUrl: null as string | null,
     signatureUrl: null as string | null,
@@ -289,7 +284,7 @@ export default function UserDashboardOverviewPage() {
               {lang === "bn" ? "বর্তমান প্রিসেট" : "Active Preset"}
             </span>
             <h4 className="text-base font-extrabold text-slate-900 dark:text-white mt-1 truncate max-w-[150px]">
-              {profile.businessName?.split(" ")[0] || "Active Preset"}
+              {profile.businessName || (lang === "bn" ? "সক্রিয় প্রিসেট" : "Active Preset")}
             </h4>
             <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1 mt-0.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>

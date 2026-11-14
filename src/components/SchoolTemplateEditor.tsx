@@ -39,6 +39,7 @@ import {
 } from "lucide-react";
 import AdSenseSlot from "@/components/AdSenseSlot";
 import PostDownloadModal from "@/components/PostDownloadModal";
+import ShareDocumentModal from "@/components/ShareDocumentModal";
 import VoiceInputButton from "@/components/VoiceInputButton";
 import { useGlobalSettings } from "@/context/GlobalSettingsContext";
 import ThemeSelectorBar from "@/components/ThemeSelectorBar";
@@ -83,6 +84,7 @@ export default function SchoolTemplateEditor({
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [isExportingJpg, setIsExportingJpg] = useState(false);
   const [showPostDownloadModal, setShowPostDownloadModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
   const [docSaveLoading, setDocSaveLoading] = useState(false);
@@ -235,31 +237,20 @@ export default function SchoolTemplateEditor({
     }
   };
 
+  const getShareMessage = () => {
+    const institute = data.instituteName || "Academic Institute";
+    const student = data.studentName || "Student";
+    const roll = data.studentRoll ? `রোল: ${data.studentRoll}` : "";
+    const gpa = data.gpa ? `GPA: ${data.gpa}` : "";
+    const exam = data.examName || "Examination";
+
+    return docLang === "bn"
+      ? `*${institute}*\nপরীক্ষা: ${exam}\nশিক্ষার্থী: ${student}\n${roll}\n${gpa}\n\nফলাফল বিস্তারিত দেখতে বা প্রিন্ট কপি ডাউনলোড করতে ভিজিট করুন FreeDocForge.com`
+      : `*${institute}*\nExam: ${exam}\nStudent: ${student}\n${roll}\n${gpa}\n\nOfficial Academic Document via FreeDocForge.com`;
+  };
+
   const handleWhatsAppShare = () => {
-    try {
-      const institute = data.instituteName || "Academic Institute";
-      const student = data.studentName || "Student";
-      const roll = data.studentRoll ? `রোল: ${data.studentRoll}` : "";
-      const gpa = data.gpa ? `GPA: ${data.gpa}` : "";
-      const exam = data.examName || "Examination";
-
-      const message =
-        docLang === "bn"
-          ? `*${institute}*\nপরীক্ষা: ${exam}\nশিক্ষার্থী: ${student}\n${roll}\n${gpa}\n\nফলাফল বিস্তারিত দেখতে বা প্রিন্ট কপি ডাউনলোড করতে ভিজিট করুন FreeDocForge.com`
-          : `*${institute}*\nExam: ${exam}\nStudent: ${student}\n${roll}\n${gpa}\n\nOfficial Academic Document via FreeDocForge.com`;
-
-      const cleanPhone = (data.guardianPhone || data.phone || "").replace(/[^0-9]/g, "");
-      const targetUrl =
-        cleanPhone.length >= 10
-          ? `https://wa.me/${cleanPhone.startsWith("88") ? cleanPhone : `88${cleanPhone}`}?text=${encodeURIComponent(
-              message
-            )}`
-          : `https://wa.me/?text=${encodeURIComponent(message)}`;
-
-      window.open(targetUrl, "_blank");
-    } catch (e) {
-      console.error("WhatsApp share error:", e);
-    }
+    setShowShareModal(true);
   };
 
   const handleSaveToProfile = async () => {
@@ -2411,6 +2402,18 @@ export default function SchoolTemplateEditor({
         documentTitle={data.schoolName || data.templateTitle || "Academic Sheet"}
         lang={docLang}
         paperSize="A4"
+      />
+
+      {/* Multi-Channel Share Modal */}
+      <ShareDocumentModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        documentTitle={data.schoolName || "Academic Record"}
+        documentNumber={data.studentRoll || "DOC"}
+        recipientName={data.studentName || "Student"}
+        recipientPhone={data.guardianPhone || data.phone || ""}
+        fullFormattedText={getShareMessage()}
+        docLang={docLang}
       />
     </div>
   );

@@ -28,6 +28,7 @@ import {
 import { numberToWordsEnglish, numberToWordsBengali } from "@/lib/numberToWords";
 import AdSenseSlot from "@/components/AdSenseSlot";
 import PostDownloadModal from "@/components/PostDownloadModal";
+import ShareDocumentModal from "@/components/ShareDocumentModal";
 import VoiceInputButton, { parseBanglaDigits } from "@/components/VoiceInputButton";
 import { useGlobalSettings } from "@/context/GlobalSettingsContext";
 import { trackEvent } from "@/lib/analytics";
@@ -104,6 +105,7 @@ export default function InvoiceEditor({
   const [isExportingJpg, setIsExportingJpg] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [showPostDownloadModal, setShowPostDownloadModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
   const [docSaveLoading, setDocSaveLoading] = useState(false);
@@ -304,41 +306,29 @@ export default function InvoiceEditor({
     window.print();
   };
 
+  const getShareMessage = () => {
+    const shopTitle = data.businessName || "Cash Memo";
+    const invNumber = data.invoiceNumber || "INV-001";
+    const customer = data.customerName || "Valued Customer";
+    const totalStr = `${currency} ${grandTotal.toLocaleString()}`;
+    const dueStr =
+      due > 0 ? `${currency} ${due.toLocaleString()}` : docLang === "bn" ? "পরিশোধিত" : "Paid";
+
+    return docLang === "bn"
+      ? `*${shopTitle}*\nমেমো নং: ${invNumber}\nক্রেতা: ${customer}\nমোবাইল: ${data.customerPhone || "N/A"}\nডেলিভারি ঠিকানা: ${
+          data.customerAddress || "N/A"
+        }\nকুরিয়ার: ${data.courierPartner || "Standard"}\n\n*সর্বমোট বিল:* ${totalStr}\n*ক্যাশ অন ডেলিভারি (বাকি):* ${dueStr}\n\nধন্যবাদ আমাদের সাথে কেনাকাটা করার জন্য!`
+      : `*${shopTitle}*\nInvoice: ${invNumber}\nCustomer: ${customer}\nPhone: ${data.customerPhone || "N/A"}\nDelivery Address: ${
+          data.customerAddress || "N/A"
+        }\nCourier: ${data.courierPartner || "Standard"}\n\n*Grand Total:* ${totalStr}\n*Net COD Due:* ${dueStr}\n\nThank you for shopping with us!`;
+  };
+
   const handleWhatsAppShare = () => {
-    try {
-      const shopTitle = data.businessName || "Cash Memo";
-      const invNumber = data.invoiceNumber || "INV-001";
-      const customer = data.customerName || "Valued Customer";
-      const totalStr = `${currency} ${grandTotal.toLocaleString()}`;
-      const dueStr =
-        due > 0 ? `${currency} ${due.toLocaleString()}` : docLang === "bn" ? "পরিশোধিত" : "Paid";
-
-      const message =
-        docLang === "bn"
-          ? `*${shopTitle}*\nমেমো নং: ${invNumber}\nক্রেতা: ${customer}\nডেলিভারি ঠিকানা: ${
-              data.customerAddress || "N/A"
-            }\nকুরিয়ার: ${data.courierPartner || "Standard"}\n\n*সর্বমোট বিল:* ${totalStr}\n*ক্যাশ অন ডেলিভারি (বাকি):* ${dueStr}\n\nধন্যবাদ আমাদের সাথে কেনাকাটা করার জন্য!`
-          : `*${shopTitle}*\nInvoice: ${invNumber}\nCustomer: ${customer}\nDelivery Address: ${
-              data.customerAddress || "N/A"
-            }\nCourier: ${data.courierPartner || "Standard"}\n\n*Grand Total:* ${totalStr}\n*Net COD Due:* ${dueStr}\n\nThank you for shopping with us!`;
-
-      trackEvent({
-        name: "whatsapp_share_clicked",
-        properties: { template_slug: templateSlug },
-      });
-
-      const cleanPhone = (data.customerPhone || "").replace(/[^0-9]/g, "");
-      const targetUrl =
-        cleanPhone.length >= 10
-          ? `https://wa.me/${cleanPhone.startsWith("88") ? cleanPhone : `88${cleanPhone}`}?text=${encodeURIComponent(
-              message
-            )}`
-          : `https://wa.me/?text=${encodeURIComponent(message)}`;
-
-      window.open(targetUrl, "_blank");
-    } catch (e) {
-      console.error("WhatsApp share error:", e);
-    }
+    trackEvent({
+      name: "whatsapp_share_clicked",
+      properties: { template_slug: templateSlug },
+    });
+    setShowShareModal(true);
   };
 
   const handleDownloadPdf = async () => {
@@ -1880,6 +1870,19 @@ export default function InvoiceEditor({
         documentTitle={data.businessName || data.templateTitle || "Document"}
         lang={docLang}
         paperSize={isPos ? "POS_80MM" : "A4"}
+      />
+
+      {/* Multi-Channel Share Modal (WhatsApp, Messenger, SMS, Copy) */}
+      <ShareDocumentModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        documentTitle={data.businessName || "Cash Memo"}
+        documentNumber={data.invoiceNumber || "INV-001"}
+        recipientName={data.customerName || "Customer"}
+        recipientPhone={data.customerPhone || ""}
+        amountOrDetails={`${currency} ${grandTotal.toLocaleString()}`}
+        fullFormattedText={getShareMessage()}
+        docLang={docLang}
       />
     </div>
   );

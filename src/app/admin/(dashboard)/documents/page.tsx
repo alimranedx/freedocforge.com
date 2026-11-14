@@ -15,6 +15,7 @@ import {
   X,
   Download,
   ShieldAlert,
+  ExternalLink,
 } from "lucide-react";
 
 export default function AdminDocumentsPage() {
@@ -330,7 +331,21 @@ export default function AdminDocumentsPage() {
               </div>
             </div>
 
-            <div className="p-4 border-t border-zinc-800 flex justify-end gap-2 bg-zinc-900/50">
+            <div className="p-4 border-t border-zinc-800 flex items-center justify-between gap-2 bg-zinc-900/50">
+              <a
+                href={
+                  inspectDoc.templateSlug
+                    ? `/templates/${inspectDoc.templateSlug}?docId=${inspectDoc.id}`
+                    : `/templates/f-commerce-invoice?docId=${inspectDoc.id}`
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Open Document Visualizer</span>
+              </a>
+
               <button
                 onClick={() => setInspectDoc(null)}
                 className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg text-xs font-semibold cursor-pointer"

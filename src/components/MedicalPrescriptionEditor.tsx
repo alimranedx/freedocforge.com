@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import AdSenseSlot from "@/components/AdSenseSlot";
 import PostDownloadModal from "@/components/PostDownloadModal";
+import ShareDocumentModal from "@/components/ShareDocumentModal";
 import VoiceInputButton from "@/components/VoiceInputButton";
 import { useGlobalSettings } from "@/context/GlobalSettingsContext";
 import ThemeSelectorBar from "@/components/ThemeSelectorBar";
@@ -73,6 +74,7 @@ export default function MedicalPrescriptionEditor({
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [isExportingJpg, setIsExportingJpg] = useState(false);
   const [showPostDownloadModal, setShowPostDownloadModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
   const [docSaveLoading, setDocSaveLoading] = useState(false);
@@ -274,32 +276,21 @@ export default function MedicalPrescriptionEditor({
     }
   };
 
+  const getShareMessage = () => {
+    const doctor = data.doctorName || "Doctor";
+    const patient = data.patientName || "Patient";
+    const rxNum = data.prescriptionNumber || data.tokenNumber || "RX";
+    const meds = Array.isArray(data.medicines)
+      ? data.medicines.map((m: any, i: number) => `${i + 1}. ${m.name} - ${m.dosage || ""}`).join("\n")
+      : "";
+
+    return docLang === "bn"
+      ? `*${doctor}*\nরোগীর নাম: ${patient}\nপ্রেসক্রিপশন নং: ${rxNum}\nতারিখ: ${data.date || ""}\n\n*ওষুধের তালিকা:*\n${meds}\n\nপরামর্শ: ${data.advice || "নিয়ম অনুযায়ী ওষুধ সেবন করুন।"}`
+      : `*${doctor}*\nPatient: ${patient}\nRx No: ${rxNum}\nDate: ${data.date || ""}\n\n*Prescribed Medicines:*\n${meds}\n\nAdvice: ${data.advice || "Take medicines as directed."}`;
+  };
+
   const handleWhatsAppShare = () => {
-    try {
-      const doctor = data.doctorName || "Doctor";
-      const patient = data.patientName || "Patient";
-      const rxNum = data.prescriptionNumber || data.tokenNumber || "RX";
-      const meds = Array.isArray(data.medicines)
-        ? data.medicines.map((m: any, i: number) => `${i + 1}. ${m.name} - ${m.dosage || ""}`).join("\n")
-        : "";
-
-      const message =
-        docLang === "bn"
-          ? `*${doctor}*\nরোগীর নাম: ${patient}\nপ্রেসক্রিপশন নং: ${rxNum}\nতারিখ: ${data.date || ""}\n\n*ওষুধের তালিকা:*\n${meds}\n\nপরামর্শ: ${data.advice || "নিয়ম অনুযায়ী ওষুধ সেবন করুন।"}`
-          : `*${doctor}*\nPatient: ${patient}\nRx No: ${rxNum}\nDate: ${data.date || ""}\n\n*Prescribed Medicines:*\n${meds}\n\nAdvice: ${data.advice || "Take medicines as directed."}`;
-
-      const cleanPhone = (data.patientPhone || data.phone || "").replace(/[^0-9]/g, "");
-      const targetUrl =
-        cleanPhone.length >= 10
-          ? `https://wa.me/${cleanPhone.startsWith("88") ? cleanPhone : `88${cleanPhone}`}?text=${encodeURIComponent(
-              message
-            )}`
-          : `https://wa.me/?text=${encodeURIComponent(message)}`;
-
-      window.open(targetUrl, "_blank");
-    } catch (e) {
-      console.error("WhatsApp share error:", e);
-    }
+    setShowShareModal(true);
   };
 
   const handleSaveToProfile = async () => {
@@ -1840,6 +1831,18 @@ export default function MedicalPrescriptionEditor({
         documentTitle={data.doctorName || data.templateTitle || "Medical Record"}
         lang={docLang}
         paperSize="A4"
+      />
+
+      {/* Multi-Channel Share Modal */}
+      <ShareDocumentModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        documentTitle={data.doctorName || "Doctor Prescription"}
+        documentNumber={data.prescriptionNumber || data.tokenNumber || "RX"}
+        recipientName={data.patientName || "Patient"}
+        recipientPhone={data.patientPhone || data.phone || ""}
+        fullFormattedText={getShareMessage()}
+        docLang={docLang}
       />
     </div>
   );

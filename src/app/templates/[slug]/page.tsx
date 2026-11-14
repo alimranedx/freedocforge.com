@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import UserWorkspaceShell from "@/components/UserWorkspaceShell";
 import InvoiceEditor from "@/components/InvoiceEditor";
 import MedicalPrescriptionEditor from "@/components/MedicalPrescriptionEditor";
 import SchoolTemplateEditor from "@/components/SchoolTemplateEditor";
@@ -269,10 +270,8 @@ export default function TemplatePage({
   params: Promise<{ slug: string }>;
 }) {
   return (
-    <div className="min-h-screen flex flex-col bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200">
-      <Navbar />
-
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+    <UserWorkspaceShell adaptive={true} activeNav="/templates">
+      <div className="max-w-7xl mx-auto py-2 w-full">
         <Suspense
           fallback={
             <div className="flex items-center justify-center min-h-[400px]">
@@ -282,9 +281,7 @@ export default function TemplatePage({
         >
           <TemplateContent params={params} />
         </Suspense>
-      </main>
-
-      <Footer />
-    </div>
+      </div>
+    </UserWorkspaceShell>
   );
 }

@@ -1,8 +1,8 @@
 # FreeDocForge.com - Project Memory & Continuity Handoff
 
-> **Last Updated:** November 12, 2026 (19:58:00 +06:00)  
+> **Last Updated:** November 14, 2026 (15:10:00 +06:00)  
 > **Active Git Branch:** `dev` (`origin/dev`)  
-> **Status:** Production-Grade, All 64 routes verified with `npm run build` (Exit code 0).  
+> **Status:** Production-Grade, All 104 routes verified with `npm run build` (Exit code 0), ESLint clean (0 errors).  
 > **Mandatory Agent Guideline:** Every AI agent, pairing session, or developer MUST read this file upon starting any task.
 
 ---
@@ -301,6 +301,43 @@ When resuming development, proceed with the following high-priority features:
 
 ### Priority 3: Dynamic OpenGraph Template Previews (`@vercel/og`)
 * **Next Step:** Build dynamic social preview card generator at `/api/og/template?slug=...` so sharing any template on Facebook, WhatsApp, or Twitter displays an eye-catching rendered snapshot of that exact template.
+
+### K. UI/UX & Universal Left Sidebar Overhaul
+* **Resolved Need:** User dashboard needed a modern, streamlined workspace experience with a permanently fixed left navigation bar across all pages when logged in, eliminating sidebar hopping and visual jumps.
+* **Solution:**
+  1. Built `src/components/UserWorkspaceShell.tsx`: High-performance workspace shell with a fixed sidebar (`fixed inset-y-0 left-0 w-64`), `md:pl-64` main content offset, sticky header, and print isolation (`print:hidden`).
+  2. Features adaptive studio branding (`DocForge Studio`, `Academic Studio`, `Clinical Studio`), live document count badges, user avatar, and an interactive `+ New Document` quick launcher modal.
+  3. Fixed greeting logic in `formatDisplayName()` to properly handle multi-part names and honorifics (`Al Imran`, `Md. Tanvir`, `Dr. Farhana`) instead of naive single-word splitting.
+  4. Universal layout integration across:
+     - All user dashboard routes (`/dashboard`, `/dashboard/history`, `/dashboard/shop-profile`, `/dashboard/ai-designer`) via `src/app/(user)/dashboard/layout.tsx`.
+     - Template catalog (`/templates`) and all 60 editor routes (`/templates/[slug]`) via adaptive shell wrapping (authenticated users keep their fixed sidebar and workspace context while guests see standard public navigation).
+  5. Overhauled `src/app/(user)/dashboard/history/page.tsx` with a compact Bento header, 3 micro-KPI chips, category pills, animated skeleton loader during fetch, and safe delete confirmation.
+
+### L. Multi-Channel Document Sharing Engine
+* **Resolved Issue:** When sending invoices or documents to numbers not registered on WhatsApp, WhatsApp Web/Desktop returned *"The number ... isn't on WhatsApp"*, leaving users blocked.
+* **Solution:**
+  1. Built `src/components/ShareDocumentModal.tsx`:
+     - **WhatsApp Alternate Phone:** Input field allows entering any alternate WhatsApp-enabled number on the fly.
+     - **Pick from Chat List:** Added direct fallback launcher (`api.whatsapp.com/send/?text=...`) letting users select any contact or group directly inside WhatsApp without entering a phone number.
+     - **Facebook / Messenger Tab:** Added 1-click "Copy Bill Text" and direct `https://www.messenger.com` launcher for pasting into Facebook Page inboxes or Messenger DMs.
+     - **Native SMS:** Added `sms:phone?body=...` launcher for instant standard SMS sending.
+     - **Live Formatted Preview:** Formatted text preview with 1-click clipboard copy.
+  2. Integrated across all primary document editors:
+     - `src/components/InvoiceEditor.tsx`
+     - `src/components/MedicalPrescriptionEditor.tsx`
+     - `src/components/SchoolTemplateEditor.tsx`
+     - `src/app/(user)/dashboard/history/page.tsx`
+
+### M. Admin Portal Enhancements & Database Connection Resiliency
+* **Mobile Responsiveness:** Upgraded `src/app/admin/(dashboard)/layout.tsx` with a responsive mobile drawer navigation and hamburger toggle.
+* **Real-Time Telemetry:** Added live database status indicator (`MySQL Engine Online` / `MySQL Offline - Fallback`) in admin header.
+* **Document Visualizer:** Added direct "Open Document Visualizer" button inside the admin document inspection modal (`/admin/documents`).
+* **OAuth Resiliency:** Updated `src/app/api/auth/callback/google/route.ts` and `/login` to catch Prisma connection error `P1001` (when local MySQL is offline) and display clear human instructions instead of raw `oauth_internal_error`.
+
+### N. Codebase Lint & Build Verification
+* **ESLint 9 & React 19:** Configured `eslint.config.mjs` with optimal Next.js 16.4.6 rules.
+* **Results:** `npm run lint` passes with 0 errors (399 warnings for optional types/unused vars, down from 198 errors).
+* **Production Build:** `npm run build` compiles 104/104 static and dynamic routes with Exit Code 0.
 
 ---
 

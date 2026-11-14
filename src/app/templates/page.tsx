@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import UserWorkspaceShell from "@/components/UserWorkspaceShell";
 import AdSenseSlot from "@/components/AdSenseSlot";
 import TemplateCardPreview from "@/components/TemplateCardPreview";
 import JsonLd from "@/components/JsonLd";
@@ -606,16 +607,14 @@ export default function TemplatesCatalogPage() {
   );
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200">
+    <UserWorkspaceShell adaptive={true} activeNav="/templates">
       {/* Schema.org Structured Data */}
       <JsonLd data={breadcrumbs} />
       <JsonLd data={itemListSchema} />
 
-      <Navbar />
       <Suspense fallback={<div className="flex-1 flex items-center justify-center p-20 text-xs text-slate-400">Loading catalog...</div>}>
         <CatalogContent />
       </Suspense>
-      <Footer />
-    </div>
+    </UserWorkspaceShell>
   );
 }
