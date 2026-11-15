@@ -969,26 +969,8 @@ export default function TemplateCardPreview({
         {renderFloatingIcon()}
       </div>
 
-      {/* Floating Theme Label & Star Actions (Top Right) */}
-      <div className="absolute top-2.5 right-3 z-10 flex items-center gap-1.5">
-        {onToggleFavorite && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onToggleFavorite(template);
-            }}
-            className={`p-1 rounded-full backdrop-blur-xs shadow-2xs border transition cursor-pointer ${
-              isFavorite
-                ? "bg-amber-100 dark:bg-amber-950 text-amber-500 border-amber-300 dark:border-amber-700"
-                : "bg-white/90 dark:bg-slate-900/90 text-slate-400 hover:text-amber-500 hover:scale-110 border-slate-200/60 dark:border-slate-700"
-            }`}
-            title={isFavorite ? "Remove from Pinned Favorites" : "Pin to Favorites"}
-          >
-            <Star className={`w-3.5 h-3.5 ${isFavorite ? "fill-amber-400 text-amber-500" : ""}`} />
-          </button>
-        )}
+      {/* Floating Theme Label Pill (Top Right) */}
+      <div className="absolute top-2.5 right-3 z-10">
         <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-xs text-slate-700 dark:text-slate-300 shadow-2xs border border-slate-200/60 dark:border-slate-700">
           {theme.icon} {lang === "bn" ? theme.nameBn.split("(")[0] : theme.nameEn.split(" ")[0]}
         </span>

@@ -229,37 +229,37 @@ function CatalogContent() {
     tabs.push(
       {
         id: "receipts",
-        label: lang === "bn" ? "ক্যাশ মেমো ও পিওএস" : "Worldwide Receipts & POS",
+        label: lang === "bn" ? "ক্যাশ মেমো ও ইনভয়েস" : "Worldwide Receipts",
         count: RECEIPT_TEMPLATES.length,
         icon: Receipt,
       },
       {
         id: "class-routines",
-        label: lang === "bn" ? "ক্লাস রুটিন" : "Class Routines & Timetables",
+        label: lang === "bn" ? "ক্লাস রুটিন" : "Class Routines",
         count: CLASS_ROUTINE_TEMPLATES.length,
         icon: Calendar,
       },
       {
         id: "exam-routines",
-        label: lang === "bn" ? "পরীক্ষার রুটিন" : "Exam Routines & Date Sheets",
+        label: lang === "bn" ? "পরীক্ষার রুটিন" : "Exam Routines",
         count: EXAM_ROUTINE_TEMPLATES.length,
         icon: GraduationCap,
       },
       {
         id: "medical-receipts",
-        label: lang === "bn" ? "ডায়াগনস্টিক ও চিকিৎসা বিল" : "Diagnostic & Medical Bills",
+        label: lang === "bn" ? "চিকিৎসা ও ডায়াগনস্টিক রসিদ" : "Medical Receipts",
         count: MEDICAL_RECEIPT_TEMPLATES.length,
         icon: Stethoscope,
       },
       {
         id: "academic-other",
-        label: lang === "bn" ? "মার্কশিট ও প্রগ্রেস কার্ড" : "Marksheets & Progress Cards",
+        label: lang === "bn" ? "অন্যান্য শিক্ষা ফরম্যাট" : "Other Academic",
         count: OTHER_EDUCATION_TEMPLATES.length,
         icon: FileText,
       },
       {
         id: "medical-other",
-        label: lang === "bn" ? "প্রেসক্রিপশন ও ক্লিনিক স্লিপ" : "Prescriptions, Tokens & Clinic Slips",
+        label: lang === "bn" ? "প্রেসক্রিপশন ও টোকেন" : "Rx & Clinic Slips",
         count: OTHER_HEALTHCARE_TEMPLATES.length,
         icon: Building,
       }
@@ -277,19 +277,41 @@ function CatalogContent() {
       const containerWidth = container.clientWidth;
       if (!containerWidth) return;
 
-      const TAB_WIDTH = 155;
-      const MORE_BTN_WIDTH = 135;
+      const TAB_WIDTHS_MAP: Record<string, number> = {
+        all: 135,
+        favorites: 110,
+        receipts: 180,
+        "class-routines": 145,
+        "exam-routines": 150,
+        "medical-receipts": 165,
+        "academic-other": 150,
+        "medical-other": 155,
+      };
+      const MORE_BTN_WIDTH = 125;
       const GAP = 8;
 
-      const totalNeeded = categoryTabs.length * TAB_WIDTH + (categoryTabs.length - 1) * GAP;
+      let totalNeeded = 0;
+      for (let i = 0; i < categoryTabs.length; i++) {
+        totalNeeded += (TAB_WIDTHS_MAP[categoryTabs[i].id] || 150) + (i > 0 ? GAP : 0);
+      }
       if (containerWidth >= totalNeeded) {
         setVisibleCount(categoryTabs.length);
         return;
       }
 
       const availableForTabs = containerWidth - MORE_BTN_WIDTH - GAP;
-      const fitCount = Math.max(1, Math.floor(availableForTabs / (TAB_WIDTH + GAP)));
-      setVisibleCount(Math.min(categoryTabs.length, fitCount));
+      let used = 0;
+      let fitCount = 0;
+      for (let i = 0; i < categoryTabs.length; i++) {
+        const w = (TAB_WIDTHS_MAP[categoryTabs[i].id] || 150) + (i > 0 ? GAP : 0);
+        if (used + w <= availableForTabs) {
+          used += w;
+          fitCount++;
+        } else {
+          break;
+        }
+      }
+      setVisibleCount(Math.max(1, Math.min(categoryTabs.length, fitCount)));
     };
 
     calculateVisibleTabs();
@@ -416,7 +438,7 @@ function CatalogContent() {
   }, [filteredTemplates, sortBy, lang]);
 
   return (
-    <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full">
+    <div className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full">
       {/* Header Title Section */}
       <div className="text-center max-w-3xl mx-auto mb-6">
         <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 text-xs font-semibold mb-3 border border-blue-200 dark:border-blue-900 shadow-2xs">
@@ -467,9 +489,9 @@ function CatalogContent() {
       {/* CONTROLS: Category Tabs, Paper Size Filter, Sorting & Search Bar */}
       <div className="my-8 space-y-4">
         {/* Category Switcher Tabs Container: Dynamic partition into visible tabs & More overflow */}
-        <div ref={containerRef} className="relative flex items-center gap-2 w-full flex-wrap sm:flex-nowrap">
+        <div ref={containerRef} className="relative flex items-center gap-2 w-full flex-nowrap overflow-hidden">
           {/* Visible Category Tabs that fit on this screen */}
-          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+          <div className="flex items-center gap-2 flex-nowrap shrink-0">
             {visibleTabs.map((tab) => {
               const IconComponent = tab.icon;
               const isActive = selectedCategory === tab.id;
@@ -729,8 +751,6 @@ function CatalogContent() {
                     <TemplateCardPreview
                       template={tmpl}
                       lang={lang}
-                      isFavorite={isFav}
-                      onToggleFavorite={() => handleToggleFavorite(tmpl.slug)}
                       onQuickView={(t) => setQuickViewTemplate(t)}
                     />
                   </div>
@@ -1022,7 +1042,7 @@ function CatalogContent() {
           </div>
         </div>
       )}
-    </main>
+    </div>
   );
 }
 
