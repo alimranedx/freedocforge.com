@@ -285,6 +285,106 @@
      * `npm run build`: All 104 static and dynamic routes compiled in 13.8s with Exit code 0.
      * Cryptographic admin authentication (`getAdminSession`), XSS sanitization (`sanitizeText`), and bidirectional panel isolation (SEC-RBAC-01/02) strictly verified.
 
+### U. Smart In-Place Document Updates, History Deduplication & Tenant Isolation
+* **Resolved User Request:** "same template showing twich thing about this smartly and fixed properly . It will be for others user also. If a user change a document for his or her then its be for him or her or for otheres. Keep this in ming. /swarm think carefully and fixed those"
+* **Root Cause:**
+  1. When editing or re-saving an existing document (`FC-2026-894`), the editor did not attach `currentDocId` to the save payload. Consequently, `POST /api/user/documents` created an accidental duplicate database row instead of updating the existing record.
+  2. In `localStorage`, save operations prepended new records unconditionally.
+  3. Stale duplicate rows persisted in MySQL and rendered twice on `/dashboard/history`.
+* **Architectural Modules Engineered:**
+  1. **Backend Smart Upsert & Tenant Isolation (`src/app/api/user/documents/route.ts` & `[id]/route.ts`):**
+     * Enforced `id` verification scoped strictly by `where: { id, userId: payload.userId }` (SEC-IDOR-01, SEC-TENANT-01).
+     * Added smart deduplication fallback: if `id` is not passed, checks if `{ userId: payload.userId, templateSlug, documentNumber }` already exists; if found, updates the record in-place instead of creating an accidental duplicate row.
+     * Added in-memory sorting to prevent MySQL Error 1038 on large base64 logo payloads in `dataJson`.
+  2. **Active Document ID Tracking Across All 3 Editors (`InvoiceEditor.tsx`, `MedicalPrescriptionEditor.tsx`, `SchoolTemplateEditor.tsx`):**
+     * Tracks `currentDocId` state initialized from `?docId=...`.
+     * Added visual active document pill with a 1-click `+ Save as new copy` unlinking action so users can detach at any time.
+     * Silently syncs URL via `window.history.replaceState` upon initial save so subsequent saves continue updating the same document without page reloads.
+     * In-place `localStorage` update prevents duplicate entries in offline history.
+     * Enforced strict tenant boundaries: user customizations only affect that user's personal document; global template defaults in `src/lib/` and MySQL remain completely untouched for other users.
+  3. **History Page Deduplication & Database Cleanup (`history/page.tsx`):**
+     * Added `deduplicateHistory` utility to guarantee zero visual duplicates on `/dashboard/history`.
+     * Cleaned up the stale duplicate in MySQL for user Al Imran, preserving the latest record with the custom logo.
+  4. **Verification & Build:**
+     * `npx tsc --noEmit`: 0 errors.
+     * `npm run build`: All 104 static and dynamic routes compiled cleanly in 4.4s with Exit code 0.
+
+### V. Admin Smart Template Creation Hub, Category-Based Starter Suggester, Advanced Style Engine & Multimodal AI PDF Generator
+* **Resolved User Request:** "when goes to add a new template by admin then there will be dropdown that's option like which type of template admin wants to add . then suggest some ready template to admin then admin can choice and then edit , modify or added as he want /swarm pleas ethink about this and this will be more easy backgroud , font color font size and everything will be changeable . There will have a ai generate option which deal will antigravity and make pdf by given screenshot or idea . Think as a cms designer and senior software artitect with business analytics then implememnt"
+* **Architectural Modules Engineered:**
+  1. **New Template Creation Hub & Ready-Made Suggester Modal (`src/app/admin/(dashboard)/templates/page.tsx`):**
+     * Replaced immediate blank canvas dump with a 3-tab creation launcher modal:
+       - **Tab 1: Ready-Made Starter Templates (60+ Formats):** Categorized selector tabs for all 8 archetypes (`Worldwide Invoices & Receipts`, `Class Routines`, `Exam Schedules`, `Medical Receipts`, `Academic Marksheets`, `Clinical Prescriptions`, `80mm POS Thermal`, and `Custom`). Includes live search filter and responsive cards with 1-click "Load into Studio" populating all blocks, rows, metadata tags, and styles.
+       - **Tab 2: AI Template Designer & OCR:** Idea/prompt input with inspiration chips + screenshot/photo uploader with image preview. Integrates with `/api/admin/templates/ai-generate` and includes live preview card with "Open in Studio" and 1-click "Test Download PDF".
+       - **Tab 3: Blank Studio Canvas:** Clean slate option for power users.
+  2. **Multimodal AI Synthesis API (`src/app/api/admin/templates/ai-generate/route.ts`):**
+     * Guarded with cryptographic admin session authentication via `getAdminSession` (SEC-RBAC-02).
+     * Accepts `{ prompt?, imageBase64?, category?, paperSize? }`.
+     * Multi-layered AI generation: Gemini API multimodal analysis when API key is configured, plus comprehensive intelligent domain heuristic synthesis for resilient offline development.
+     * Enforces stored-XSS sanitization (`sanitizeText`) across all generated strings and line items.
+  3. **Advanced Visual Style Engine in Elementor Studio:**
+     * Expanded Inspector "Style" tab with:
+       - 6 Curated Theme Archetypes (`modern-blue`, `clinical-teal`, `luxury-gold`, `thermal-pos`, `royal-academic`, `cyber-slate`).
+       - Interactive color pickers & quick palette chips for Canvas Background (`bgColor`), Primary Typography (`fontColor`), Brand Accent Color (`accentColor`), and Secondary / Label Color (`secondaryColor`).
+       - Font Family selector (`Inter`, `Playfair Display`, `JetBrains Mono`, `Hind Siliguri`, `Kalpurush`).
+       - Typography Scale selector (`sm`, `base`, `lg`, `xl`).
+       - Center Canvas Paper dynamically updates live with all active styles.
+       - Full persistence of `styles` in MySQL `Template.fieldSchema` and `defaultData`.
+  4. **Verification & Build:**
+     * `npx tsc --noEmit`: 0 errors.
+     * `npm run build`: All 105 static and dynamic routes compiled in 2.7s with Exit code 0.
+     * Security review confirmed SEC-RBAC-02, SEC-XSS-01, and zero secret exposure.
+
+### W. Client-Storage Multi-Tenant Isolation & Zero Cross-User Leakage Fix
+* **Resolved User Request:** "both are different user and as I know alimran.edx@gmail.com for this user that template has saves . Then why showng this for othere user also /swarm think about this and fixed this types of scenario"
+* **Root Cause Analysis:**
+  1. In MySQL, strict tenant isolation was properly enforced (`where: { userId: payload.userId }`): User 1 (`alimran.edx@gmail.com`) had 1 document, and User 2 (`mdalimransagor@gmail.com`) had 0 documents.
+  2. In `src/app/(user)/dashboard/history/page.tsx`, the API check read: `if (data && Array.isArray(data.documents) && data.documents.length > 0)`.
+  3. When User 2 logged in, the server returned `documents: []` (0 records). Because `length === 0`, it failed the condition and branched to `else { const saved = localStorage.getItem("freedocforge_history"); setHistory(parsed); }`.
+  4. Because both users logged in on the same browser, the un-scoped browser key `freedocforge_history` contained User 1's saved document. User 2 was therefore seeing User 1's document!
+  5. Similar un-scoped localStorage fallbacks existed in `UserWorkspaceShell.tsx`, `dashboard/page.tsx`, and the editors.
+* **Architectural Modules Engineered:**
+  1. **Strict Cloud Truth & Fallback Elimination (`src/app/(user)/dashboard/history/page.tsx`):**
+     * Initialized `history` state to empty `[]` (removed hardcoded demo items).
+     * When `/api/user/documents` returns an array, `history` is set directly to that array. If length is 0, the user cleanly sees "No documents found". Zero fallback to localStorage when the API succeeds.
+     * Purged legacy un-scoped `freedocforge_history` from `localStorage`.
+     * Scoped offline recovery exclusively to `freedocforge_history_${userId}`.
+  2. **Storage Purge on Logout & Account Switching (`Navbar.tsx`, `UserWorkspaceShell.tsx`, `api/auth/logout`):**
+     * `handleLogout` thoroughly expunges all user-specific and legacy client keys (`freedocforge_history*`, `freedocforge_active_preset*`, `freedocforge_profile*`) before redirection.
+     * Cookie cleared with `maxAge: 0` and `expires: new Date(0)`.
+  3. **User-Scoped Editor Persistence (`InvoiceEditor.tsx`, `MedicalPrescriptionEditor.tsx`, `SchoolTemplateEditor.tsx`):**
+     * All local caching and draft presets are scoped to `userId` (`freedocforge_history_${userId || 'guest'}`).
+  4. **Verification & Build:**
+     * `npx tsc --noEmit`: 0 errors.
+     * `npm run build`: All 105 static and dynamic routes compiled cleanly with Turbopack (Exit code 0).
+     * Strict compliance with `SECURITY_CHECKLIST.md` (SEC-TENANT-01, SEC-IDOR-01, SEC-AUTH-01, SEC-JWT-02). Zero cross-tenant leakage.
+
+### X. User Profile Circular Avatar in Active Profile Card & Header
+* **Resolved User Request:** "if have profile image then a circle profile image can goes there" (pointing with arrow to the right of the organization name/email in the left sidebar's "Active Profile" card).
+* **Solution:**
+  1. Updated `src/components/UserWorkspaceShell.tsx`:
+     - Computed dynamic `profileImage` resolving in priority order: Google account avatar (`user.avatarUrl`), organization logo (`user.profiles?.[0]?.logoUrl`), or local preset logo (`localPresetLogo`).
+     - Added a clean circular profile image container (`w-9 h-9 rounded-full overflow-hidden border shadow-2xs`) to the right of the business name and email inside the Active Profile card.
+     - Added graceful fallback handling: if no profile image exists or if the image fails to load (`onError`), the layout expands gracefully with zero broken icon or layout shift.
+     - Also integrated a circular profile avatar quick-launcher in the top sticky header linking directly to `/dashboard/shop-profile`.
+  2. **Verification & Build:**
+     * `npx tsc --noEmit`: 0 errors.
+     * `npm run build`: All 105 routes compiled cleanly with Turbopack in 8.0s (Exit code 0).
+
+### Y. Horizontal Category Navigation Scroll Controls, Scrollbar & "More..." Dropdown Menu
+* **Resolved User Request:** "medical receipt there. If need then there will can goes a left to right and right to left scroll bal for see all or can have a more> icon or horgental ... icon for see more" (highlighting "Medical Receipts" cut off in `/templates`).
+* **Root Cause:** In `/templates`, horizontal category tabs used `scrollbar-none` inside a flex container. On desktop screens with fixed left sidebar offset (`md:pl-64`), tabs beyond "Exam Routines" were cut off at the edge of the viewport with no visible scrollbar or scroll controls.
+* **Solution:**
+  1. Updated `src/app/templates/page.tsx`:
+     - Added dynamic left (`ChevronLeft`) and right (`ChevronRight`) scroll navigation buttons that appear smoothly whenever horizontal overflow exists.
+     - Added subtle left and right gradient fade indicator masks to visually communicate extending content.
+     - Enabled accessible thin scrollbar styling (`scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800 hover:scrollbar-thumb-slate-300`).
+     - Added an interactive **"More Categories" (`MoreHorizontal`)** popover dropdown menu listing all categories with counts and 1-click jump.
+     - Added smooth auto-centering (`scrollIntoView`) on active category selection so selected tabs are never cut off.
+  2. **Verification & Build:**
+     * `npx tsc --noEmit`: 0 errors.
+     * `npm run build`: All 105 static and dynamic routes compiled cleanly with Turbopack in 5.5s (Exit code 0).
+
 ---
 
 ## 3. Where You Should Start Next (Actionable Roadmap)

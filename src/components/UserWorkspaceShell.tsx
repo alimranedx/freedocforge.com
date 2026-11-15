@@ -62,6 +62,8 @@ export default function UserWorkspaceShell({
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [localPresetName, setLocalPresetName] = useState<string>("");
+  const [localPresetLogo, setLocalPresetLogo] = useState<string>("");
+  const [imageLoadError, setImageLoadError] = useState(false);
   const [presetType, setPresetType] = useState<"shop" | "school" | "medical">("shop");
   const [savedCount, setSavedCount] = useState<number | null>(null);
   const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
@@ -69,23 +71,24 @@ export default function UserWorkspaceShell({
   const { theme, toggleTheme, lang, toggleLang, t } = useGlobalSettings();
 
   useEffect(() => {
-    // 1. Check local preset
-    const savedLocal = localStorage.getItem("freedocforge_active_preset");
-    if (savedLocal) {
-      try {
-        const parsed = JSON.parse(savedLocal);
-        if (parsed.businessName) setLocalPresetName(parsed.businessName);
-        if (parsed.presetType) setPresetType(parsed.presetType);
-      } catch (e) {}
-    }
-
-    // 2. Fetch auth user
+    // 1. Fetch auth user
     fetch("/api/auth/me")
       .then((res) => res.json())
       .then((data) => {
         if (data.authenticated && data.user.role !== "ADMIN") {
           setUser(data.user);
           setIsAuthenticated(true);
+
+          // Check user-scoped preset
+          const userPreset = localStorage.getItem(`freedocforge_active_preset_${data.user.id}`);
+          if (userPreset) {
+            try {
+              const parsed = JSON.parse(userPreset);
+              if (parsed.businessName) setLocalPresetName(parsed.businessName);
+              if (parsed.presetType) setPresetType(parsed.presetType);
+              if (parsed.logoUrl) setLocalPresetLogo(parsed.logoUrl);
+            } catch (e) {}
+          }
         } else {
           setIsAuthenticated(false);
         }
@@ -94,26 +97,41 @@ export default function UserWorkspaceShell({
         setIsAuthenticated(false);
       });
 
-    // 3. Fetch live user documents count for sidebar badge
+    // 2. Fetch live user documents count for sidebar badge
     fetch("/api/user/documents")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data && Array.isArray(data.documents)) {
           setSavedCount(data.documents.length);
         } else {
-          const hist = localStorage.getItem("freedocforge_history");
-          if (hist) {
-            try {
-              const p = JSON.parse(hist);
-              if (Array.isArray(p)) setSavedCount(p.length);
-            } catch (e) {}
-          }
+          setSavedCount(0);
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        setSavedCount(0);
+      });
   }, []);
 
   const handleLogout = async () => {
+    try {
+      // Purge all user-specific and legacy keys from localStorage to prevent multi-tenant cross-user leakage
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (
+          key &&
+          (key.startsWith("freedocforge_history") ||
+            key.startsWith("freedocforge_active_preset") ||
+            key.startsWith("freedocforge_profile"))
+        ) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach((k) => localStorage.removeItem(k));
+      localStorage.removeItem("freedocforge_history");
+      localStorage.removeItem("freedocforge_active_preset");
+    } catch {}
+
     try {
       await fetch("/api/auth/logout", { method: "POST" });
     } catch {
@@ -168,6 +186,12 @@ export default function UserWorkspaceShell({
         : "Clinical Studio"
       : t("dashboardTitle");
 
+  const profileImage =
+    user?.avatarUrl ||
+    user?.profiles?.[0]?.logoUrl ||
+    localPresetLogo ||
+    null;
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200">
       {/* MOBILE BACKDROP OVERLAY */}
@@ -215,7 +239,7 @@ export default function UserWorkspaceShell({
 
           {/* User Organization & Letterhead Card */}
           <div className="m-3 p-3 bg-gradient-to-br from-slate-50 to-slate-100/80 dark:from-slate-800/80 dark:to-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-2xs">
-            <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center justify-between mb-1.5">
               <span className="text-[10px] font-extrabold text-blue-600 dark:text-blue-400 uppercase tracking-wider block">
                 {t("activeShop")}
               </span>
@@ -228,12 +252,29 @@ export default function UserWorkspaceShell({
                 <span>{lang === "bn" ? "এডিট" : "Edit"}</span>
               </Link>
             </div>
-            <h4 className="text-xs font-black text-slate-900 dark:text-white truncate">
-              {localPresetName || user?.profiles?.[0]?.businessName || user?.name || "FreeDocForge Preset"}
-            </h4>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
-              {user?.email || (lang === "bn" ? "১-ক্লিক অটোফিল সক্রিয়" : "1-Click Auto-Fill Active")}
-            </p>
+
+            <div className="flex items-center justify-between gap-2.5">
+              <div className="min-w-0 flex-1">
+                <h4 className="text-xs font-black text-slate-900 dark:text-white truncate">
+                  {localPresetName || user?.profiles?.[0]?.businessName || user?.name || "FreeDocForge Preset"}
+                </h4>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                  {user?.email || (lang === "bn" ? "১-ক্লিক অটোফিল সক্রিয়" : "1-Click Auto-Fill Active")}
+                </p>
+              </div>
+
+              {/* Circle profile image */}
+              {profileImage && !imageLoadError && (
+                <div className="relative shrink-0 w-9 h-9 rounded-full overflow-hidden border border-slate-200/90 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-2xs ring-1 ring-slate-200/60 dark:ring-slate-800">
+                  <img
+                    src={profileImage}
+                    alt={user?.name || "Profile"}
+                    className="w-full h-full object-cover rounded-full"
+                    onError={() => setImageLoadError(true)}
+                  />
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Navigation Links */}
@@ -357,6 +398,22 @@ export default function UserWorkspaceShell({
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
               <span>{t("freePlanBadge")}</span>
             </div>
+
+            {/* Profile Avatar Quick Launcher */}
+            {profileImage && !imageLoadError && (
+              <Link
+                href="/dashboard/shop-profile"
+                className="relative shrink-0 w-8 h-8 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700 hover:ring-2 hover:ring-blue-500 transition shadow-2xs cursor-pointer"
+                title={user?.name || "Profile & Letterhead"}
+              >
+                <img
+                  src={profileImage}
+                  alt={user?.name || "Profile"}
+                  className="w-full h-full object-cover rounded-full"
+                  onError={() => setImageLoadError(true)}
+                />
+              </Link>
+            )}
           </div>
         </header>
 

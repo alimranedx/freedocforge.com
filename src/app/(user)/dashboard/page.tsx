@@ -30,7 +30,7 @@ export default function UserDashboardOverviewPage() {
   >("receipts");
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [docCount, setDocCount] = useState<number>(4);
+  const [docCount, setDocCount] = useState<number>(0);
 
   const [profile, setProfile] = useState({
     businessName: "",
@@ -43,36 +43,22 @@ export default function UserDashboardOverviewPage() {
     presetType: "shop" as "shop" | "school" | "medical",
   });
 
-  // Load saved preset and live document count
+  // Load saved profile from cloud and live document count
   useEffect(() => {
-    // 1. Check local preset
-    const saved = localStorage.getItem("freedocforge_active_preset");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setProfile((prev) => ({
-          ...prev,
-          ...parsed,
-        }));
-        if (parsed.presetType === "school") setActiveCategoryTab("class-routines");
-        else if (parsed.presetType === "medical") setActiveCategoryTab("medical-receipts");
-      } catch (e) {
-        console.error(e);
-      }
-    } else {
-      // Check cloud API
-      fetch("/api/user/profile")
-        .then((res) => (res.ok ? res.json() : null))
-        .then((data) => {
-          if (data?.profile) {
-            setProfile((prev) => ({
-              ...prev,
-              ...data.profile,
-            }));
-          }
-        })
-        .catch(() => {});
-    }
+    // 1. Fetch cloud profile for authenticated user
+    fetch("/api/user/profile")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.profile) {
+          setProfile((prev) => ({
+            ...prev,
+            ...data.profile,
+          }));
+          if (data.profile.presetType === "school") setActiveCategoryTab("class-routines");
+          else if (data.profile.presetType === "medical") setActiveCategoryTab("medical-receipts");
+        }
+      })
+      .catch(() => {});
 
     // 2. Fetch live user documents count
     fetch("/api/user/documents")
@@ -81,23 +67,11 @@ export default function UserDashboardOverviewPage() {
         if (data && Array.isArray(data.documents)) {
           setDocCount(data.documents.length);
         } else {
-          const savedHist = localStorage.getItem("freedocforge_history");
-          if (savedHist) {
-            try {
-              const parsedHist = JSON.parse(savedHist);
-              if (Array.isArray(parsedHist)) setDocCount(parsedHist.length);
-            } catch (e) {}
-          }
+          setDocCount(0);
         }
       })
       .catch(() => {
-        const savedHist = localStorage.getItem("freedocforge_history");
-        if (savedHist) {
-          try {
-            const parsedHist = JSON.parse(savedHist);
-            if (Array.isArray(parsedHist)) setDocCount(parsedHist.length);
-          } catch (e) {}
-        }
+        setDocCount(0);
       });
   }, []);
 

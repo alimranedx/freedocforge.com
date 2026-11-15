@@ -54,6 +54,25 @@ export default function Navbar() {
   }, []);
 
   const handleLogout = async () => {
+    try {
+      // Purge all user-specific and legacy keys from localStorage to prevent multi-tenant cross-user leakage
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (
+          key &&
+          (key.startsWith("freedocforge_history") ||
+            key.startsWith("freedocforge_active_preset") ||
+            key.startsWith("freedocforge_profile"))
+        ) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach((k) => localStorage.removeItem(k));
+      localStorage.removeItem("freedocforge_history");
+      localStorage.removeItem("freedocforge_active_preset");
+    } catch {}
+
     const isAdmin = user?.role === "ADMIN";
     await fetch("/api/auth/logout", { method: "POST" });
     if (isAdmin) {

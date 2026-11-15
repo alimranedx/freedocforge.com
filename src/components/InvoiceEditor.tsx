@@ -111,6 +111,13 @@ export default function InvoiceEditor({
   const [docSaveLoading, setDocSaveLoading] = useState(false);
   const [docSaveSuccess, setDocSaveSuccess] = useState(false);
   const [docSaveMessage, setDocSaveMessage] = useState<string | null>(null);
+  const [currentDocId, setCurrentDocId] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      return new URLSearchParams(window.location.search).get("docId");
+    }
+    return null;
+  });
+  const [activeUserId, setActiveUserId] = useState<string | null>(null);
 
   // Collapsible Form Section Cards
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
@@ -150,12 +157,29 @@ export default function InvoiceEditor({
 
   // Auto-fill from user's active preset or load saved document
   useEffect(() => {
+    // 0. Purge legacy global un-scoped keys to avoid cross-user leakage
+    try {
+      localStorage.removeItem("freedocforge_history");
+      localStorage.removeItem("freedocforge_active_preset");
+    } catch {}
+
+    // Check active user authentication to scope local storage
+    fetch("/api/auth/me")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((authData) => {
+        if (authData?.authenticated && authData.user?.id) {
+          setActiveUserId(authData.user.id);
+        }
+      })
+      .catch(() => {});
+
     // 1. Check if user opened a saved document via ?docId=...
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const docId = params.get("docId");
 
       if (docId) {
+        setCurrentDocId(docId);
         fetch(`/api/user/documents/${docId}`)
           .then((res) => (res.ok ? res.json() : null))
           .then((resData) => {
@@ -165,19 +189,38 @@ export default function InvoiceEditor({
               if (saved.logoUrl) setLogoPreview(saved.logoUrl);
               if (saved.signatureUrl) setSignaturePreview(saved.signatureUrl);
               if (saved.docLang) setDocLang(saved.docLang);
+              if (resData.userId) setActiveUserId(resData.userId);
             }
           })
-          .catch(() => {});
+          .catch(() => {
+            // Offline fallback: check user-scoped storage
+            try {
+              for (let i = 0; i < localStorage.length; i++) {
+                const k = localStorage.key(i);
+                if (k && k.startsWith("freedocforge_history_")) {
+                  const hist = JSON.parse(localStorage.getItem(k) || "[]");
+                  const found = hist.find((item: any) => item.id === docId);
+                  if (found?.dataJson) {
+                    setData((prev: any) => ({ ...prev, ...found.dataJson }));
+                    if (found.dataJson.logoUrl) setLogoPreview(found.dataJson.logoUrl);
+                    if (found.dataJson.signatureUrl) setSignaturePreview(found.dataJson.signatureUrl);
+                    if (found.dataJson.docLang) setDocLang(found.dataJson.docLang);
+                    break;
+                  }
+                }
+              }
+            } catch (e) {}
+          });
         return;
       }
     }
 
-    // 2. Load brand preset from localStorage first
-    const saved = localStorage.getItem("freedocforge_active_preset");
-    if (saved) {
-      try {
-        const p = JSON.parse(saved);
-        if (p.presetType === "shop" || !p.presetType) {
+    // 2. Load brand preset from cloud account
+    fetch("/api/user/profile")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((resData) => {
+        if (resData?.profile) {
+          const p = resData.profile;
           setData((prev: any) => ({
             ...prev,
             businessName: p.businessName || prev.businessName,
@@ -190,29 +233,8 @@ export default function InvoiceEditor({
           if (p.logoUrl) setLogoPreview(p.logoUrl);
           if (p.signatureUrl) setSignaturePreview(p.signatureUrl);
         }
-      } catch (e) {}
-    } else {
-      // 3. Fallback: Load saved preset from user cloud account
-      fetch("/api/user/profile")
-        .then((res) => (res.ok ? res.json() : null))
-        .then((resData) => {
-          if (resData?.profile) {
-            const p = resData.profile;
-            setData((prev: any) => ({
-              ...prev,
-              businessName: p.businessName || prev.businessName,
-              tagline: p.tagline || prev.tagline,
-              phone: p.phone || prev.phone,
-              address: p.address || prev.address,
-              currency: p.currency || prev.currency,
-              notes: p.terms || prev.notes,
-            }));
-            if (p.logoUrl) setLogoPreview(p.logoUrl);
-            if (p.signatureUrl) setSignaturePreview(p.signatureUrl);
-          }
-        })
-        .catch(() => {});
-    }
+      })
+      .catch(() => {});
   }, []);
 
   // Switch Document Locale independently of system language
@@ -397,7 +419,11 @@ export default function InvoiceEditor({
       presetType: "shop",
     };
 
-    localStorage.setItem("freedocforge_active_preset", JSON.stringify(presetData));
+    const presetKey = activeUserId ? `freedocforge_active_preset_${activeUserId}` : "freedocforge_active_preset_guest";
+    try {
+      localStorage.setItem(presetKey, JSON.stringify(presetData));
+      localStorage.removeItem("freedocforge_active_preset");
+    } catch {}
 
     try {
       await fetch("/api/user/profile", {
@@ -434,13 +460,14 @@ export default function InvoiceEditor({
     setDocSaveLoading(true);
     setDocSaveMessage(null);
 
+    const isUpdating = Boolean(currentDocId);
     const recipient = isMedicalReceipt
       ? data.patientName || data.customerName || "Patient"
       : data.customerName || data.clientName || data.name || "Customer";
     const docNum = data.invoiceNumber || data.memoNumber || data.billNumber || `INV-${Date.now().toString().slice(-6)}`;
     const amountStr = `${currency} ${grandTotal.toLocaleString("en-US")}`;
 
-    const docPayload = {
+    const docPayload: any = {
       templateSlug,
       templateTitle: locales?.[docLang]?.title || data.businessName || "Invoice / Cash Memo",
       category: "Business",
@@ -456,16 +483,62 @@ export default function InvoiceEditor({
       },
     };
 
-    // Save locally first for instant offline access
+    if (currentDocId) {
+      docPayload.id = currentDocId;
+    }
+
+    // Save/update locally first for instant offline access (scoped to active user)
+    let localTargetId = currentDocId;
+    const initialHistKey = activeUserId ? `freedocforge_history_${activeUserId}` : "freedocforge_history_guest";
     try {
-      const existing = JSON.parse(localStorage.getItem("freedocforge_history") || "[]");
-      const localItem = {
-        id: `local-${Date.now()}`,
-        ...docPayload,
-        date: new Date().toISOString().split("T")[0],
-      };
-      localStorage.setItem("freedocforge_history", JSON.stringify([localItem, ...existing]));
-    } catch (e) {}
+      localStorage.removeItem("freedocforge_history");
+      const existingHistoryStr = localStorage.getItem(initialHistKey);
+      let existingHistory: any[] = [];
+      if (existingHistoryStr) {
+        try {
+          existingHistory = JSON.parse(existingHistoryStr);
+          if (!Array.isArray(existingHistory)) existingHistory = [];
+        } catch {
+          existingHistory = [];
+        }
+      }
+
+      const matchIndex = existingHistory.findIndex((item: any) => {
+        if (currentDocId && (item.id === currentDocId || item.id === `local-${currentDocId}`)) {
+          return true;
+        }
+        if (docNum && item.documentNumber === docNum && item.templateSlug === templateSlug) {
+          return true;
+        }
+        return false;
+      });
+
+      const todayDate = new Date().toISOString().split("T")[0];
+
+      if (matchIndex >= 0) {
+        localTargetId = existingHistory[matchIndex].id;
+        existingHistory[matchIndex] = {
+          ...existingHistory[matchIndex],
+          ...docPayload,
+          id: localTargetId,
+          date: existingHistory[matchIndex].date || todayDate,
+        };
+      } else {
+        if (!localTargetId) {
+          localTargetId = `local-${Date.now()}`;
+        }
+        const newLocalRecord = {
+          id: localTargetId,
+          ...docPayload,
+          date: todayDate,
+        };
+        existingHistory = [newLocalRecord, ...existingHistory];
+      }
+
+      localStorage.setItem(initialHistKey, JSON.stringify(existingHistory));
+    } catch (e) {
+      console.warn("Could not save to local history:", e);
+    }
 
     // Persist to database via API
     try {
@@ -479,7 +552,11 @@ export default function InvoiceEditor({
       if (!res.ok) {
         if (res.status === 401) {
           setDocSaveMessage(
-            docLang === "bn"
+            isUpdating
+              ? docLang === "bn"
+                ? "ব্রাউজারে ডকুমেন্ট আপডেট হয়েছে! ক্লাউড সিঙ্কের জন্য লগইন করুন।"
+                : "Document updated in browser! Log in to save to your cloud account."
+              : docLang === "bn"
               ? "ব্রাউজারে সেভ হয়েছে! ক্লাউড হিস্ট্রির জন্য লগইন করুন।"
               : "Saved in browser! Log in to save to your cloud account."
           );
@@ -487,8 +564,49 @@ export default function InvoiceEditor({
           throw new Error(resData.error || "Failed to save");
         }
       } else {
+        const savedDocId = resData.document?.id;
+        const uid = resData.userId || activeUserId;
+        if (uid) setActiveUserId(uid);
+
+        if (savedDocId) {
+          setCurrentDocId(savedDocId);
+
+          // Sync user-scoped localStorage record id to cloud savedDocId
+          try {
+            const finalHistKey = uid ? `freedocforge_history_${uid}` : initialHistKey;
+            localStorage.removeItem("freedocforge_history");
+            const histStr = localStorage.getItem(finalHistKey);
+            if (histStr) {
+              const list = JSON.parse(histStr);
+              if (Array.isArray(list)) {
+                const idx = list.findIndex(
+                  (it: any) =>
+                    it.id === localTargetId ||
+                    it.id === savedDocId ||
+                    (it.documentNumber === docNum && it.templateSlug === templateSlug)
+                );
+                if (idx >= 0) {
+                  list[idx].id = savedDocId;
+                  localStorage.setItem(finalHistKey, JSON.stringify(list));
+                }
+              }
+            }
+          } catch (e) {}
+
+          // Update URL using window.history.replaceState without page reload
+          if (typeof window !== "undefined") {
+            const url = new URL(window.location.href);
+            url.searchParams.set("docId", savedDocId);
+            window.history.replaceState({}, "", url.toString());
+          }
+        }
+
         setDocSaveMessage(
-          docLang === "bn"
+          isUpdating
+            ? docLang === "bn"
+              ? "ডকুমেন্ট সফলভাবে আপডেট করা হয়েছে!"
+              : "Document updated successfully!"
+            : docLang === "bn"
             ? "ডকুমেন্ট ও টেমপ্লেট ডাটা সফলভাবে ক্লাউডে সংরক্ষিত হয়েছে!"
             : "Document & template saved to your cloud history!"
         );
@@ -499,7 +617,12 @@ export default function InvoiceEditor({
         setDocSaveMessage(null);
       }, 4000);
     } catch (err: any) {
-      setDocSaveMessage(err.message || "Saved locally");
+      setDocSaveMessage(
+        err.message ||
+          (isUpdating
+            ? docLang === "bn" ? "ডকুমেন্ট লোকালি আপডেট হয়েছে" : "Updated locally"
+            : docLang === "bn" ? "ডকুমেন্ট লোকালি সেভ হয়েছে" : "Saved locally")
+      );
       setDocSaveSuccess(true);
       setTimeout(() => {
         setDocSaveSuccess(false);
@@ -1414,28 +1537,67 @@ export default function InvoiceEditor({
             </div>
 
             {/* 2. Save Document for Next Use (Cloud + Local) */}
-            <button
-              onClick={handleSaveDocument}
-              disabled={docSaveLoading}
-              className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl shadow-xs transition text-xs cursor-pointer disabled:opacity-50"
-            >
-              {docSaveLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>{docLang === "bn" ? "সংরক্ষণ হচ্ছে..." : "Saving..."}</span>
-                </>
-              ) : docSaveSuccess ? (
-                <>
-                  <BookmarkCheck className="w-4 h-4 text-white" />
-                  <span>{docLang === "bn" ? "ডকুমেন্ট সংরক্ষিত হয়েছে!" : "Document Saved!"}</span>
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4" />
-                  <span>{docLang === "bn" ? "পরবর্তী ব্যবহারের জন্য মেমো সেভ রাখুন" : "Save Document for Next Use"}</span>
-                </>
+            <div className="space-y-1.5">
+              {currentDocId && (
+                <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/60 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span className="font-medium">
+                      {docLang === "bn" ? "বিদ্যমান ডকুমেন্ট এডিট মোড" : "Editing saved document"}
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCurrentDocId(null);
+                      if (typeof window !== "undefined") {
+                        const url = new URL(window.location.href);
+                        url.searchParams.delete("docId");
+                        window.history.replaceState({}, "", url.toString());
+                      }
+                    }}
+                    className="text-blue-600 dark:text-blue-400 hover:underline font-bold cursor-pointer"
+                  >
+                    {docLang === "bn" ? "+ নতুন হিসেবে সেভ" : "+ Save as new"}
+                  </button>
+                </div>
               )}
-            </button>
+
+              <button
+                onClick={handleSaveDocument}
+                disabled={docSaveLoading}
+                className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl shadow-xs transition text-xs cursor-pointer disabled:opacity-50"
+              >
+                {docSaveLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>
+                      {Boolean(currentDocId)
+                        ? docLang === "bn" ? "আপডেট হচ্ছে..." : "Updating..."
+                        : docLang === "bn" ? "সংরক্ষণ হচ্ছে..." : "Saving..."}
+                    </span>
+                  </>
+                ) : docSaveSuccess ? (
+                  <>
+                    <BookmarkCheck className="w-4 h-4 text-white" />
+                    <span>
+                      {Boolean(currentDocId)
+                        ? docLang === "bn" ? "ডকুমেন্ট আপডেট হয়েছে!" : "Document Updated!"
+                        : docLang === "bn" ? "ডকুমেন্ট সংরক্ষিত হয়েছে!" : "Document Saved!"}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    <span>
+                      {Boolean(currentDocId)
+                        ? docLang === "bn" ? "ডকুমেন্ট আপডেট করুন" : "Update Saved Document"
+                        : docLang === "bn" ? "পরবর্তী ব্যবহারের জন্য মেমো সেভ রাখুন" : "Save Document for Next Use"}
+                    </span>
+                  </>
+                )}
+              </button>
+            </div>
 
             {/* Feedback notice for document save */}
             {docSaveMessage && (

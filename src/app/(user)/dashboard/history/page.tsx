@@ -32,67 +32,41 @@ interface HistoryItem {
   status: "Printed" | "Saved" | "Paid";
 }
 
-const DEFAULT_DEMO_HISTORY: HistoryItem[] = [
-  {
-    id: "hist-1",
-    templateSlug: "f-commerce-invoice",
-    templateTitle: "Facebook Shop & F-Commerce Cash Memo",
-    category: "Business",
-    documentNumber: "INV-2026-089",
-    recipientName: "Md. Tanvir Ahmed (Dhanmondi)",
-    amountOrDetails: "৳ 3,470 (COD Due)",
-    date: "2026-11-12",
-    status: "Printed",
-  },
-  {
-    id: "hist-2",
-    templateSlug: "school-class-routine",
-    templateTitle: "Primary / Elementary School Weekly Timetable",
-    category: "Education",
-    documentNumber: "ROUTINE-2026-09",
-    recipientName: "Class 9 (Science) - Morning Shift",
-    amountOrDetails: "6 Periods • Room 402",
-    date: "2026-11-11",
-    status: "Printed",
-  },
-  {
-    id: "hist-3",
-    templateSlug: "school-exam-routine",
-    templateTitle: "School Annual & Term Final Exam Routine",
-    category: "Education",
-    documentNumber: "EXAM-2026-T2",
-    recipientName: "Secondary Term Final Candidates",
-    amountOrDetails: "10 Subjects • Morning Shift",
-    date: "2026-11-10",
-    status: "Saved",
-  },
-  {
-    id: "hist-4",
-    templateSlug: "medical-money-receipt",
-    templateTitle: "Diagnostic Center Test Bill & Money Receipt",
-    category: "Healthcare",
-    documentNumber: "BILL-2026-904",
-    recipientName: "Md. Rafiqul Islam (48y)",
-    amountOrDetails: "৳ 3,400 (Advance ৳1,600)",
-    date: "2026-11-09",
-    status: "Paid",
-  },
-  {
-    id: "hist-5",
-    templateSlug: "restaurant-pos-bill",
-    templateTitle: "Restaurant POS Thermal Bill (80mm)",
-    category: "Business",
-    documentNumber: "BILL-5491",
-    recipientName: "Table 4 - Dine In",
-    amountOrDetails: "৳ 1,420 (Paid Full)",
-    date: "2026-11-08",
-    status: "Paid",
-  },
-];
+/**
+ * Deduplicates history items gracefully:
+ * 1. Guarantees unique document IDs.
+ * 2. Deduplicates stray identical records sharing identical templateSlug + documentNumber.
+ * Retains the newest/first occurrence.
+ */
+function deduplicateHistory(items: HistoryItem[]): HistoryItem[] {
+  const seenIds = new Set<string>();
+  const seenDocKeys = new Set<string>();
+  const deduplicated: HistoryItem[] = [];
+
+  for (const item of items) {
+    if (!item || !item.id) continue;
+    if (seenIds.has(item.id)) continue;
+
+    const trimmedNum = (item.documentNumber || "").trim().toLowerCase();
+    const trimmedSlug = (item.templateSlug || "").trim().toLowerCase();
+    const docKey = trimmedNum && trimmedSlug ? `${trimmedSlug}::${trimmedNum}` : null;
+
+    if (docKey && seenDocKeys.has(docKey)) {
+      continue;
+    }
+
+    seenIds.add(item.id);
+    if (docKey) seenDocKeys.add(docKey);
+    deduplicated.push(item);
+  }
+
+  return deduplicated;
+}
 
 export default function SavedDocumentsHistoryPage() {
   const { lang } = useUserDashboard();
-  const [history, setHistory] = useState<HistoryItem[]>(DEFAULT_DEMO_HISTORY);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [activeUserId, setActiveUserId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [pillarFilter, setPillarFilter] = useState<
     "all" | "receipts" | "class-routines" | "exam-routines" | "medical-receipts"
@@ -103,11 +77,19 @@ export default function SavedDocumentsHistoryPage() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   useEffect(() => {
-    // 1. Fetch user documents from cloud API
+    // 1. Purge legacy un-scoped localStorage to prevent multi-tenant cross-user leakage
+    try {
+      localStorage.removeItem("freedocforge_history");
+    } catch {}
+
+    // 2. Fetch authenticated user's documents from cloud API
     fetch("/api/user/documents")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data && Array.isArray(data.documents) && data.documents.length > 0) {
+        if (data && Array.isArray(data.documents)) {
+          const uid = data.userId || null;
+          if (uid) setActiveUserId(uid);
+
           const cloudDocs: HistoryItem[] = data.documents.map((d: any) => ({
             id: d.id,
             templateSlug: d.templateSlug,
@@ -119,35 +101,42 @@ export default function SavedDocumentsHistoryPage() {
             date: new Date(d.createdAt).toISOString().split("T")[0],
             status: (d.status || "Saved") as any,
           }));
-          setHistory(cloudDocs);
-        } else {
-          // 2. Fallback to localStorage if offline / no cloud records
-          const saved = localStorage.getItem("freedocforge_history");
-          if (saved) {
+
+          const deduped = deduplicateHistory(cloudDocs);
+          setHistory(deduped);
+
+          // Cache to user-scoped storage only
+          if (uid) {
             try {
-              const parsed = JSON.parse(saved);
-              if (Array.isArray(parsed) && parsed.length > 0) {
-                setHistory(parsed);
-              }
-            } catch (e) {
-              console.error("History parse error", e);
-            }
+              localStorage.setItem(`freedocforge_history_${uid}`, JSON.stringify(deduped));
+            } catch {}
           }
+        } else {
+          // Unauthenticated or non-array response: clean empty state
+          setHistory([]);
         }
       })
       .catch(() => {
-        const saved = localStorage.getItem("freedocforge_history");
-        if (saved) {
-          try {
-            const parsed = JSON.parse(saved);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              setHistory(parsed);
+        // True network/offline failure only: attempt user-scoped recovery if present
+        try {
+          if (activeUserId) {
+            const saved = localStorage.getItem(`freedocforge_history_${activeUserId}`);
+            if (saved) {
+              const parsed = JSON.parse(saved);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                setHistory(deduplicateHistory(parsed));
+                return;
+              }
             }
-          } catch (e) {}
-        }
+          }
+        } catch {}
+        setHistory([]);
       })
       .finally(() => setIsLoading(false));
   }, []);
+
+  // Gracefully guarantee unique history items across the board
+  const uniqueHistory = useMemo(() => deduplicateHistory(history), [history]);
 
   const counts = useMemo(() => {
     let receipts = 0;
@@ -155,7 +144,7 @@ export default function SavedDocumentsHistoryPage() {
     let exams = 0;
     let medicals = 0;
 
-    history.forEach((item) => {
+    uniqueHistory.forEach((item) => {
       if (item.category === "Business" || item.templateSlug.includes("invoice") || item.templateSlug.includes("receipt") || item.templateSlug.includes("bill")) {
         receipts++;
       } else if (item.templateSlug.includes("routine") && !item.templateSlug.includes("exam")) {
@@ -167,16 +156,23 @@ export default function SavedDocumentsHistoryPage() {
       }
     });
 
-    return { all: history.length, receipts, routines, exams, medicals };
-  }, [history]);
+    return { all: uniqueHistory.length, receipts, routines, exams, medicals };
+  }, [uniqueHistory]);
 
   const handleDelete = async (id: string) => {
     // Optimistic UI removal
-    const updated = history.filter((item) => item.id !== id);
+    const updated = deduplicateHistory(history.filter((item) => item.id !== id));
     setHistory(updated);
-    localStorage.setItem("freedocforge_history", JSON.stringify(updated));
     setDeleteConfirmId(null);
     if (previewItem?.id === id) setPreviewItem(null);
+
+    // Clean user-scoped storage & purge legacy
+    try {
+      localStorage.removeItem("freedocforge_history");
+      if (activeUserId) {
+        localStorage.setItem(`freedocforge_history_${activeUserId}`, JSON.stringify(updated));
+      }
+    } catch {}
 
     // Delete from cloud backend API
     try {
@@ -188,7 +184,7 @@ export default function SavedDocumentsHistoryPage() {
     }
   };
 
-  const filteredHistory = history.filter((item) => {
+  const filteredHistory = uniqueHistory.filter((item) => {
     // Pillar Filter
     if (pillarFilter === "receipts") {
       if (item.category !== "Business" && !item.templateSlug.includes("invoice") && !item.templateSlug.includes("receipt") && !item.templateSlug.includes("bill")) {
@@ -232,7 +228,7 @@ export default function SavedDocumentsHistoryPage() {
           <h1 className="text-xl sm:text-2xl font-black tracking-tight flex items-center gap-2">
             <span>{lang === "bn" ? "সংরক্ষিত ডকুমেন্টস" : "Generated Documents History"}</span>
             <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-white/20 text-white">
-              {history.length}
+              {uniqueHistory.length}
             </span>
           </h1>
           <p className="text-blue-100/90 text-xs sm:text-sm mt-1 max-w-xl leading-relaxed">
@@ -259,7 +255,7 @@ export default function SavedDocumentsHistoryPage() {
               {lang === "bn" ? "মোট সংরক্ষিত" : "Total Saved"}
             </span>
             <h4 className="text-lg font-black text-slate-900 dark:text-white mt-0.5">
-              {history.length} {lang === "bn" ? "টি ডকুমেন্ট" : "Records"}
+              {uniqueHistory.length} {lang === "bn" ? "টি ডকুমেন্ট" : "Records"}
             </h4>
           </div>
           <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center">

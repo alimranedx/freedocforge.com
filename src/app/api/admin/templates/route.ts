@@ -16,6 +16,16 @@ export interface TemplateBlock {
   options?: Record<string, any>;
 }
 
+export interface TemplateStyleTokens {
+  designStyle: string;
+  bgColor: string;
+  fontColor: string;
+  accentColor: string;
+  secondaryColor?: string;
+  fontSize: string;
+  fontFamily: string;
+}
+
 // Allowed component types in the Smart CMS
 export const ALLOWED_BLOCK_TYPES = [
   "header",
@@ -58,7 +68,7 @@ const RESERVED_SLUGS = new Set([
 ]);
 
 // Security: Strip dangerous script and HTML tags to prevent stored XSS
-function sanitizeText(val: any, maxLength = 500): string {
+export function sanitizeText(val: any, maxLength = 500): string {
   if (typeof val !== "string") return "";
   const cleaned = val
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
@@ -74,7 +84,7 @@ function sanitizeText(val: any, maxLength = 500): string {
 }
 
 // Security: Sanitize line items inside dynamic tables
-function sanitizeLineItems(rawItems: any[]): Array<{ name: string; quantity: number; price: number; unit?: string }> {
+export function sanitizeLineItems(rawItems: any[]): Array<{ name: string; quantity: number; price: number; unit?: string }> {
   if (!Array.isArray(rawItems) || rawItems.length === 0) {
     return [
       { name: "Premium Formal Cotton Shirt", quantity: 2, price: 1250 },
@@ -89,8 +99,18 @@ function sanitizeLineItems(rawItems: any[]): Array<{ name: string; quantity: num
   }));
 }
 
-// Security: Sanitize full dynamic template data
-function sanitizeDefaultData(raw: any, fallbackTitle: string, currency: string, isBangla = false) {
+// Security: Sanitize full dynamic template data with styling tokens
+export function sanitizeDefaultData(raw: any, fallbackTitle: string, currency: string, isBangla = false) {
+  const defaultStyles: TemplateStyleTokens = {
+    designStyle: "modern-blue",
+    bgColor: "#ffffff",
+    fontColor: "#0f172a",
+    accentColor: "#2563eb",
+    secondaryColor: "#64748b",
+    fontSize: "normal",
+    fontFamily: "sans",
+  };
+
   if (!raw || typeof raw !== "object") {
     return {
       businessName: fallbackTitle,
@@ -110,8 +130,18 @@ function sanitizeDefaultData(raw: any, fallbackTitle: string, currency: string, 
       paidAmount: 0,
       notes: isBangla ? "আমাদের সেবা গ্রহণ করার জন্য আপনাকে ধন্যবাদ।" : "Thank you for doing business with us.",
       signatoryTitle: isBangla ? "অনুমোদিত স্বাক্ষর" : "Authorized Signature",
+      ...defaultStyles,
     };
   }
+
+  // Extract and sanitize styling tokens
+  const designStyle = sanitizeText(raw.designStyle || raw.styles?.designStyle || defaultStyles.designStyle, 40);
+  const bgColor = sanitizeText(raw.bgColor || raw.styles?.bgColor || defaultStyles.bgColor, 30);
+  const fontColor = sanitizeText(raw.fontColor || raw.styles?.fontColor || defaultStyles.fontColor, 30);
+  const accentColor = sanitizeText(raw.accentColor || raw.styles?.accentColor || defaultStyles.accentColor, 30);
+  const secondaryColor = sanitizeText(raw.secondaryColor || raw.styles?.secondaryColor || defaultStyles.secondaryColor, 30);
+  const fontSize = sanitizeText(raw.fontSize || raw.styles?.fontSize || defaultStyles.fontSize, 30);
+  const fontFamily = sanitizeText(raw.fontFamily || raw.styles?.fontFamily || defaultStyles.fontFamily, 50);
 
   return {
     businessName: sanitizeText(raw.businessName || fallbackTitle, 120),
@@ -145,11 +175,18 @@ function sanitizeDefaultData(raw: any, fallbackTitle: string, currency: string, 
           value: sanitizeText(m?.value || "", 100),
         }))
       : undefined,
+    designStyle,
+    bgColor,
+    fontColor,
+    accentColor,
+    secondaryColor,
+    fontSize,
+    fontFamily,
   };
 }
 
 // Security: Validate and sanitize blocks
-function sanitizeBlocks(rawBlocks: any[]): TemplateBlock[] {
+export function sanitizeBlocks(rawBlocks: any[]): TemplateBlock[] {
   if (!Array.isArray(rawBlocks)) return DEFAULT_TEMPLATE_BLOCKS;
 
   // Max 30 blocks per template to prevent DoS via massive payloads
@@ -302,8 +339,20 @@ export async function GET(req: Request) {
     });
 
     // 3. Transform DB templates to TemplateDefinition
-    const customTemplates: (TemplateDefinition & { isCustom: boolean; blocks?: TemplateBlock[] })[] = dbTemplates.map((t) => {
+    const customTemplates: (TemplateDefinition & { isCustom: boolean; blocks?: TemplateBlock[]; styles?: TemplateStyleTokens })[] = dbTemplates.map((t) => {
       const fieldSchema = (t.fieldSchema as any) || {};
+      const defData = fieldSchema.locales?.en?.defaultData || fieldSchema.defaultData || {};
+
+      const styles: TemplateStyleTokens = fieldSchema.styles || {
+        designStyle: defData.designStyle || "modern-blue",
+        bgColor: defData.bgColor || "#ffffff",
+        fontColor: defData.fontColor || "#0f172a",
+        accentColor: defData.accentColor || "#2563eb",
+        secondaryColor: defData.secondaryColor || "#64748b",
+        fontSize: defData.fontSize || "normal",
+        fontFamily: defData.fontFamily || "sans",
+      };
+
       return {
         id: t.id,
         slug: t.slug,
@@ -315,10 +364,10 @@ export async function GET(req: Request) {
         badge: t.isFeatured ? "Featured" : "Custom Template",
         isCustom: true,
         blocks: sanitizeBlocks(fieldSchema.blocks || DEFAULT_TEMPLATE_BLOCKS),
-        defaultData: fieldSchema.locales?.en?.defaultData || fieldSchema.defaultData || {
-          businessName: t.title,
-          currency: "৳",
-          items: [{ name: "Sample Item", quantity: 1, price: 100 }],
+        styles,
+        defaultData: {
+          ...sanitizeDefaultData(defData, t.title, defData.currency || "৳", false),
+          ...styles,
         },
         locales: {
           en: fieldSchema.locales?.en || {
@@ -326,9 +375,8 @@ export async function GET(req: Request) {
             description: t.description || "",
             badge: "English Edition",
             defaultData: {
-              businessName: t.title,
-              currency: "৳",
-              items: [{ name: "Sample Item", quantity: 1, price: 100 }],
+              ...sanitizeDefaultData(defData, t.title, defData.currency || "৳", false),
+              ...styles,
             },
           },
           bn: fieldSchema.locales?.bn || {
@@ -336,9 +384,8 @@ export async function GET(req: Request) {
             description: t.description || "",
             badge: "বাংলা সংস্করণ",
             defaultData: {
-              businessName: t.title,
-              currency: "৳",
-              items: [{ name: "নমুনা পণ্য", quantity: 1, price: 100 }],
+              ...sanitizeDefaultData(fieldSchema.locales?.bn?.defaultData || defData, t.title, defData.currency || "৳", true),
+              ...styles,
             },
           },
         },
@@ -350,6 +397,15 @@ export async function GET(req: Request) {
       ...t,
       isCustom: false,
       blocks: DEFAULT_TEMPLATE_BLOCKS,
+      styles: {
+        designStyle: "modern-blue",
+        bgColor: "#ffffff",
+        fontColor: "#0f172a",
+        accentColor: "#2563eb",
+        secondaryColor: "#64748b",
+        fontSize: "normal",
+        fontFamily: "sans",
+      },
     }));
 
     let combined = [...customTemplates, ...systemTemplatesWithFlag];
@@ -403,6 +459,15 @@ export async function GET(req: Request) {
       ...t,
       isCustom: false,
       blocks: DEFAULT_TEMPLATE_BLOCKS,
+      styles: {
+        designStyle: "modern-blue",
+        bgColor: "#ffffff",
+        fontColor: "#0f172a",
+        accentColor: "#2563eb",
+        secondaryColor: "#64748b",
+        fontSize: "normal",
+        fontFamily: "sans",
+      },
     }));
 
     let filtered = systemTemplatesWithFlag;
@@ -475,6 +540,17 @@ export async function POST(req: Request) {
 
     const blocks = sanitizeBlocks(body.blocks || []);
 
+    // 2. Extract and sanitize custom styling tokens
+    const styles: TemplateStyleTokens = {
+      designStyle: sanitizeText(body.designStyle || body.styles?.designStyle || "modern-blue", 40),
+      bgColor: sanitizeText(body.bgColor || body.styles?.bgColor || "#ffffff", 30),
+      fontColor: sanitizeText(body.fontColor || body.styles?.fontColor || "#0f172a", 30),
+      accentColor: sanitizeText(body.accentColor || body.styles?.accentColor || "#2563eb", 30),
+      secondaryColor: sanitizeText(body.secondaryColor || body.styles?.secondaryColor || "#64748b", 30),
+      fontSize: sanitizeText(body.fontSize || body.styles?.fontSize || "normal", 30),
+      fontFamily: sanitizeText(body.fontFamily || body.styles?.fontFamily || "sans", 50),
+    };
+
     if (!slug || slug.length < 3) {
       return NextResponse.json({ error: "A valid URL slug (at least 3 characters, alphanumeric with hyphens) is required." }, { status: 400 });
     }
@@ -524,20 +600,26 @@ export async function POST(req: Request) {
     });
 
     // Sanitize dynamic defaultData for English & Bangla
-    const defaultDataEn = sanitizeDefaultData(
-      body.defaultDataEn || body.defaultData || body.locales?.en?.defaultData,
-      enTitle,
-      enCurrency,
-      false
-    );
-    const defaultDataBn = sanitizeDefaultData(
-      body.defaultDataBn || body.locales?.bn?.defaultData,
-      bnTitle,
-      bnCurrency,
-      true
-    );
+    const defaultDataEn = {
+      ...sanitizeDefaultData(
+        body.defaultDataEn || body.defaultData || body.locales?.en?.defaultData,
+        enTitle,
+        enCurrency,
+        false
+      ),
+      ...styles,
+    };
+    const defaultDataBn = {
+      ...sanitizeDefaultData(
+        body.defaultDataBn || body.locales?.bn?.defaultData,
+        bnTitle,
+        bnCurrency,
+        true
+      ),
+      ...styles,
+    };
 
-    // Create custom template
+    // Create custom template with styles stored cleanly in Template.fieldSchema
     const newTemplate = await prisma.template.create({
       data: {
         title: enTitle,
@@ -553,6 +635,7 @@ export async function POST(req: Request) {
           paperSize,
           category: categoryName,
           subCategory: sanitizeText(body.subCategory || "invoice", 50),
+          styles,
           defaultData: defaultDataEn,
           locales: {
             en: {
@@ -630,22 +713,40 @@ export async function PUT(req: Request) {
       }, { status: 404 });
     }
 
-    const blocks = sanitizeBlocks(body.blocks || (existing.fieldSchema as any)?.blocks || DEFAULT_TEMPLATE_BLOCKS);
+    const existingSchema = (existing.fieldSchema as any) || {};
+    const blocks = sanitizeBlocks(body.blocks || existingSchema.blocks || DEFAULT_TEMPLATE_BLOCKS);
     const enCurrency = sanitizeText(body.en_currency || "৳", 10);
     const bnCurrency = sanitizeText(body.bn_currency || "৳", 10);
 
-    const defaultDataEn = sanitizeDefaultData(
-      body.defaultDataEn || body.defaultData || (existing.fieldSchema as any)?.defaultData || (existing.fieldSchema as any)?.locales?.en?.defaultData,
-      enTitle,
-      enCurrency,
-      false
-    );
-    const defaultDataBn = sanitizeDefaultData(
-      body.defaultDataBn || (existing.fieldSchema as any)?.locales?.bn?.defaultData,
-      bnTitle,
-      bnCurrency,
-      true
-    );
+    // Extract and sanitize updated styling tokens
+    const styles: TemplateStyleTokens = {
+      designStyle: sanitizeText(body.designStyle || body.styles?.designStyle || existingSchema.styles?.designStyle || "modern-blue", 40),
+      bgColor: sanitizeText(body.bgColor || body.styles?.bgColor || existingSchema.styles?.bgColor || "#ffffff", 30),
+      fontColor: sanitizeText(body.fontColor || body.styles?.fontColor || existingSchema.styles?.fontColor || "#0f172a", 30),
+      accentColor: sanitizeText(body.accentColor || body.styles?.accentColor || existingSchema.styles?.accentColor || "#2563eb", 30),
+      secondaryColor: sanitizeText(body.secondaryColor || body.styles?.secondaryColor || existingSchema.styles?.secondaryColor || "#64748b", 30),
+      fontSize: sanitizeText(body.fontSize || body.styles?.fontSize || existingSchema.styles?.fontSize || "normal", 30),
+      fontFamily: sanitizeText(body.fontFamily || body.styles?.fontFamily || existingSchema.styles?.fontFamily || "sans", 50),
+    };
+
+    const defaultDataEn = {
+      ...sanitizeDefaultData(
+        body.defaultDataEn || body.defaultData || existingSchema.defaultData || existingSchema.locales?.en?.defaultData,
+        enTitle,
+        enCurrency,
+        false
+      ),
+      ...styles,
+    };
+    const defaultDataBn = {
+      ...sanitizeDefaultData(
+        body.defaultDataBn || existingSchema.locales?.bn?.defaultData,
+        bnTitle,
+        bnCurrency,
+        true
+      ),
+      ...styles,
+    };
 
     const updated = await prisma.template.update({
       where: { id: existing.id },
@@ -655,7 +756,8 @@ export async function PUT(req: Request) {
         paperSize: body.paperSize === "POS_80MM" ? "POS_80MM" : "A4",
         fieldSchema: {
           blocks,
-          subCategory: sanitizeText(body.subCategory || (existing.fieldSchema as any)?.subCategory || "invoice", 50),
+          subCategory: sanitizeText(body.subCategory || existingSchema.subCategory || "invoice", 50),
+          styles,
           defaultData: defaultDataEn,
           locales: {
             en: {

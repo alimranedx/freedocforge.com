@@ -18,12 +18,15 @@ export async function GET() {
       return NextResponse.json({ error: "Invalid session token" }, { status: 401 });
     }
 
+    // Strict User Isolation: Retrieve only documents belonging to the authenticated user
     const documents = await prisma.savedDocument.findMany({
       where: { userId: payload.userId },
-      orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json({ success: true, documents });
+    // In-memory sort prevents MySQL error 1038 (out of sort memory) on large dataJson/logo payloads
+    documents.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+
+    return NextResponse.json({ success: true, userId: payload.userId, documents });
   } catch (error: any) {
     return handleApiError(error, "Failed to load documents");
   }
@@ -65,25 +68,31 @@ export async function POST(req: Request) {
 
     // Sanitize string inputs
     const sanitizedTitle = (templateTitle || "Saved Document").slice(0, 150);
-    const sanitizedDocNum = documentNumber.slice(0, 50);
+    const sanitizedDocNum = String(documentNumber).trim().slice(0, 50);
     const sanitizedRecipient = recipientName ? String(recipientName).slice(0, 150) : null;
     const sanitizedAmount = amountOrDetails ? String(amountOrDetails).slice(0, 100) : null;
-    const sanitizedCategory = category || "Business";
-    const sanitizedStatus = status || "Saved";
+    const sanitizedCategory = category ? String(category).slice(0, 50) : "Business";
+    const sanitizedStatus = status ? String(status).slice(0, 50) : "Saved";
+    const sanitizedSlug = String(templateSlug).trim().slice(0, 100);
 
-    // If updating an existing document, verify user ownership (IDOR defense)
+    // Case 1: Updating existing document by explicit ID (with strict user ownership verification - SEC-IDOR-01)
     if (id) {
-      const existing = await prisma.savedDocument.findUnique({
-        where: { id },
+      const existing = await prisma.savedDocument.findFirst({
+        where: {
+          id: String(id),
+          userId: payload.userId, // Strict user isolation
+        },
+        select: { id: true },
       });
 
-      if (!existing || existing.userId !== payload.userId) {
+      if (!existing) {
         return NextResponse.json({ error: "Document not found or access denied" }, { status: 404 });
       }
 
       const updated = await prisma.savedDocument.update({
-        where: { id },
+        where: { id: existing.id },
         data: {
+          templateSlug: sanitizedSlug,
           templateTitle: sanitizedTitle,
           documentNumber: sanitizedDocNum,
           recipientName: sanitizedRecipient,
@@ -94,10 +103,48 @@ export async function POST(req: Request) {
         },
       });
 
-      return NextResponse.json({ success: true, document: updated });
+      return NextResponse.json({
+        success: true,
+        userId: payload.userId,
+        document: updated,
+        updated: true,
+      });
     }
 
-    // Get user's active profile if available
+    // Case 2: ID not provided - Smart Duplicate Prevention Check
+    // If the user already has a saved document with the exact same documentNumber and templateSlug, update it!
+    const existingSameDoc = await prisma.savedDocument.findFirst({
+      where: {
+        userId: payload.userId, // Strict user isolation
+        templateSlug: sanitizedSlug,
+        documentNumber: sanitizedDocNum,
+      },
+      select: { id: true },
+    });
+
+    if (existingSameDoc) {
+      const updated = await prisma.savedDocument.update({
+        where: { id: existingSameDoc.id },
+        data: {
+          templateTitle: sanitizedTitle,
+          recipientName: sanitizedRecipient,
+          amountOrDetails: sanitizedAmount,
+          category: sanitizedCategory,
+          status: sanitizedStatus,
+          dataJson,
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        userId: payload.userId,
+        document: updated,
+        updated: true,
+        updatedExisting: true,
+      });
+    }
+
+    // Case 3: Create a brand new document for this user
     const profile = await prisma.organizationProfile.findFirst({
       where: { userId: payload.userId },
       orderBy: { createdAt: "desc" },
@@ -105,9 +152,9 @@ export async function POST(req: Request) {
 
     const newDoc = await prisma.savedDocument.create({
       data: {
-        userId: payload.userId,
+        userId: payload.userId, // Strict tenant / user isolation
         profileId: profile?.id || null,
-        templateSlug,
+        templateSlug: sanitizedSlug,
         templateTitle: sanitizedTitle,
         category: sanitizedCategory,
         documentNumber: sanitizedDocNum,
@@ -118,8 +165,12 @@ export async function POST(req: Request) {
       },
     });
 
-    return NextResponse.json({ success: true, document: newDoc });
+    return NextResponse.json({ success: true, userId: payload.userId, document: newDoc, created: true });
   } catch (error: any) {
     return handleApiError(error, "Failed to save document");
   }
+}
+
+export async function PUT(req: Request) {
+  return POST(req);
 }
