@@ -385,6 +385,24 @@
      * `npx tsc --noEmit`: 0 errors.
      * `npm run build`: All 105 static and dynamic routes compiled cleanly with Turbopack in 5.5s (Exit code 0).
 
+### Z. Responsive Category Navigation Overhaul: Arrow Removal & Pure Overflow in "More"
+* **Resolved User Request:** "> this not need and in more goes whose are not seen this screen" (with screenshot highlighting the `[ > ]` scroll button next to `[ ... More ]`).
+* **Root Cause & Solution:**
+  1. The user explicitly directed to remove the `>` and `<` arrow buttons completely (`> this not need`), remove scroll clipping/track masks, and ensure that categories that do NOT fit on the user's screen are automatically placed into the `... More` dropdown menu ("in more goes whose are not seen this screen").
+  2. Updated `src/app/templates/page.tsx`:
+     - Completely removed `ChevronLeft`, `ChevronRight`, `canScrollLeft`, `canScrollRight`, `handleScroll`, and gradient scroll masks.
+     - Implemented dynamic screen width measurement using `ResizeObserver` on the tabs container: calculates exact `visibleCount` based on available container width, tab widths, and the More button.
+     - Partitioned category tabs into:
+       - `visibleTabs`: ONLY the tabs that fit cleanly on the current screen (e.g. `All Templates`, `Worldwide Receipts`, `Class Routines`, `Exam Routines` on desktop).
+       - `overflowTabs`: ONLY the categories that are not seen on this screen ("whose are not seen this screen").
+     - The `[ ... More ▾ ]` button sits directly at the end of the visible tabs, and its popover menu lists ONLY the overflow categories with their icons, labels, and document counts.
+     - Added smart active state indication: if the user selects a category from the `More` menu (e.g. `Medical Receipts`), the `More` button itself displays that category's active icon, title, and count badge with active blue styling (`bg-blue-600 text-white`), giving immediate visual confirmation of the active filter.
+     - If all categories fit comfortably on a wide screen, `overflowTabs` is empty and the `More` button seamlessly hides.
+  3. **Verification & Build:**
+     - `npx tsc --noEmit`: 0 errors.
+     - `npm run build`: All 105 static and dynamic routes compiled cleanly in 5.9s (Exit code 0).
+     - Security review confirmed: zero security weakening, client-side display enhancement, zero cross-user leakage.
+
 ---
 
 ## 3. Where You Should Start Next (Actionable Roadmap)

@@ -29,8 +29,7 @@ import {
   Download,
   Building,
   Check,
-  ChevronLeft,
-  ChevronRight,
+  ChevronDown,
   MoreHorizontal,
 } from "lucide-react";
 import { useGlobalSettings } from "@/context/GlobalSettingsContext";
@@ -112,30 +111,62 @@ function CatalogContent() {
   const [searchQuery, setSearchQuery] = useState("");
   const [quickViewTemplate, setQuickViewTemplate] = useState<TemplateDefinition | null>(null);
 
-  const tabsContainerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const moreMenuRef = useRef<HTMLDivElement>(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [visibleCount, setVisibleCount] = useState<number>(4);
 
-  // Check scroll position
-  const updateScrollState = () => {
-    if (!tabsContainerRef.current) return;
-    const { scrollLeft, scrollWidth, clientWidth } = tabsContainerRef.current;
-    setCanScrollLeft(scrollLeft > 4);
-    setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 6);
-  };
-
+  // Dynamically calculate visible category tabs that fit cleanly on this screen
   useEffect(() => {
-    updateScrollState();
-    const el = tabsContainerRef.current;
-    if (!el) return;
+    const container = containerRef.current;
+    if (!container) return;
 
-    el.addEventListener("scroll", updateScrollState, { passive: true });
-    window.addEventListener("resize", updateScrollState, { passive: true });
+    const calculateVisibleTabs = () => {
+      const containerWidth = container.clientWidth;
+      if (!containerWidth) return;
+
+      // Approximate widths in pixels per category tab (icon + label + badge count + padding)
+      const TAB_WIDTHS = [140, 185, 145, 150, 175, 160, 165];
+      const MORE_BTN_WIDTH = 135;
+      const GAP = 8;
+
+      // Check if all tabs can fit comfortably without a More dropdown
+      const totalWidthAll =
+        TAB_WIDTHS.reduce((sum, w) => sum + w, 0) + (TAB_WIDTHS.length - 1) * GAP;
+      if (containerWidth >= totalWidthAll) {
+        setVisibleCount(TAB_WIDTHS.length);
+        return;
+      }
+
+      // Available width for direct tabs when the More button is present
+      const availableForTabs = containerWidth - MORE_BTN_WIDTH - GAP;
+      let usedWidth = 0;
+      let fitCount = 0;
+
+      for (let i = 0; i < TAB_WIDTHS.length; i++) {
+        const nextWidth = usedWidth + TAB_WIDTHS[i] + (i > 0 ? GAP : 0);
+        if (nextWidth <= availableForTabs) {
+          usedWidth = nextWidth;
+          fitCount++;
+        } else {
+          break;
+        }
+      }
+
+      setVisibleCount(Math.max(1, Math.min(TAB_WIDTHS.length, fitCount)));
+    };
+
+    calculateVisibleTabs();
+
+    const resizeObserver = new ResizeObserver(() => {
+      calculateVisibleTabs();
+    });
+    resizeObserver.observe(container);
+
+    window.addEventListener("resize", calculateVisibleTabs, { passive: true });
     return () => {
-      el.removeEventListener("scroll", updateScrollState);
-      window.removeEventListener("resize", updateScrollState);
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", calculateVisibleTabs);
     };
   }, []);
 
@@ -150,28 +181,6 @@ function CatalogContent() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showMoreMenu]);
-
-  // Smooth scroll handler
-  const handleScroll = (direction: "left" | "right") => {
-    if (!tabsContainerRef.current) return;
-    const scrollDelta = tabsContainerRef.current.clientWidth * 0.65;
-    tabsContainerRef.current.scrollBy({
-      left: direction === "right" ? scrollDelta : -scrollDelta,
-      behavior: "smooth",
-    });
-  };
-
-  // Scroll active tab into view when selected
-  const handleSelectCategory = (catId: string) => {
-    setSelectedCategory(catId);
-    setShowMoreMenu(false);
-    setTimeout(() => {
-      const activeEl = tabsContainerRef.current?.querySelector(`[data-tab-id="${catId}"]`);
-      if (activeEl) {
-        activeEl.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
-      }
-    }, 50);
-  };
 
   // Sync with URL query parameter
   useEffect(() => {
@@ -241,6 +250,27 @@ function CatalogContent() {
     ],
     [lang]
   );
+
+  // Partition categories into visible tabs on this screen vs overflow in "More"
+  const { visibleTabs, overflowTabs, activeInOverflow } = useMemo(() => {
+    if (visibleCount >= categoryTabs.length) {
+      return {
+        visibleTabs: categoryTabs,
+        overflowTabs: [],
+        activeInOverflow: null,
+      };
+    }
+
+    const visible = categoryTabs.slice(0, visibleCount);
+    const overflow = categoryTabs.slice(visibleCount);
+    const activeOverflowItem = overflow.find((t) => t.id === selectedCategory) || null;
+
+    return {
+      visibleTabs: visible,
+      overflowTabs: overflow,
+      activeInOverflow: activeOverflowItem,
+    };
+  }, [categoryTabs, visibleCount, selectedCategory]);
 
   // Filter Templates
   const filteredTemplates = useMemo(() => {
@@ -316,38 +346,21 @@ function CatalogContent() {
 
       {/* CONTROLS: Category Tabs, Paper Size Filter & Search Bar */}
       <div className="my-8 space-y-4">
-        {/* Category Switcher Tabs Container with Interactive Left/Right Scroll & More Dropdown */}
-        <div className="relative flex items-center gap-2 w-full">
-          {/* Scroll Left Arrow Button */}
-          {canScrollLeft && (
-            <button
-              type="button"
-              onClick={() => handleScroll("left")}
-              className="flex items-center justify-center w-8 h-8 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 shadow-xs shrink-0 transition cursor-pointer z-10"
-              title={lang === "bn" ? "বামে স্ক্রোল করুন" : "Scroll Left"}
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-          )}
-
-          {/* Left Gradient Fade Mask */}
-          {canScrollLeft && (
-            <div className="pointer-events-none absolute left-0 sm:left-9 top-0 bottom-0 w-8 bg-gradient-to-r from-slate-50 dark:from-slate-950 to-transparent z-10" />
-          )}
-
-          {/* Scrollable Tabs Track */}
-          <div
-            ref={tabsContainerRef}
-            className="flex-1 flex items-center gap-1.5 overflow-x-auto pb-1.5 pt-1 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800 hover:scrollbar-thumb-slate-300 dark:hover:scrollbar-thumb-slate-700 transition"
-          >
-            {categoryTabs.map((tab) => {
+        {/* Category Switcher Tabs Container: Dynamic partition into visible tabs & More overflow */}
+        <div ref={containerRef} className="relative flex items-center gap-2 w-full flex-wrap sm:flex-nowrap">
+          {/* Visible Category Tabs that fit on this screen */}
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            {visibleTabs.map((tab) => {
               const IconComponent = tab.icon;
               const isActive = selectedCategory === tab.id;
               return (
                 <button
                   key={tab.id}
                   data-tab-id={tab.id}
-                  onClick={() => handleSelectCategory(tab.id)}
+                  onClick={() => {
+                    setSelectedCategory(tab.id);
+                    setShowMoreMenu(false);
+                  }}
                   className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer shrink-0 ${
                     isActive
                       ? "bg-blue-600 text-white shadow-xs"
@@ -370,71 +383,82 @@ function CatalogContent() {
             })}
           </div>
 
-          {/* Right Gradient Fade Mask */}
-          {canScrollRight && (
-            <div className="pointer-events-none absolute right-12 sm:right-28 top-0 bottom-0 w-8 bg-gradient-to-l from-slate-50 dark:from-slate-950 to-transparent z-10" />
-          )}
+          {/* More (...) Dropdown Launcher for categories not seen on this screen */}
+          {overflowTabs.length > 0 && (
+            <div ref={moreMenuRef} className="relative shrink-0 z-20">
+              <button
+                type="button"
+                onClick={() => setShowMoreMenu((prev) => !prev)}
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold border transition cursor-pointer shrink-0 shadow-xs ${
+                  activeInOverflow
+                    ? "bg-blue-600 text-white border-blue-600 shadow-xs"
+                    : showMoreMenu
+                    ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-transparent"
+                    : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
+                }`}
+                title={
+                  activeInOverflow
+                    ? `${activeInOverflow.label} (${activeInOverflow.count})`
+                    : lang === "bn"
+                    ? "অন্যান্য ক্যাটাগরি"
+                    : "More Categories"
+                }
+              >
+                {activeInOverflow ? (
+                  <>
+                    {React.createElement(activeInOverflow.icon, { className: "w-4 h-4 shrink-0" })}
+                    <span className="whitespace-nowrap">{activeInOverflow.label}</span>
+                    <span className="text-[10px] px-1.5 py-0.2 rounded-full font-extrabold bg-blue-800 text-blue-100">
+                      {activeInOverflow.count}
+                    </span>
+                    <ChevronDown className="w-3.5 h-3.5 shrink-0 opacity-80" />
+                  </>
+                ) : (
+                  <>
+                    <MoreHorizontal className="w-4 h-4 shrink-0" />
+                    <span>{lang === "bn" ? "আরও" : "More"}</span>
+                    <ChevronDown className="w-3.5 h-3.5 shrink-0 opacity-60" />
+                  </>
+                )}
+              </button>
 
-          {/* Scroll Right Arrow Button */}
-          {canScrollRight && (
-            <button
-              type="button"
-              onClick={() => handleScroll("right")}
-              className="flex items-center justify-center w-8 h-8 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 shadow-xs shrink-0 transition cursor-pointer z-10"
-              title={lang === "bn" ? "ডানে স্ক্রোল করুন" : "Scroll Right"}
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          )}
-
-          {/* Horizontal More (...) Dropdown Launcher */}
-          <div ref={moreMenuRef} className="relative shrink-0 z-20">
-            <button
-              type="button"
-              onClick={() => setShowMoreMenu((prev) => !prev)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold border transition cursor-pointer shrink-0 shadow-xs ${
-                showMoreMenu
-                  ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-transparent"
-                  : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
-              }`}
-              title={lang === "bn" ? "সকল ক্যাটাগরি তালিকা" : "All Categories Dropdown"}
-            >
-              <MoreHorizontal className="w-4 h-4" />
-              <span className="hidden sm:inline">{lang === "bn" ? "আরও" : "More"}</span>
-            </button>
-
-            {/* Dropdown Menu Popover */}
-            {showMoreMenu && (
-              <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-1.5 z-40 space-y-0.5 animate-in fade-in zoom-in-95">
-                <div className="px-2.5 py-1 text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">
-                  {lang === "bn" ? "ক্যাটাগরি সমূহ" : "Select Category"}
+              {/* Dropdown Menu Popover: ONLY categories not seen on this screen */}
+              {showMoreMenu && (
+                <div className="absolute right-0 top-full mt-2 w-72 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-1.5 z-40 space-y-0.5 animate-in fade-in zoom-in-95">
+                  <div className="px-2.5 py-1.5 text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">
+                    {lang === "bn" ? "আরও ক্যাটাগরি" : "More Categories"}
+                  </div>
+                  {overflowTabs.map((tab) => {
+                    const IconComp = tab.icon;
+                    const isSelected = selectedCategory === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedCategory(tab.id);
+                          setShowMoreMenu(false);
+                        }}
+                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+                          isSelected
+                            ? "bg-blue-50 dark:bg-blue-950/80 text-blue-600 dark:text-blue-400 font-bold"
+                            : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <IconComp className="w-4 h-4 shrink-0" />
+                          <span className="truncate">{tab.label}</span>
+                        </div>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 shrink-0 ml-2">
+                          {tab.count}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
-                {categoryTabs.map((tab) => {
-                  const IconComp = tab.icon;
-                  const isSelected = selectedCategory === tab.id;
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => handleSelectCategory(tab.id)}
-                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition cursor-pointer ${
-                        isSelected
-                          ? "bg-blue-50 dark:bg-blue-950/80 text-blue-600 dark:text-blue-400 font-bold"
-                          : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <IconComp className="w-4 h-4" />
-                        <span>{tab.label}</span>
-                      </div>
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500">
-                        {tab.count}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Search Bar & Paper Size Filter Bar */}
