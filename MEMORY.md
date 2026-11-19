@@ -11,6 +11,7 @@
 * **Framework:** Next.js 16.4.6 (App Router + Turbopack), React 19, TypeScript.
 * **Database & ORM:** MySQL with Prisma ORM 6.4.1 (`prisma/schema.prisma`).
 * **Styling & Print Engine:** Tailwind CSS, `@media print` with `-webkit-print-color-adjust: exact !important;` and `break-inside: avoid;`.
+* **Permanent AdSense Policy (MANDATORY RULE ALWAYS):** All AdSense fields, banners, and slots MUST remain 100% completely hidden (`return null;`, zero visual boxes, zero dashed borders, zero placeholders, 0 DOM footprint) until official Google AdSense approval is received and `NEXT_PUBLIC_ENABLE_ADS=true` with a verified non-placeholder Publisher ID. Public and development pages must NEVER render sandbox placeholders or ad frames.
 * **Primary Target Audiences:**
   1. **Shopkeepers & F-Commerce:** Invoices, Cash Memos, Delivery Chalans, Quotations, Restaurant POS slips (80mm).
   2. **School Teachers & Institutes:** Academic Marksheets (GPA 5.00), Exam Schedules, Admit Cards (35x45mm photo), Testimonial/Certificates.
@@ -477,6 +478,13 @@
   6. **Verification & Build:**
      * `npx tsc --noEmit`: 0 errors.
      * `npm run build`: All 105 static and dynamic routes compiled in Next.js 16.4.6 Turbopack (Exit code 0).
+
+### AA. AdSense Complete Suppression & Zero-Footprint Policy Hardening
+* **Resolved User Request:** "I asked you this adsence fields should keep hide for now untill get advence approval . keep this in your memory for this project alwys. Then fixed this"
+* **Solution:**
+  1. Updated `src/components/AdSenseSlot.tsx`: Completely suppressed all sandbox mock frames and dashed placeholders from public and development screens. Returns `null` with 0 DOM footprint unless officially approved (`NEXT_PUBLIC_ENABLE_ADS=true` with a verified non-placeholder Publisher ID).
+  2. Permanently recorded the mandatory AdSense suppression rule in `MEMORY.md` (Section 1 and Section 2).
+  3. Verified build with `npx tsc --noEmit` and `npm run build` (Exit code 0). Committed and pushed to `origin/dev`.
 
 ---
 

@@ -14,10 +14,8 @@ export interface AdSenseSlotProps {
 
 const GOOGLE_ADSENSE_CLIENT_ID = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID || "ca-pub-XXXXXXXXXXXXXXXX";
 const ENABLE_ADS = process.env.NEXT_PUBLIC_ENABLE_ADS === "true";
-const IS_DEV = process.env.NODE_ENV !== "production";
 
 // Production-Calibrated Layout Reservations for Zero Cumulative Layout Shift (CLS < 0.01)
-// Accounts for standard IAB dimensions + 20px padding + 21px label + 2px border.
 const FORMAT_CLS_RESERVATION: Record<string, string> = {
   horizontal: "min-h-[95px] sm:min-h-[135px] w-full max-w-[728px]",
   rectangle: "min-h-[295px] w-full max-w-[336px]",
@@ -25,7 +23,7 @@ const FORMAT_CLS_RESERVATION: Record<string, string> = {
   auto: "min-h-[95px] sm:min-h-[135px] w-full",
 };
 
-// Dimensions description for developer/admin sandbox verification
+// Dimensions description for internal developer/admin sandbox verification
 const FORMAT_DIMENSIONS: Record<string, string> = {
   horizontal: "728 × 90 Leaderboard (320 × 50 Mobile)",
   rectangle: "300 × 250 / 336 × 280 Rectangle",
@@ -39,22 +37,28 @@ export default function AdSenseSlot({
   responsive = true,
   className = "",
   label = "Advertisement",
-  testMode,
+  testMode = false,
 }: AdSenseSlotProps) {
   const adPushedRef = useRef(false);
   const insRef = useRef<HTMLModElement>(null);
   const [isUnfilled, setIsUnfilled] = useState(false);
 
-  // Determine if sandbox/test mode is active:
-  // Active if explicitly passed, or if test mode is enabled in development without a real client ID.
-  const isSandbox =
-    testMode !== undefined
-      ? testMode
-      : process.env.NEXT_PUBLIC_ADS_TEST_MODE === "true" ||
-        (IS_DEV && (GOOGLE_ADSENSE_CLIENT_ID.includes("XXXX") || GOOGLE_ADSENSE_CLIENT_ID.includes("placeholder")));
+  // =========================================================================
+  // MANDATORY PROJECT RULE (Permanent Project Requirement):
+  // All AdSense slots must remain 100% COMPLETELY HIDDEN (return null, 0 DOM footprint,
+  // zero visual boxes, zero dashed borders, zero placeholders) until official Google
+  // AdSense approval is received and NEXT_PUBLIC_ENABLE_ADS is explicitly "true"
+  // with an official, non-placeholder Publisher ID.
+  // =========================================================================
+  const isApprovedAndActive =
+    ENABLE_ADS &&
+    !GOOGLE_ADSENSE_CLIENT_ID.includes("XXXX") &&
+    !GOOGLE_ADSENSE_CLIENT_ID.includes("placeholder");
 
-  // Google Publisher Policy Enforcement:
-  // Ads may strictly only be labeled as "Advertisement", "Sponsored Links", or official translation "বিজ্ঞাপন"
+  // Only allow sandbox preview if explicitly passed testMode === true (e.g. inside an internal admin test view)
+  const isExplicitSandbox = testMode === true;
+
+  // Google Publisher Policy Enforcement
   const compliantLabel =
     label === "Sponsored Links"
       ? "Sponsored Links"
@@ -64,12 +68,11 @@ export default function AdSenseSlot({
 
   // Dynamic push of adsbygoogle on component mount
   useEffect(() => {
-    if (!ENABLE_ADS || isSandbox || adPushedRef.current) return;
+    if (!isApprovedAndActive || adPushedRef.current) return;
 
     try {
       if (typeof window !== "undefined") {
         const insElement = insRef.current;
-        // Avoid duplicate push if Next.js already hydrated or pushed to this ins tag
         if (insElement && insElement.getAttribute("data-adsbygoogle-status")) {
           return;
         }
@@ -85,7 +88,6 @@ export default function AdSenseSlot({
           },
         });
 
-        // Listen for AdSense unfilled status via MutationObserver to prevent blank boxes
         if (insElement) {
           const observer = new MutationObserver((mutations) => {
             for (const mutation of mutations) {
@@ -105,26 +107,23 @@ export default function AdSenseSlot({
         }
       }
     } catch {
-      // AdSense push error swallowed to prevent UI disruption
+      // Swallowed to prevent UI disruption
     }
-  }, [slotId, format, isSandbox]);
+  }, [slotId, format, isApprovedAndActive]);
 
-  // If ads are globally disabled and not in sandbox mode, completely collapse
-  if (!ENABLE_ADS && !isSandbox) {
+  // Unless official AdSense is approved and enabled, completely collapse with 0 DOM footprint!
+  if (!isApprovedAndActive && !isExplicitSandbox) {
     return null;
   }
 
-  // If AdSense confirmed unfilled, gracefully collapse or hide to avoid empty dashed boxes
-  if (isUnfilled && !isSandbox) {
+  if (isUnfilled && !isExplicitSandbox) {
     return null;
   }
 
   const reservationClass = FORMAT_CLS_RESERVATION[format] || FORMAT_CLS_RESERVATION.auto;
 
-  // SAFE SANDBOX / TEST MODE PREVIEW
-  // Renders a high-fidelity visual blueprint unit for layout and responsiveness verification
-  // with ZERO risk of Google account bans for invalid self-impressions.
-  if (isSandbox) {
+  // Render sandbox ONLY when explicitly forced with testMode={true} (e.g. in an internal admin test preview)
+  if (isExplicitSandbox) {
     return (
       <aside
         role="region"
@@ -134,7 +133,7 @@ export default function AdSenseSlot({
         <div className="flex items-center gap-1.5 mb-1.5">
           <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
           <span className="text-[10px] uppercase font-mono font-bold tracking-widest text-blue-600 dark:text-blue-400">
-            ADSENSE SANDBOX • 0 IMPRESSIONS BILLED
+            ADSENSE SANDBOX • ADMIN TEST PREVIEW
           </span>
         </div>
 
@@ -151,7 +150,7 @@ export default function AdSenseSlot({
     );
   }
 
-  // PRODUCTION LIVE ADSENSE UNIT
+  // PRODUCTION LIVE ADSENSE UNIT (Only rendered when approved and active)
   return (
     <aside
       role="region"
