@@ -95,9 +95,9 @@ export async function POST(req: Request) {
 
     const hashedPassword = await hashPassword(password);
 
-    // If first user in database, grant ADMIN role, otherwise USER
-    const userCount = await prisma.user.count();
-    const role = userCount === 0 ? "ADMIN" : "USER";
+    // All public self-registrations strictly receive USER role (SEC-AUTH-03).
+    // Superuser administrative accounts must be provisioned explicitly via /admin/registration with ADMIN_PROVISION_KEY.
+    const role = "USER";
 
     const user = await prisma.user.create({
       data: {

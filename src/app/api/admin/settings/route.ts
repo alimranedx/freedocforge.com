@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getAdminSession } from "@/lib/auth";
+import { handleApiError } from "@/lib/errorHandler";
 
 // In-memory runtime persistence for platform configuration
 let currentPlatformSettings = {
@@ -42,9 +43,45 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
+
+    if (!body || typeof body !== "object") {
+      return NextResponse.json({ error: "Invalid payload format" }, { status: 400 });
+    }
+
+    // Input bounds validation and field whitelisting to prevent prototype/property pollution (SEC-NEXT-01)
+    const sanitized: Partial<typeof currentPlatformSettings> = {};
+
+    if (typeof body.platformName === "string") {
+      sanitized.platformName = body.platformName.trim().slice(0, 100);
+    }
+    if (typeof body.supportPhone === "string") {
+      sanitized.supportPhone = body.supportPhone.trim().slice(0, 50);
+    }
+    if (typeof body.supportEmail === "string") {
+      sanitized.supportEmail = body.supportEmail.trim().slice(0, 100);
+    }
+    if (typeof body.officeAddress === "string") {
+      sanitized.officeAddress = body.officeAddress.trim().slice(0, 300);
+    }
+    if (typeof body.defaultCurrency === "string") {
+      sanitized.defaultCurrency = body.defaultCurrency.trim().slice(0, 20);
+    }
+    if (typeof body.maintenanceMode === "boolean") {
+      sanitized.maintenanceMode = body.maintenanceMode;
+    }
+    if (typeof body.maintenanceMessage === "string") {
+      sanitized.maintenanceMessage = body.maintenanceMessage.trim().slice(0, 500);
+    }
+    if (typeof body.aiModelEngine === "string") {
+      sanitized.aiModelEngine = body.aiModelEngine.trim().slice(0, 50);
+    }
+    if (typeof body.defaultAiTokens === "number" && !isNaN(body.defaultAiTokens)) {
+      sanitized.defaultAiTokens = Math.max(0, Math.min(1000, Math.floor(body.defaultAiTokens)));
+    }
+
     currentPlatformSettings = {
       ...currentPlatformSettings,
-      ...body,
+      ...sanitized,
       lastUpdated: new Date().toISOString(),
     };
 
@@ -54,6 +91,6 @@ export async function POST(req: Request) {
       settings: currentPlatformSettings,
     });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || "Failed to update platform settings" }, { status: 500 });
+    return handleApiError(error, "Failed to update platform settings");
   }
 }

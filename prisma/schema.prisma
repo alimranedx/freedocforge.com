@@ -50,6 +50,8 @@ model OrganizationProfile {
   terms        String?         @db.Text
   documents    SavedDocument[]
   createdAt    DateTime        @default(now())
+
+  @@index([userId])
 }
 
 model Category {
@@ -97,4 +99,8 @@ model SavedDocument {
   dataJson        Json
   createdAt       DateTime             @default(now())
   updatedAt       DateTime             @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([category, createdAt])
+  @@index([documentNumber])
 }

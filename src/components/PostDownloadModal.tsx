@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect } from "react";
-import { CheckCircle2, X, Download, ArrowRight, Printer, Sparkles } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import Link from "next/link";
+import { CheckCircle2, X, Download, ArrowRight, Printer, Sparkles, Store, History, UserPlus } from "lucide-react";
 import AdSenseSlot from "@/components/AdSenseSlot";
 
 interface PostDownloadModalProps {
@@ -19,6 +20,18 @@ export default function PostDownloadModal({
   lang = "en",
   paperSize = "A4",
 }: PostDownloadModalProps) {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    fetch("/api/auth/me")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.authenticated) setIsLoggedIn(true);
+      })
+      .catch(() => {});
+  }, [isOpen]);
+
   // ESC key to dismiss
   useEffect(() => {
     if (!isOpen) return;
@@ -73,6 +86,51 @@ export default function PostDownloadModal({
             : `${documentTitle ? `"${documentTitle}"` : "Your document"} has been generated in vector high-resolution. You can print directly or continue customizing.`}
         </p>
 
+        {/* HIGH-CONVERTING MERCHANT SIGNUP / DASHBOARD CALLOUT */}
+        <div className="my-5 p-4 rounded-2xl bg-gradient-to-r from-blue-50 via-indigo-50/60 to-purple-50/50 dark:from-blue-950/40 dark:via-indigo-950/30 dark:to-purple-950/30 border border-blue-200/80 dark:border-blue-800/60 text-left flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xs">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+              {isLoggedIn ? <History className="w-5 h-5" /> : <Store className="w-5 h-5" />}
+            </div>
+            <div>
+              <h4 className="text-xs font-black text-slate-900 dark:text-white leading-tight">
+                {isLoggedIn
+                  ? lang === "bn"
+                    ? "ডকুমেন্টটি আপনার ড্যাশবোর্ডে সংরক্ষিত রয়েছে"
+                    : "Document archived in your merchant dashboard"
+                  : lang === "bn"
+                  ? "ভবিষ্যতের চালানে লোগো ও ঠিকানা অটো-ফিল করতে চান?"
+                  : "Save logo & details for 1-second auto-fill?"}
+              </h4>
+              <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5 leading-snug">
+                {isLoggedIn
+                  ? lang === "bn"
+                    ? "যেকোনো সময় হিস্ট্রি থেকে রি-প্রিন্ট বা এডিট করতে পারেন।"
+                    : "Review, edit, or re-print your documents anytime from history."
+                  : lang === "bn"
+                  ? "একটি ফ্রি প্রিসেট সংরক্ষণ করুন, পরবর্তী প্রতিটি চালানে সময় বাঁচান।"
+                  : "Save your brand preset once for automatic 1-second generation on future orders."}
+              </p>
+            </div>
+          </div>
+          <Link
+            href={isLoggedIn ? "/dashboard/history" : "/register"}
+            onClick={onClose}
+            className="shrink-0 w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition shadow-xs group"
+          >
+            <span>
+              {isLoggedIn
+                ? lang === "bn"
+                  ? "হিস্ট্রি দেখুন →"
+                  : "View History →"
+                : lang === "bn"
+                ? "ফ্রি সাইন আপ →"
+                : "Sign Up Free →"}
+            </span>
+            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+          </Link>
+        </div>
+
         {/* Policy-Safe AdSense Slot (Only rendered when approved/enabled) */}
         <div className="my-4">
           <AdSenseSlot
@@ -84,11 +142,11 @@ export default function PostDownloadModal({
         </div>
 
         {/* Action Controls */}
-        <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+        <div className="mt-5 flex flex-col sm:flex-row items-center justify-center gap-3">
           <button
             type="button"
             onClick={onClose}
-            className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs sm:text-sm shadow-md transition cursor-pointer"
+            className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs sm:text-sm transition cursor-pointer"
           >
             {lang === "bn" ? "এডিটর-এ ফিরে যান" : "Continue Editing"}
           </button>

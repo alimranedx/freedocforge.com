@@ -11,9 +11,12 @@ export default function robots(): MetadataRoute.Robots {
         disallow: [
           "/admin",
           "/admin/",
+          "/admin/*",
           "/api/",
+          "/api/*",
           "/dashboard",
           "/dashboard/",
+          "/dashboard/*",
         ],
       },
       {
@@ -22,9 +25,12 @@ export default function robots(): MetadataRoute.Robots {
         disallow: [
           "/admin",
           "/admin/",
+          "/admin/*",
           "/api/",
+          "/api/*",
           "/dashboard",
           "/dashboard/",
+          "/dashboard/*",
         ],
       },
       {
@@ -33,7 +39,12 @@ export default function robots(): MetadataRoute.Robots {
         disallow: [
           "/admin",
           "/admin/",
+          "/admin/*",
           "/api/",
+          "/api/*",
+          "/dashboard",
+          "/dashboard/",
+          "/dashboard/*",
         ],
       },
     ],

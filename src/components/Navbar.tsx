@@ -164,7 +164,7 @@ export default function Navbar() {
   ];
 
   return (
-    <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40 print:hidden transition-colors duration-200">
+    <header className="sticky top-0 z-40 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 supports-[backdrop-filter]:bg-white/70 dark:supports-[backdrop-filter]:bg-slate-950/70 print:hidden transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand */}
         <Link href="/" className="flex items-center gap-2 group shrink-0">
@@ -208,9 +208,10 @@ export default function Navbar() {
             </button>
 
             {activeDropdown === "shop" && (
-              <div className="absolute left-0 mt-2 w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="absolute left-0 mt-2 w-80 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150 ring-1 ring-slate-900/5 overflow-hidden">
+                <div className="h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-green-500 -mt-2 mb-1" />
                 <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-800">
-                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{t("navShop")}</p>
+                  <p className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">{t("navShop")}</p>
                   <p className="text-xs text-slate-500 dark:text-slate-400">{t("navShopDesc")}</p>
                 </div>
                 <div className="p-1.5 space-y-0.5">
@@ -219,17 +220,17 @@ export default function Navbar() {
                       key={idx}
                       href={item.href}
                       onClick={() => setActiveDropdown(null)}
-                      className="flex items-start justify-between p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition group"
+                      className="flex items-start justify-between p-2.5 rounded-xl hover:bg-emerald-50/70 dark:hover:bg-emerald-950/30 transition group"
                     >
                       <div>
-                        <p className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                        <p className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
                           {item.title}
                         </p>
                         <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
                           {item.desc}
                         </p>
                       </div>
-                      <span className="text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold px-1.5 py-0.5 rounded shrink-0 ml-2">
+                      <span className="text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold px-1.5 py-0.5 rounded shrink-0 ml-2 group-hover:bg-emerald-100 dark:group-hover:bg-emerald-900/60 group-hover:text-emerald-800 dark:group-hover:text-emerald-300 transition-colors">
                         {item.badge}
                       </span>
                     </Link>
@@ -262,9 +263,10 @@ export default function Navbar() {
             </button>
 
             {activeDropdown === "school" && (
-              <div className="absolute left-0 mt-2 w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="absolute left-0 mt-2 w-80 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150 ring-1 ring-slate-900/5 overflow-hidden">
+                <div className="h-1 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 -mt-2 mb-1" />
                 <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-800">
-                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{t("navSchool")}</p>
+                  <p className="text-[11px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">{t("navSchool")}</p>
                   <p className="text-xs text-slate-500 dark:text-slate-400">{t("navSchoolDesc")}</p>
                 </div>
                 <div className="p-1.5 space-y-0.5">
@@ -273,17 +275,17 @@ export default function Navbar() {
                       key={idx}
                       href={item.href}
                       onClick={() => setActiveDropdown(null)}
-                      className="flex items-start justify-between p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition group"
+                      className="flex items-start justify-between p-2.5 rounded-xl hover:bg-blue-50/70 dark:hover:bg-blue-950/30 transition group"
                     >
                       <div>
-                        <p className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                        <p className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                           {item.title}
                         </p>
                         <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
                           {item.desc}
                         </p>
                       </div>
-                      <span className="text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold px-1.5 py-0.5 rounded shrink-0 ml-2">
+                      <span className="text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold px-1.5 py-0.5 rounded shrink-0 ml-2 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/60 group-hover:text-blue-800 dark:group-hover:text-blue-300 transition-colors">
                         {item.badge}
                       </span>
                     </Link>
@@ -323,9 +325,10 @@ export default function Navbar() {
             </button>
 
             {activeDropdown === "medical" && (
-              <div className="absolute left-0 mt-2 w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="absolute left-0 mt-2 w-80 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150 ring-1 ring-slate-900/5 overflow-hidden">
+                <div className="h-1 bg-gradient-to-r from-rose-500 via-pink-500 to-teal-500 -mt-2 mb-1" />
                 <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-800">
-                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{t("navMedical")}</p>
+                  <p className="text-[11px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">{t("navMedical")}</p>
                   <p className="text-xs text-slate-500 dark:text-slate-400">{t("navMedicalDesc")}</p>
                 </div>
                 <div className="p-1.5 space-y-0.5">
@@ -334,17 +337,17 @@ export default function Navbar() {
                       key={idx}
                       href={item.href}
                       onClick={() => setActiveDropdown(null)}
-                      className="flex items-start justify-between p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition group"
+                      className="flex items-start justify-between p-2.5 rounded-xl hover:bg-rose-50/70 dark:hover:bg-rose-950/30 transition group"
                     >
                       <div>
-                        <p className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-rose-600 dark:group-hover:text-rose-400">
+                        <p className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors">
                           {item.title}
                         </p>
                         <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
                           {item.desc}
                         </p>
                       </div>
-                      <span className="text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold px-1.5 py-0.5 rounded shrink-0 ml-2">
+                      <span className="text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold px-1.5 py-0.5 rounded shrink-0 ml-2 group-hover:bg-rose-100 dark:group-hover:bg-rose-900/60 group-hover:text-rose-800 dark:group-hover:text-rose-300 transition-colors">
                         {item.badge}
                       </span>
                     </Link>
@@ -366,28 +369,31 @@ export default function Navbar() {
 
         {/* Right CTA / Controls / Auth */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Language Switcher Button (Works on public site without login) */}
-          <button
-            onClick={toggleLang}
-            className="flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100/70 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer"
-            title={lang === "en" ? "বাংলা ভাষায় পরিবর্তন করুন" : "Switch to English"}
-          >
-            <Globe className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-            <span>{lang === "en" ? "বাংলা" : "EN"}</span>
-          </button>
+          {/* Segmented Controls Container for Language & Theme */}
+          <div className="flex items-center bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-xl border border-slate-200 dark:border-slate-700/60 shadow-2xs">
+            <button
+              onClick={toggleLang}
+              className="flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-700 hover:shadow-2xs active:scale-95 transition-all cursor-pointer"
+              title={lang === "en" ? "বাংলা ভাষায় পরিবর্তন করুন" : "Switch to English"}
+            >
+              <Globe className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+              <span>{lang === "en" ? "বাংলা" : "EN"}</span>
+            </button>
 
-          {/* Dark / Light Mode Toggle Button (Works on public site without login) */}
-          <button
-            onClick={toggleTheme}
-            className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100/70 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer"
-            title={theme === "light" ? "Switch to Dark Mode" : "Switch to Light Mode"}
-          >
-            {theme === "light" ? (
-              <Moon className="w-4 h-4 text-slate-700" />
-            ) : (
-              <Sun className="w-4 h-4 text-amber-400" />
-            )}
-          </button>
+            <div className="w-px h-4 bg-slate-200 dark:border-slate-700 my-auto" />
+
+            <button
+              onClick={toggleTheme}
+              className="p-1.5 px-2 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-700 hover:shadow-2xs active:scale-95 transition-all cursor-pointer"
+              title={theme === "light" ? "Switch to Dark Mode" : "Switch to Light Mode"}
+            >
+              {theme === "light" ? (
+                <Moon className="w-4 h-4 text-slate-700" />
+              ) : (
+                <Sun className="w-4 h-4 text-amber-400" />
+              )}
+            </button>
+          </div>
 
           {/* User Auth Buttons */}
           {user ? (

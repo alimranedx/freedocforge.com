@@ -243,14 +243,20 @@ export default function UserWorkspaceShell({
               <span className="text-[10px] font-extrabold text-blue-600 dark:text-blue-400 uppercase tracking-wider block">
                 {t("activeShop")}
               </span>
-              <Link
-                href="/dashboard/shop-profile"
-                className="text-[10px] font-bold text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-0.5 transition"
-                title={t("editPresetTooltip")}
-              >
-                <Edit3 className="w-3 h-3" />
-                <span>{lang === "bn" ? "এডিট" : "Edit"}</span>
-              </Link>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200 dark:border-emerald-800/80 px-1.5 py-0.2 rounded-full flex items-center gap-1 shadow-2xs">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span>Cloud Sync</span>
+                </span>
+                <Link
+                  href="/dashboard/shop-profile"
+                  className="text-[10px] font-bold text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-0.5 transition"
+                  title={t("editPresetTooltip")}
+                >
+                  <Edit3 className="w-3 h-3" />
+                  <span>{lang === "bn" ? "এডিট" : "Edit"}</span>
+                </Link>
+              </div>
             </div>
 
             <div className="flex items-center justify-between gap-2.5">
@@ -290,9 +296,9 @@ export default function UserWorkspaceShell({
                   key={item.href}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs transition ${
+                  className={`relative flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs transition overflow-hidden ${
                     isActive
-                      ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold shadow-xs"
+                      ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold shadow-md shadow-blue-500/20 before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:rounded-r before:bg-white"
                       : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white font-semibold"
                   }`}
                 >

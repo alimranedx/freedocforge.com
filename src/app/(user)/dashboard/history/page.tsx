@@ -16,6 +16,9 @@ import {
   Share2,
   X,
   Clock,
+  CloudUpload,
+  RefreshCw,
+  CheckCircle2,
 } from "lucide-react";
 import { useUserDashboard } from "@/context/UserDashboardContext";
 import ShareDocumentModal from "@/components/ShareDocumentModal";
@@ -75,22 +78,25 @@ export default function SavedDocumentsHistoryPage() {
   const [previewItem, setPreviewItem] = useState<HistoryItem | null>(null);
   const [shareItem, setShareItem] = useState<HistoryItem | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [unsyncedLocalDocs, setUnsyncedLocalDocs] = useState<any[]>([]);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncSuccessMessage, setSyncSuccessMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    // 1. Purge legacy un-scoped localStorage to prevent multi-tenant cross-user leakage
+  const loadAllDocuments = async () => {
+    setIsLoading(true);
+    let cloudList: HistoryItem[] = [];
+    let cloudIds = new Set<string>();
+
     try {
-      localStorage.removeItem("freedocforge_history");
-    } catch {}
-
-    // 2. Fetch authenticated user's documents from cloud API
-    fetch("/api/user/documents")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
+      // 1. Fetch user documents from cloud API
+      const res = await fetch("/api/user/documents");
+      if (res.ok) {
+        const data = await res.json();
         if (data && Array.isArray(data.documents)) {
           const uid = data.userId || null;
           if (uid) setActiveUserId(uid);
 
-          const cloudDocs: HistoryItem[] = data.documents.map((d: any) => ({
+          cloudList = data.documents.map((d: any) => ({
             id: d.id,
             templateSlug: d.templateSlug,
             templateTitle: d.templateTitle,
@@ -101,41 +107,102 @@ export default function SavedDocumentsHistoryPage() {
             date: new Date(d.createdAt).toISOString().split("T")[0],
             status: (d.status || "Saved") as any,
           }));
+          cloudIds = new Set(data.documents.map((d: any) => d.id));
 
-          const deduped = deduplicateHistory(cloudDocs);
-          setHistory(deduped);
-
-          // Cache to user-scoped storage only
           if (uid) {
             try {
-              localStorage.setItem(`freedocforge_history_${uid}`, JSON.stringify(deduped));
+              localStorage.setItem(`freedocforge_history_${uid}`, JSON.stringify(cloudList));
             } catch {}
           }
-        } else {
-          // Unauthenticated or non-array response: clean empty state
-          setHistory([]);
         }
-      })
-      .catch(() => {
-        // True network/offline failure only: attempt user-scoped recovery if present
-        try {
-          if (activeUserId) {
-            const saved = localStorage.getItem(`freedocforge_history_${activeUserId}`);
-            if (saved) {
-              const parsed = JSON.parse(saved);
-              if (Array.isArray(parsed) && parsed.length > 0) {
-                setHistory(deduplicateHistory(parsed));
-                return;
-              }
-            }
-          }
-        } catch {}
-        setHistory([]);
-      })
-      .finally(() => setIsLoading(false));
+      }
+    } catch (e) {
+      console.warn("Cloud documents load error:", e);
+    }
+
+    // 2. Check local guest documents
+    let localList: any[] = [];
+    try {
+      const saved = localStorage.getItem("freedocforge_history");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) localList = parsed;
+      }
+    } catch (e) {
+      console.error("Local history parse error", e);
+    }
+
+    // Unsynced guest records: either have "local-" ID or not in cloud
+    const unsynced = localList.filter((item) => {
+      if (!item.id || item.id.startsWith("local-") || item.id.startsWith("hist-")) {
+        return !cloudList.some((c) => c.documentNumber === item.documentNumber);
+      }
+      return !cloudIds.has(item.id);
+    });
+
+    setUnsyncedLocalDocs(unsynced);
+
+    const formattedLocal: HistoryItem[] = unsynced.map((d: any) => ({
+      id: d.id || `local-${Date.now()}`,
+      templateSlug: d.templateSlug,
+      templateTitle: d.templateTitle,
+      category: d.category || "Business",
+      documentNumber: d.documentNumber || "DOC-PRESET",
+      recipientName: d.recipientName || "Guest Draft",
+      amountOrDetails: d.amountOrDetails || "Local Session",
+      date: d.date || new Date().toISOString().split("T")[0],
+      status: (d.status || "Saved") as any,
+    }));
+
+    setHistory(deduplicateHistory([...cloudList, ...formattedLocal]));
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    loadAllDocuments();
   }, []);
 
-  // Gracefully guarantee unique history items across the board
+  const handleSyncGuestDocs = async () => {
+    if (unsyncedLocalDocs.length === 0 || isSyncing) return;
+    setIsSyncing(true);
+    let syncedCount = 0;
+
+    for (const doc of unsyncedLocalDocs) {
+      try {
+        await fetch("/api/user/documents", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            templateSlug: doc.templateSlug || "f-commerce-invoice",
+            templateTitle: doc.templateTitle || "Saved Document",
+            category: doc.category || "Business",
+            documentNumber: doc.documentNumber || `INV-${Date.now()}`,
+            recipientName: doc.recipientName || "Customer",
+            amountOrDetails: doc.amountOrDetails || "৳ 0",
+            status: doc.status || "Saved",
+            dataJson: doc.dataJson || {},
+          }),
+        });
+        syncedCount++;
+      } catch (err) {
+        console.warn("Failed to sync item:", doc.documentNumber, err);
+      }
+    }
+
+    try {
+      localStorage.removeItem("freedocforge_history");
+    } catch {}
+    setUnsyncedLocalDocs([]);
+    setSyncSuccessMessage(
+      lang === "bn"
+        ? `${syncedCount}টি পূর্ববর্তী ডকুমেন্ট ক্লাউড অ্যাকাউন্টে সফলভাবে সিঙ্ক হয়েছে!`
+        : `Successfully synced ${syncedCount} guest documents to your cloud account!`
+    );
+    setTimeout(() => setSyncSuccessMessage(null), 4000);
+    setIsSyncing(false);
+    await loadAllDocuments();
+  };
+
   const uniqueHistory = useMemo(() => deduplicateHistory(history), [history]);
 
   const counts = useMemo(() => {
@@ -158,6 +225,11 @@ export default function SavedDocumentsHistoryPage() {
 
     return { all: uniqueHistory.length, receipts, routines, exams, medicals };
   }, [uniqueHistory]);
+
+  const totalReceipts = counts.receipts;
+  const totalRoutines = counts.routines;
+  const totalExams = counts.exams;
+  const totalMedical = counts.medicals;
 
   const handleDelete = async (id: string) => {
     // Optimistic UI removal
@@ -247,54 +319,106 @@ export default function SavedDocumentsHistoryPage() {
         </Link>
       </div>
 
-      {/* 2. THREE QUICK SUMMARY MICRO-CARDS */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-center justify-between">
-          <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-              {lang === "bn" ? "মোট সংরক্ষিত" : "Total Saved"}
+      {/* 1. GUEST DOCUMENTS CLOUD SYNC CALLOUT */}
+      {unsyncedLocalDocs.length > 0 && (
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+              <CloudUpload className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
+                {lang === "bn"
+                  ? `${unsyncedLocalDocs.length}টি পূর্ববর্তী গেস্ট ডকুমেন্ট পাওয়া গেছে!`
+                  : `Found ${unsyncedLocalDocs.length} documents from your guest session!`}
+              </h4>
+              <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
+                {lang === "bn"
+                  ? "সাইন আপের আগে তৈরি করা চালানগুলো স্থায়ীভাবে আপনার ক্লাউড অ্যাকাউন্টে যুক্ত করতে নিচের বাটনে ক্লিক করুন।"
+                  : "Sync documents created before registering so they are safely backed up to your account."}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleSyncGuestDocs}
+            disabled={isSyncing}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white font-bold text-xs shadow-xs transition cursor-pointer shrink-0"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? "animate-spin" : ""}`} />
+            <span>
+              {isSyncing
+                ? lang === "bn"
+                  ? "সিঙ্ক হচ্ছে..."
+                  : "Syncing..."
+                : lang === "bn"
+                ? "ক্লাউডে ইমপোর্ট ও সিঙ্ক করুন"
+                : "Import to Cloud Account"}
             </span>
-            <h4 className="text-lg font-black text-slate-900 dark:text-white mt-0.5">
-              {uniqueHistory.length} {lang === "bn" ? "টি ডকুমেন্ট" : "Records"}
-            </h4>
+          </button>
+        </div>
+      )}
+
+      {/* Sync Success Toast */}
+      {syncSuccessMessage && (
+        <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center gap-2 animate-in fade-in">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <span>{syncSuccessMessage}</span>
+        </div>
+      )}
+
+      {/* 2. ACTIVITY & VOLUME KPI RIBBON */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+            {lang === "bn" ? "মোট সংরক্ষিত" : "Total Documents"}
+          </span>
+          <div className="text-xl font-black text-slate-900 dark:text-white mt-1">
+            {uniqueHistory.length}
           </div>
-          <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-            <FileText className="w-4 h-4" />
-          </div>
+          <span className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold mt-0.5 block">
+            {lang === "bn" ? "রেকর্ড প্রস্তুত" : "Archived records"}
+          </span>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-center justify-between">
-          <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-              {lang === "bn" ? "ক্যাশ মেমো ও রসিদ" : "Receipts & Memos"}
-            </span>
-            <h4 className="text-lg font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
-              {counts.receipts} {lang === "bn" ? "টি ভাউচার" : "Billed Memos"}
-            </h4>
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+            {lang === "bn" ? "ক্যাশ মেমো ও বিল" : "Receipts & POS"}
+          </span>
+          <div className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-1">
+            {counts.receipts}
           </div>
-          <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-            <Receipt className="w-4 h-4" />
-          </div>
+          <span className="text-[10px] text-slate-500 font-semibold mt-0.5 block">
+            {lang === "bn" ? "বাণিজ্যিক চালান" : "Invoices & slips"}
+          </span>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-center justify-between">
-          <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-              {lang === "bn" ? "রি-প্রিন্ট সুবিধা" : "1-Click Re-Print"}
-            </span>
-            <h4 className="text-lg font-black text-indigo-600 dark:text-indigo-400 mt-0.5">
-              100% Free
-            </h4>
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+            {lang === "bn" ? "রুটিন ও শিডিউল" : "Academic Records"}
+          </span>
+          <div className="text-xl font-black text-blue-600 dark:text-blue-400 mt-1">
+            {counts.routines + counts.exams}
           </div>
-          <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
-            <Printer className="w-4 h-4" />
+          <span className="text-[10px] text-slate-500 font-semibold mt-0.5 block">
+            {lang === "bn" ? "ক্লাস ও পরীক্ষার সূচি" : "Routines & exams"}
+          </span>
+        </div>
+
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+            {lang === "bn" ? "চিকিৎসা ও ক্লিনিক" : "Clinical & Rx"}
+          </span>
+          <div className="text-xl font-black text-teal-600 dark:text-teal-400 mt-1">
+            {counts.medicals}
           </div>
+          <span className="text-[10px] text-slate-500 font-semibold mt-0.5 block">
+            {lang === "bn" ? "প্রেসক্রিপশন ও বিল" : "Prescriptions & bills"}
+          </span>
         </div>
       </div>
 
-      {/* 3. FILTER PILLS & SEARCH BAR */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs">
-        {/* Pillar Filter Pills with Live Badges */}
+      {/* 3. 4-PILLAR FILTER AND SEARCH BAR */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
           {[
             { id: "all", label: lang === "bn" ? "সকল" : "All", count: counts.all, icon: FileText },
@@ -401,6 +525,11 @@ export default function SavedDocumentsHistoryPage() {
                         <span className="font-mono font-black text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/80 px-2 py-0.5 rounded border border-blue-200/60 dark:border-blue-900/60">
                           {item.documentNumber}
                         </span>
+                        {(item.id.startsWith("local-") || item.id.startsWith("hist-")) && (
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                            {lang === "bn" ? "গেস্ট ড্রাফট" : "Guest Draft"}
+                          </span>
+                        )}
                         <span className="text-[10px] text-slate-400 flex items-center gap-1 font-medium">
                           <Calendar className="w-3 h-3" />
                           <span>{item.date}</span>
@@ -459,6 +588,19 @@ export default function SavedDocumentsHistoryPage() {
                     >
                       <Eye className="w-4 h-4" />
                     </button>
+
+                    {/* WhatsApp Direct Share */}
+                    <a
+                      href={`https://wa.me/?text=${encodeURIComponent(
+                        `*${item.templateTitle}*\nDocument: ${item.documentNumber}\nRecipient: ${item.recipientName}\nDetails: ${item.amountOrDetails}\nGenerated via FreeDocForge.com`
+                      )}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-xl transition cursor-pointer"
+                      title={lang === "bn" ? "হোয়াটসঅ্যাপে শেয়ার করুন" : "Share via WhatsApp"}
+                    >
+                      <Share2 className="w-4 h-4" />
+                    </a>
 
                     {/* Delete button with confirmation */}
                     {deleteConfirmId === item.id ? (

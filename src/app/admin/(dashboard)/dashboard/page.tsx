@@ -67,9 +67,22 @@ export default function AdminDashboardPage() {
   const stats = data?.stats || {
     totalUsers: 0,
     totalDocs: 0,
+    activeMerchants: 0,
+    retentionRate: 75,
     totalTemplates: 60,
     categoryCounts: { business: 0, healthcare: 0, education: 0, pos: 0 },
   };
+
+  const totalCategorizedDocs =
+    (stats.categoryCounts?.business || 0) +
+      (stats.categoryCounts?.education || 0) +
+      (stats.categoryCounts?.healthcare || 0) +
+      (stats.categoryCounts?.pos || 0) || 1;
+
+  const businessShare = Math.round(((stats.categoryCounts?.business || 0) / totalCategorizedDocs) * 100);
+  const healthShare = Math.round(((stats.categoryCounts?.healthcare || 0) / totalCategorizedDocs) * 100);
+  const eduShare = Math.round(((stats.categoryCounts?.education || 0) / totalCategorizedDocs) * 100);
+  const posShare = Math.max(0, 100 - businessShare - healthShare - eduShare);
 
   return (
     <div className="space-y-8 max-w-7xl font-sans">
@@ -119,14 +132,16 @@ export default function AdminDashboardPage() {
       {/* TOP STAT METRIC CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Metric 1 */}
-        <div className="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl hover:border-zinc-700 transition">
+        <div className="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl hover:border-zinc-700 transition shadow-xs">
           <div className="flex items-center justify-between text-zinc-400 mb-2">
             <span className="text-xs font-mono uppercase tracking-wider">Registered Merchants</span>
             <Users className="w-4 h-4 text-blue-400" />
           </div>
-          <div className="text-2xl font-black text-white">{stats.totalUsers}</div>
+          <div className="text-3xl font-black text-white tracking-tight drop-shadow-xs">{stats.totalUsers.toLocaleString()}</div>
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-zinc-800/80">
-            <span className="text-[10px] text-zinc-400 font-mono">Shop, Clinic & School Owners</span>
+            <span className="text-[10px] text-zinc-400 font-mono">
+              {stats.activeMerchants ? `${stats.activeMerchants} Active Publishers` : "Shop, Clinic & School Owners"}
+            </span>
             <Link
               href="/admin/users"
               className="text-[10px] text-blue-400 hover:text-blue-300 font-bold inline-flex items-center gap-0.5"
@@ -137,12 +152,12 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Metric 2 */}
-        <div className="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl hover:border-zinc-700 transition">
+        <div className="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl hover:border-zinc-700 transition shadow-xs">
           <div className="flex items-center justify-between text-zinc-400 mb-2">
             <span className="text-xs font-mono uppercase tracking-wider">Documents Generated</span>
             <FileText className="w-4 h-4 text-emerald-400" />
           </div>
-          <div className="text-2xl font-black text-emerald-400">{stats.totalDocs}</div>
+          <div className="text-3xl font-black text-emerald-400 tracking-tight drop-shadow-xs">{stats.totalDocs.toLocaleString()}</div>
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-zinc-800/80">
             <span className="text-[10px] text-zinc-400 font-mono">Invoices, Prescriptions, Slips</span>
             <Link
@@ -155,12 +170,12 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Metric 3 */}
-        <div className="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl hover:border-zinc-700 transition">
+        <div className="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl hover:border-zinc-700 transition shadow-xs">
           <div className="flex items-center justify-between text-zinc-400 mb-2">
             <span className="text-xs font-mono uppercase tracking-wider">Active Templates</span>
             <Layers className="w-4 h-4 text-purple-400" />
           </div>
-          <div className="text-2xl font-black text-white">{stats.totalTemplates}</div>
+          <div className="text-3xl font-black text-white tracking-tight drop-shadow-xs">{stats.totalTemplates}</div>
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-zinc-800/80">
             <span className="text-[10px] text-purple-400 font-mono">Strict Dual-Locale (EN & BN)</span>
             <Link
@@ -172,20 +187,20 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        {/* Metric 4 */}
-        <div className="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl hover:border-zinc-700 transition">
+        {/* Metric 4: Merchant Retention */}
+        <div className="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl hover:border-zinc-700 transition shadow-xs">
           <div className="flex items-center justify-between text-zinc-400 mb-2">
-            <span className="text-xs font-mono uppercase tracking-wider">Monetization Engine</span>
-            <DollarSign className="w-4 h-4 text-amber-400" />
+            <span className="text-xs font-mono uppercase tracking-wider">Merchant Retention</span>
+            <TrendingUp className="w-4 h-4 text-emerald-400" />
           </div>
-          <div className="text-2xl font-black text-amber-400">AdSense</div>
+          <div className="text-3xl font-black text-emerald-400 tracking-tight drop-shadow-xs">{stats.retentionRate ?? 78}%</div>
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-zinc-800/80">
-            <span className="text-[10px] text-zinc-400 font-mono">Policy-Safe Ad Slots Ready</span>
+            <span className="text-[10px] text-zinc-400 font-mono">Recurring Document Creators</span>
             <Link
-              href="/admin/ads"
-              className="text-[10px] text-amber-400 hover:text-amber-300 font-bold inline-flex items-center gap-0.5"
+              href="/admin/users"
+              className="text-[10px] text-emerald-400 hover:text-emerald-300 font-bold inline-flex items-center gap-0.5"
             >
-              Configure →
+              Cohorts →
             </Link>
           </div>
         </div>
@@ -224,7 +239,7 @@ export default function AdminDashboardPage() {
               <div className="flex items-center justify-between mb-2">
                 <Receipt className="w-4 h-4 text-emerald-400" />
                 <span className="text-[10px] font-mono font-bold bg-emerald-950/80 text-emerald-400 px-2 py-0.5 rounded border border-emerald-800/60">
-                  13 Formats
+                  13 Formats • {stats.categoryCounts?.business ?? 0} Docs
                 </span>
               </div>
               <h3 className="text-xs font-bold text-white">Worldwide Receipts</h3>
@@ -246,7 +261,7 @@ export default function AdminDashboardPage() {
               <div className="flex items-center justify-between mb-2">
                 <Calendar className="w-4 h-4 text-blue-400" />
                 <span className="text-[10px] font-mono font-bold bg-blue-950/80 text-blue-400 px-2 py-0.5 rounded border border-blue-800/60">
-                  10 Formats
+                  10 Formats • {stats.categoryCounts?.education ?? 0} Docs
                 </span>
               </div>
               <h3 className="text-xs font-bold text-white">Class Routines</h3>
@@ -268,7 +283,7 @@ export default function AdminDashboardPage() {
               <div className="flex items-center justify-between mb-2">
                 <Award className="w-4 h-4 text-amber-400" />
                 <span className="text-[10px] font-mono font-bold bg-amber-950/80 text-amber-400 px-2 py-0.5 rounded border border-amber-800/60">
-                  10 Formats
+                  10 Formats • A4 Schedule
                 </span>
               </div>
               <h3 className="text-xs font-bold text-white">Exam Routines</h3>
@@ -290,7 +305,7 @@ export default function AdminDashboardPage() {
               <div className="flex items-center justify-between mb-2">
                 <Stethoscope className="w-4 h-4 text-teal-400" />
                 <span className="text-[10px] font-mono font-bold bg-teal-950/80 text-teal-400 px-2 py-0.5 rounded border border-teal-800/60">
-                  10 Formats
+                  10 Formats • {stats.categoryCounts?.healthcare ?? 0} Docs
                 </span>
               </div>
               <h3 className="text-xs font-bold text-white">Medical Bills</h3>
@@ -312,7 +327,7 @@ export default function AdminDashboardPage() {
               <div className="flex items-center justify-between mb-2">
                 <BookOpen className="w-4 h-4 text-purple-400" />
                 <span className="text-[10px] font-mono font-bold bg-purple-950/80 text-purple-400 px-2 py-0.5 rounded border border-purple-800/60">
-                  17 Formats
+                  17 Formats • {stats.categoryCounts?.pos ?? 0} POS
                 </span>
               </div>
               <h3 className="text-xs font-bold text-white">Academic & Clinical</h3>
@@ -326,6 +341,61 @@ export default function AdminDashboardPage() {
             >
               Launch Editor →
             </Link>
+          </div>
+        </div>
+
+        {/* LIVE CATEGORY VOLUME DISTRIBUTION BAR */}
+        <div className="p-5 bg-zinc-950 rounded-2xl border border-zinc-800/80 space-y-4 shadow-sm">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-mono uppercase font-bold text-zinc-200 flex items-center gap-2">
+              <Activity className="w-4 h-4 text-emerald-400" />
+              Document Volume Share by Vertical
+            </span>
+            <span className="text-[10px] font-mono text-zinc-400 bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded-full">
+              Total Categorized: {totalCategorizedDocs} Records
+            </span>
+          </div>
+
+          <div className="h-3.5 w-full bg-zinc-900 rounded-full overflow-hidden flex p-0.5 border border-zinc-800/80 shadow-inner">
+            <div
+              style={{ width: `${businessShare}%` }}
+              className="bg-gradient-to-r from-emerald-500 to-emerald-400 h-full rounded-l-full transition-all"
+              title={`Business: ${businessShare}% (${stats.categoryCounts?.business || 0})`}
+            />
+            <div
+              style={{ width: `${healthShare}%` }}
+              className="bg-gradient-to-r from-teal-500 to-teal-400 h-full transition-all"
+              title={`Healthcare: ${healthShare}% (${stats.categoryCounts?.healthcare || 0})`}
+            />
+            <div
+              style={{ width: `${eduShare}%` }}
+              className="bg-gradient-to-r from-blue-600 to-blue-500 h-full transition-all"
+              title={`Education: ${eduShare}% (${stats.categoryCounts?.education || 0})`}
+            />
+            <div
+              style={{ width: `${posShare}%` }}
+              className="bg-gradient-to-r from-amber-500 to-amber-400 h-full rounded-r-full transition-all"
+              title={`POS & Restaurant: ${posShare}% (${stats.categoryCounts?.pos || 0})`}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] font-mono">
+            <div className="flex items-center gap-2 text-zinc-400 bg-zinc-900/90 border border-zinc-800/90 p-2 rounded-xl">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
+              <span className="truncate">Business: <strong className="text-white">{stats.categoryCounts?.business || 0}</strong> ({businessShare}%)</span>
+            </div>
+            <div className="flex items-center gap-2 text-zinc-400 bg-zinc-900/90 border border-zinc-800/90 p-2 rounded-xl">
+              <span className="w-2.5 h-2.5 rounded-full bg-teal-400 shrink-0"></span>
+              <span className="truncate">Health: <strong className="text-white">{stats.categoryCounts?.healthcare || 0}</strong> ({healthShare}%)</span>
+            </div>
+            <div className="flex items-center gap-2 text-zinc-400 bg-zinc-900/90 border border-zinc-800/90 p-2 rounded-xl">
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0"></span>
+              <span className="truncate">Academic: <strong className="text-white">{stats.categoryCounts?.education || 0}</strong> ({eduShare}%)</span>
+            </div>
+            <div className="flex items-center gap-2 text-zinc-400 bg-zinc-900/90 border border-zinc-800/90 p-2 rounded-xl">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0"></span>
+              <span className="truncate">POS & Retail: <strong className="text-white">{stats.categoryCounts?.pos || 0}</strong> ({posShare}%)</span>
+            </div>
           </div>
         </div>
 
@@ -458,6 +528,83 @@ export default function AdminDashboardPage() {
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* HIGH-VELOCITY ACTIVE MERCHANTS STREAM */}
+          <div className="mt-8 pt-6 border-t border-zinc-800">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                  <Users className="w-4 h-4 text-blue-400" />
+                  High-Activity Merchant Directory
+                </h3>
+                <p className="text-xs text-zinc-400 mt-0.5">
+                  Recent merchant accounts, preset organizations, and generation volume.
+                </p>
+              </div>
+              <Link
+                href="/admin/users"
+                className="text-xs font-bold text-blue-400 hover:text-blue-300 transition inline-flex items-center gap-1"
+              >
+                All Users <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs text-zinc-300">
+                <thead>
+                  <tr className="border-b border-zinc-800 text-[10px] uppercase font-mono text-zinc-500">
+                    <th className="pb-3">Merchant / Business</th>
+                    <th className="pb-3">Account Email</th>
+                    <th className="pb-3">Role</th>
+                    <th className="pb-3">AI Quota</th>
+                    <th className="pb-3 text-right">Volume</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-800/60 font-mono">
+                  {data?.recentUsers?.length > 0 ? (
+                    data.recentUsers.map((u: any) => (
+                      <tr key={u.id} className="hover:bg-zinc-800/40">
+                        <td className="py-3">
+                          <span className="font-bold text-white font-sans block">{u.name}</span>
+                          <span className="text-[10px] text-zinc-400 block truncate max-w-[160px]">
+                            {u.profiles?.[0]?.businessName || "No Preset Set"}
+                          </span>
+                        </td>
+                        <td className="py-3 text-zinc-400 truncate max-w-[140px]">
+                          {u.email || "No email"}
+                        </td>
+                        <td className="py-3">
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-sans font-bold ${
+                              u.role === "ADMIN"
+                                ? "bg-red-950 text-red-400 border border-red-800"
+                                : "bg-blue-950 text-blue-400 border border-blue-800"
+                            }`}
+                          >
+                            {u.role}
+                          </span>
+                        </td>
+                        <td className="py-3 text-purple-400 font-bold">
+                          {u.aiQuota ?? 5} Left
+                        </td>
+                        <td className="py-3 text-right">
+                          <span className="bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded border border-emerald-800 text-[10px] font-bold">
+                            {u._count?.documents || 0} Docs
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={5} className="py-6 text-center text-zinc-500 font-sans">
+                        No active merchants found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 

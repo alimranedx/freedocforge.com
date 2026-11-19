@@ -1,11 +1,12 @@
 import { MetadataRoute } from "next";
 import { INITIAL_TEMPLATES } from "@/lib/templates";
+import { prisma } from "@/lib/prisma";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://freedocforge.com";
   const currentDate = new Date();
 
-  // Core Static Marketing & Utility Routes
+  // Core Static Marketing & Authority Content Routes (excludes private/auth utility pages)
   const staticPages: MetadataRoute.Sitemap = [
     {
       url: baseUrl,
@@ -18,18 +19,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: currentDate,
       changeFrequency: "daily",
       priority: 0.95,
-    },
-    {
-      url: `${baseUrl}/login`,
-      lastModified: currentDate,
-      changeFrequency: "monthly",
-      priority: 0.6,
-    },
-    {
-      url: `${baseUrl}/register`,
-      lastModified: currentDate,
-      changeFrequency: "monthly",
-      priority: 0.6,
     },
     {
       url: `${baseUrl}/about`,
@@ -57,9 +46,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
   ];
 
-  // Dynamic Template Detail Pages for All 60+ World-Class Documents
+  // Core 60+ World-Class System Templates
   const templatePages: MetadataRoute.Sitemap = INITIAL_TEMPLATES.map((tmpl) => {
-    // Top-tier pillar templates receive higher crawl priority
     const isTopPillar =
       tmpl.slug.includes("invoice") ||
       tmpl.slug.includes("routine") ||
@@ -75,5 +63,24 @@ export default function sitemap(): MetadataRoute.Sitemap {
     };
   });
 
-  return [...staticPages, ...templatePages];
+  // Dynamic Discovery: Custom templates created by Admin in MySQL via Prisma ORM
+  let customTemplatePages: MetadataRoute.Sitemap = [];
+  try {
+    const dbTemplates = await prisma.template.findMany({
+      select: { slug: true, createdAt: true },
+    });
+    const initialSlugs = new Set(INITIAL_TEMPLATES.map((t) => t.slug));
+    customTemplatePages = dbTemplates
+      .filter((dbTmpl) => !initialSlugs.has(dbTmpl.slug))
+      .map((dbTmpl) => ({
+        url: `${baseUrl}/templates/${dbTmpl.slug}`,
+        lastModified: dbTmpl.createdAt || currentDate,
+        changeFrequency: "weekly",
+        priority: 0.85,
+      }));
+  } catch (err) {
+    // Graceful offline fallback during static pre-rendering
+  }
+
+  return [...staticPages, ...templatePages, ...customTemplatePages];
 }

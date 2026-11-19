@@ -496,6 +496,35 @@ function CatalogContent() {
               const IconComponent = tab.icon;
               const isActive = selectedCategory === tab.id;
               const isFavoritesTab = tab.id === "favorites";
+
+              let activeColorClass = "bg-blue-600 text-white shadow-md shadow-blue-500/20";
+              let badgeColorClass = "bg-blue-800 text-blue-100";
+              if (tab.id === "all") {
+                activeColorClass = "bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-md";
+                badgeColorClass = "bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900";
+              } else if (tab.id === "favorites") {
+                activeColorClass = "bg-amber-500 text-white shadow-md shadow-amber-500/25 ring-2 ring-amber-300/60";
+                badgeColorClass = "bg-amber-700 text-amber-100";
+              } else if (tab.id === "receipts") {
+                activeColorClass = "bg-emerald-600 text-white shadow-md shadow-emerald-500/25";
+                badgeColorClass = "bg-emerald-800 text-emerald-100";
+              } else if (tab.id === "class-routines") {
+                activeColorClass = "bg-blue-600 text-white shadow-md shadow-blue-500/25";
+                badgeColorClass = "bg-blue-800 text-blue-100";
+              } else if (tab.id === "exam-routines") {
+                activeColorClass = "bg-indigo-600 text-white shadow-md shadow-indigo-500/25";
+                badgeColorClass = "bg-indigo-800 text-indigo-100";
+              } else if (tab.id === "medical-receipts") {
+                activeColorClass = "bg-rose-600 text-white shadow-md shadow-rose-500/25";
+                badgeColorClass = "bg-rose-800 text-rose-100";
+              } else if (tab.id === "academic-other") {
+                activeColorClass = "bg-sky-600 text-white shadow-md shadow-sky-500/25";
+                badgeColorClass = "bg-sky-800 text-sky-100";
+              } else if (tab.id === "medical-other") {
+                activeColorClass = "bg-teal-600 text-white shadow-md shadow-teal-500/25";
+                badgeColorClass = "bg-teal-800 text-teal-100";
+              }
+
               return (
                 <button
                   key={tab.id}
@@ -504,11 +533,9 @@ function CatalogContent() {
                     setSelectedCategory(tab.id);
                     setShowMoreMenu(false);
                   }}
-                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer shrink-0 ${
+                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer shrink-0 ${
                     isActive
-                      ? isFavoritesTab
-                        ? "bg-amber-500 text-white shadow-xs"
-                        : "bg-blue-600 text-white shadow-xs"
+                      ? activeColorClass
                       : isFavoritesTab
                       ? "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-800 hover:bg-amber-100"
                       : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
@@ -519,9 +546,7 @@ function CatalogContent() {
                   <span
                     className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${
                       isActive
-                        ? isFavoritesTab
-                          ? "bg-amber-700 text-amber-100"
-                          : "bg-blue-800 text-blue-100"
+                        ? badgeColorClass
                         : isFavoritesTab
                         ? "bg-amber-200 dark:bg-amber-900 text-amber-800 dark:text-amber-200"
                         : "bg-slate-100 dark:bg-slate-800 text-slate-500"
@@ -613,7 +638,7 @@ function CatalogContent() {
         </div>
 
         {/* Search Bar, Paper Size Filter & Sorting Dropdown */}
-        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 bg-white/75 dark:bg-slate-900/75 backdrop-blur-md p-2.5 sm:p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
           {/* Left group: Paper Size Filter Pills & Sorting Dropdown */}
           <div className="flex items-center gap-3 overflow-x-auto pb-1 lg:pb-0">
             {/* Paper Size Filter Pills */}
@@ -743,7 +768,7 @@ function CatalogContent() {
               <div
                 key={tmpl.id}
                 onClick={() => router.push(`/templates/${tmpl.slug}`)}
-                className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs hover:shadow-xl hover:-translate-y-1 transition duration-200 flex flex-col justify-between group cursor-pointer relative"
+                className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 p-5 shadow-xs hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between group cursor-pointer relative ring-1 ring-slate-900/5 hover:ring-blue-500/20"
               >
                 <div>
                   {/* 1. VISUAL TEMPLATE SNAPSHOT / MOCKUP VIEW */}

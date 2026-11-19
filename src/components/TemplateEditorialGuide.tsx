@@ -15,14 +15,14 @@ import {
 } from "lucide-react";
 import { useGlobalSettings } from "@/context/GlobalSettingsContext";
 
-interface FAQItem {
+export interface FAQItem {
   questionEn: string;
   questionBn: string;
   answerEn: string;
   answerBn: string;
 }
 
-interface TemplateEditorialGuideProps {
+export interface TemplateEditorialGuideProps {
   slug: string;
   category: string;
   title: string;
@@ -30,7 +30,7 @@ interface TemplateEditorialGuideProps {
   paperSize?: string;
 }
 
-const PILLAR_FAQS: Record<string, FAQItem[]> = {
+export const PILLAR_FAQS: Record<string, FAQItem[]> = {
   ClassRoutine: [
     {
       questionEn: "How do I customize class periods (P1 to P7) and timetable hours?",

@@ -69,12 +69,12 @@
 
 ## 4. Next.js Server Actions & Route Handlers
 
-### - [ ] SEC-NEXT-01: Server Action & Route Handler Input Deserialization
+### - [x] SEC-NEXT-01: Server Action & Route Handler Input Deserialization
 * **Requirement:** All payloads parsed from `req.json()` or Server Actions must be strictly validated against schemas before being passed to business logic or database queries.
 * **Why it matters:** Attackers can send malformed JSON, prototype pollution vectors, or oversized payloads to crash the Node.js process or bypass type assertions.
 * **What to inspect:** All `POST`, `PUT`, `DELETE`, `PATCH` handlers in `src/app/api/`.
 * **Expected secure implementation:** Use validation schemas (e.g., `zod` or strict type guards) with safe parsing (`schema.safeParse(body)`).
-* **Verification method:** Inspect schema validation coverage on incoming JSON bodies.
+* **Verification method:** Verified in `src/app/api/admin/settings/route.ts`, `src/app/api/admin/ads/route.ts`, `src/app/api/user/profile/route.ts`, and `src/app/api/auth/register/route.ts`. All endpoints enforce strict whitelist validation, regex checks, size caps, and numeric bounds.
 
 ---
 

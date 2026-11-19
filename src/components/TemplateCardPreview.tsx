@@ -978,7 +978,7 @@ export default function TemplateCardPreview({
 
       {/* Visual Rendered Document Sheet */}
       <div className="w-full h-full pt-3.5 flex items-center justify-center pointer-events-none">
-        <div className="w-full h-full shadow-md rounded-xl overflow-hidden ring-1 ring-slate-900/5">
+        <div className="w-full h-full shadow-md rounded-xl overflow-hidden ring-1 ring-slate-900/5 transition-transform duration-300 ease-out group-hover/thumb:scale-[1.025]">
           {renderVisualSnapshot()}
         </div>
       </div>

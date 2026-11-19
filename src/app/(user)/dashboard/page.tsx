@@ -45,7 +45,23 @@ export default function UserDashboardOverviewPage() {
 
   // Load saved profile from cloud and live document count
   useEffect(() => {
-    // 1. Fetch cloud profile for authenticated user
+    // 1. Check local preset first for instant render
+    const saved = typeof window !== "undefined" ? localStorage.getItem("freedocforge_active_preset") : null;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setProfile((prev) => ({
+          ...prev,
+          ...parsed,
+        }));
+        if (parsed.presetType === "school") setActiveCategoryTab("class-routines");
+        else if (parsed.presetType === "medical") setActiveCategoryTab("medical-receipts");
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    // 2. Fetch latest cloud profile for authenticated user
     fetch("/api/user/profile")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
@@ -178,10 +194,10 @@ export default function UserDashboardOverviewPage() {
                 ? "/templates/medical-money-receipt"
                 : "/templates/f-commerce-invoice"
             }
-            className="flex items-center justify-center gap-2 bg-white hover:bg-blue-50 text-blue-700 font-bold px-5 py-3 rounded-xl text-xs sm:text-sm transition shadow-sm cursor-pointer"
+            className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-bold px-5 py-3 rounded-xl text-xs sm:text-sm transition shadow-lg shadow-blue-500/25 cursor-pointer ring-1 ring-white/20"
           >
-            <Printer className="w-4 h-4" />
-            <span>{lang === "bn" ? "১-ক্লিক প্রিন্ট ওপেন করুন" : "1-Click Print"}</span>
+            <Zap className="w-4 h-4 text-amber-300" />
+            <span>{lang === "bn" ? "১-সেকেন্ড ইনস্ট্যান্ট টেস্ট প্রিন্ট" : "1-Sec Instant Test Print"}</span>
           </Link>
         </div>
       </div>
@@ -252,7 +268,7 @@ export default function UserDashboardOverviewPage() {
       {/* 3. SMART ANALYTICS & STATUS KPI ROW */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* KPI 1: Active Preset */}
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs hover:border-blue-500/40 hover:shadow-md hover:shadow-blue-500/5 transition-all flex items-center justify-between">
           <div>
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
               {lang === "bn" ? "বর্তমান প্রিসেট" : "Active Preset"}
@@ -265,18 +281,18 @@ export default function UserDashboardOverviewPage() {
               {lang === "bn" ? "৬০টি টেমপ্লেটে সিঙ্কড" : "Synced across 60 formats"}
             </span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/80 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/80 text-blue-600 dark:text-blue-400 flex items-center justify-center shadow-2xs border border-blue-200/60 dark:border-blue-900/60">
             <Store className="w-5 h-5" />
           </div>
         </div>
 
         {/* KPI 2: Documents Printed */}
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs hover:border-emerald-500/40 hover:shadow-md hover:shadow-emerald-500/5 transition-all flex items-center justify-between">
           <div>
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
               {lang === "bn" ? "সংরক্ষিত ডকুমেন্টস" : "Saved Records"}
             </span>
-            <h4 className="text-base font-extrabold text-slate-900 dark:text-white mt-1">
+            <h4 className="text-base font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">
               {docCount} {lang === "bn" ? "টি সংরক্ষিত" : "Documents"}
             </h4>
             <Link
@@ -286,13 +302,13 @@ export default function UserDashboardOverviewPage() {
               {lang === "bn" ? "হিস্ট্রি দেখুন →" : "View History →"}
             </Link>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-2xs border border-emerald-200/60 dark:border-emerald-900/60">
             <FileText className="w-5 h-5" />
           </div>
         </div>
 
         {/* KPI 3: Available Library */}
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs hover:border-purple-500/40 hover:shadow-md hover:shadow-purple-500/5 transition-all flex items-center justify-between">
           <div>
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
               {lang === "bn" ? "টেমপ্লেট সংগ্রহশালা" : "Templates Library"}
@@ -307,13 +323,13 @@ export default function UserDashboardOverviewPage() {
               {lang === "bn" ? "সব টেমপ্লেট দেখুন →" : "Browse All →"}
             </Link>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-950/80 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-950/80 text-purple-600 dark:text-purple-400 flex items-center justify-center shadow-2xs border border-purple-200/60 dark:border-purple-900/60">
             <Layers className="w-5 h-5" />
           </div>
         </div>
 
         {/* KPI 4: Watermark Free Status */}
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs hover:border-amber-500/40 hover:shadow-md hover:shadow-amber-500/5 transition-all flex items-center justify-between">
           <div>
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
               {lang === "bn" ? "লাইসেন্স ও ওয়াটারমার্ক" : "License & Ads"}
@@ -325,7 +341,7 @@ export default function UserDashboardOverviewPage() {
               {lang === "bn" ? "জিরো ওয়াটারমার্ক" : "Zero Watermark"}
             </span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 flex items-center justify-center shadow-2xs border border-amber-200/60 dark:border-amber-900/60">
             <Zap className="w-5 h-5" />
           </div>
         </div>

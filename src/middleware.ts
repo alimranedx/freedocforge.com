@@ -22,27 +22,35 @@ export async function middleware(req: NextRequest) {
 
   const isAdmin = session?.role === "ADMIN";
   const isUser = !!session && !isAdmin;
+  const isPrivate = pathname.startsWith("/admin") || pathname.startsWith("/dashboard");
+
+  const secureResponse = (res: NextResponse) => {
+    if (isPrivate) {
+      res.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive, nosnippet");
+    }
+    return res;
+  };
 
   // 1. Admin Root Route (/admin)
   if (pathname === "/admin") {
     if (isAdmin) {
-      return NextResponse.redirect(new URL("/admin/dashboard", req.url));
+      return secureResponse(NextResponse.redirect(new URL("/admin/dashboard", req.url)));
     }
     if (isUser) {
-      return NextResponse.redirect(new URL("/dashboard", req.url));
+      return secureResponse(NextResponse.redirect(new URL("/dashboard", req.url)));
     }
-    return NextResponse.redirect(new URL("/admin/login", req.url));
+    return secureResponse(NextResponse.redirect(new URL("/admin/login", req.url)));
   }
 
   // 2. Dedicated Admin Auth Routes (/admin/login, /admin/registration)
   if (pathname === "/admin/login" || pathname === "/admin/registration") {
     if (isAdmin) {
-      return NextResponse.redirect(new URL("/admin/dashboard", req.url));
+      return secureResponse(NextResponse.redirect(new URL("/admin/dashboard", req.url)));
     }
     if (isUser) {
-      return NextResponse.redirect(new URL("/dashboard", req.url));
+      return secureResponse(NextResponse.redirect(new URL("/dashboard", req.url)));
     }
-    return NextResponse.next();
+    return secureResponse(NextResponse.next());
   }
 
   // 3. Protected Admin Routes (/admin/dashboard, /admin/templates, /admin/users, /admin/ads, etc.)
@@ -50,13 +58,13 @@ export async function middleware(req: NextRequest) {
     if (!session) {
       const loginUrl = new URL("/admin/login", req.url);
       loginUrl.searchParams.set("redirect", pathname);
-      return NextResponse.redirect(loginUrl);
+      return secureResponse(NextResponse.redirect(loginUrl));
     }
     if (!isAdmin) {
       // Ordinary user is forbidden from admin panel -> isolate strictly to user dashboard
-      return NextResponse.redirect(new URL("/dashboard", req.url));
+      return secureResponse(NextResponse.redirect(new URL("/dashboard", req.url)));
     }
-    return NextResponse.next();
+    return secureResponse(NextResponse.next());
   }
 
   // 4. Protected User Dashboard Routes (/dashboard, /dashboard/shop-profile, /dashboard/history, etc.)
@@ -64,13 +72,13 @@ export async function middleware(req: NextRequest) {
     if (!session) {
       const loginUrl = new URL("/login", req.url);
       loginUrl.searchParams.set("redirect", pathname);
-      return NextResponse.redirect(loginUrl);
+      return secureResponse(NextResponse.redirect(loginUrl));
     }
     if (isAdmin) {
       // Admin session is forbidden from user panel -> isolate strictly to admin console
-      return NextResponse.redirect(new URL("/admin/dashboard", req.url));
+      return secureResponse(NextResponse.redirect(new URL("/admin/dashboard", req.url)));
     }
-    return NextResponse.next();
+    return secureResponse(NextResponse.next());
   }
 
   // 5. Regular User Auth Routes (/login, /register)

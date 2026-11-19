@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
+import { getCurrentAdConfig } from "@/app/api/admin/ads/route";
 
 export async function GET() {
-  const rawId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID || "pub-XXXXXXXXXXXXXXXX";
+  const config = getCurrentAdConfig();
+  const rawId = config.publisherId || process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID || "pub-XXXXXXXXXXXXXXXX";
   // Clean 'ca-' prefix if user entered 'ca-pub-XXXX'
   const pubId = rawId.replace(/^ca-/, "");
 
   const content = `# FreeDocForge.com Authorized Digital Sellers (ads.txt)
+# Official Google AdSense Authorized Seller Record
 # https://support.google.com/adsense/answer/7532444
 google.com, ${pubId}, DIRECT, f08c47fec0942fa0
 `;

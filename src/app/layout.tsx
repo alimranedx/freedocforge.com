@@ -1,13 +1,11 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import "./globals.css";
 import { GlobalSettingsProvider } from "@/context/GlobalSettingsContext";
 import JsonLd from "@/components/JsonLd";
+import PublicAdSenseScript from "@/components/PublicAdSenseScript";
 import { getWebsiteSchema, getWebApplicationSchema, getOrganizationSchema } from "@/lib/seo";
 
 const siteUrl = "https://freedocforge.com";
-const adsenseClientId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
-const enableAds = process.env.NEXT_PUBLIC_ENABLE_ADS === "true";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -54,12 +52,21 @@ export const metadata: Metadata = {
     description:
       "Generate, customize, and print high-quality cash memos, invoices, school marksheets, and prescriptions in seconds with dual-language support and voice typing.",
     siteName: "FreeDocForge.com",
+    images: [
+      {
+        url: `${siteUrl}/og-preview.png`,
+        width: 1200,
+        height: 630,
+        alt: "FreeDocForge.com - Free Smart Business Invoices, School Marksheets & Printables",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "FreeDocForge.com - Free Printable Document Studio",
     description:
       "Instant free invoices, medical prescription pads, and academic marksheets with dual English & বাংলা support.",
+    images: [`${siteUrl}/og-preview.png`],
   },
 };
 
@@ -80,16 +87,8 @@ export default function RootLayout({
         {/* Schema.org Structured Data */}
         <JsonLd data={rootSchemas} />
 
-        {/* Google AdSense Verification Script */}
-        {enableAds && adsenseClientId && !adsenseClientId.includes("placeholder") && (
-          <Script
-            id="google-adsense"
-            async
-            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClientId}`}
-            crossOrigin="anonymous"
-            strategy="afterInteractive"
-          />
-        )}
+        {/* Policy-Safe Google AdSense Verification Script (Public Routes Only) */}
+        <PublicAdSenseScript />
       </head>
       <body
         className="min-h-full flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-200"

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getAdminSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { handleApiError } from "@/lib/errorHandler";
 
 export async function GET(req: Request) {
   const cookieStore = await cookies();
@@ -149,8 +150,16 @@ export async function PATCH(req: Request) {
   try {
     const { userId, role, aiQuota } = await req.json();
 
-    if (!userId) {
-      return NextResponse.json({ error: "User ID is required" }, { status: 400 });
+    if (!userId || typeof userId !== "string") {
+      return NextResponse.json({ error: "Valid User ID is required" }, { status: 400 });
+    }
+
+    // Safety defense: Prevent admin from demoting themselves and locking themselves out
+    if (userId === admin.userId && role && role !== "ADMIN") {
+      return NextResponse.json(
+        { error: "Security Violation: You cannot demote your own administrative account." },
+        { status: 400 }
+      );
     }
 
     const dataToUpdate: any = {};
@@ -158,7 +167,7 @@ export async function PATCH(req: Request) {
       dataToUpdate.role = role;
     }
     if (typeof aiQuota === "number" && aiQuota >= 0) {
-      dataToUpdate.aiQuota = aiQuota;
+      dataToUpdate.aiQuota = Math.floor(Math.min(aiQuota, 100000));
     }
 
     const updatedUser = await prisma.user.update({
@@ -169,10 +178,7 @@ export async function PATCH(req: Request) {
 
     return NextResponse.json({ success: true, user: updatedUser });
   } catch (error: any) {
-    return NextResponse.json(
-      { success: false, error: error.message || "Failed to update user or MySQL is offline." },
-      { status: 500 }
-    );
+    return handleApiError(error, "Failed to update user or MySQL is offline.");
   }
 }
 
@@ -188,8 +194,8 @@ export async function DELETE(req: Request) {
   try {
     const { userId } = await req.json();
 
-    if (!userId) {
-      return NextResponse.json({ error: "User ID is required" }, { status: 400 });
+    if (!userId || typeof userId !== "string") {
+      return NextResponse.json({ error: "Valid User ID is required" }, { status: 400 });
     }
 
     // Safety defense: Prevent admin from deleting themselves
@@ -206,9 +212,6 @@ export async function DELETE(req: Request) {
 
     return NextResponse.json({ success: true, message: "User deleted successfully." });
   } catch (error: any) {
-    return NextResponse.json(
-      { success: false, error: error.message || "Failed to delete user or MySQL is offline." },
-      { status: 500 }
-    );
+    return handleApiError(error, "Failed to delete user or MySQL is offline.");
   }
 }

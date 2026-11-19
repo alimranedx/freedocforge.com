@@ -9,7 +9,14 @@ import MedicalPrescriptionEditor from "@/components/MedicalPrescriptionEditor";
 import SchoolTemplateEditor from "@/components/SchoolTemplateEditor";
 import AdSenseSlot from "@/components/AdSenseSlot";
 import TemplateLanguageBar from "@/components/TemplateLanguageBar";
-import TemplateEditorialGuide from "@/components/TemplateEditorialGuide";
+import TemplateEditorialGuide, { PILLAR_FAQS } from "@/components/TemplateEditorialGuide";
+import JsonLd from "@/components/JsonLd";
+import {
+  SITE_URL,
+  getBreadcrumbListSchema,
+  getTemplateSoftwareAppSchema,
+  getFaqPageSchema,
+} from "@/lib/seo";
 import { INITIAL_TEMPLATES, TemplateDefinition } from "@/lib/templates";
 import { prisma } from "@/lib/prisma";
 
@@ -88,14 +95,7 @@ export async function generateMetadata({
   }
 
   const bnTitle = template.locales?.bn?.title || template.title;
-  const isProduction = process.env.NODE_ENV === "production";
-  const siteUrl =
-    isProduction && (!process.env.NEXTAUTH_URL || process.env.NEXTAUTH_URL.includes("localhost"))
-      ? "https://freedocforge.com"
-      : process.env.NEXTAUTH_URL ||
-        process.env.NEXT_PUBLIC_APP_URL ||
-        "https://freedocforge.com";
-  const canonicalUrl = `${siteUrl}/templates/${slug}`;
+  const canonicalUrl = `${SITE_URL}/templates/${slug}`;
 
   // Pillar-specific programmatic keywords for search CTR
   const dynamicKeywords = [
@@ -144,11 +144,20 @@ export async function generateMetadata({
       locale: "en_US",
       alternateLocale: "bn_BD",
       type: "article",
+      images: [
+        {
+          url: `${SITE_URL}/og-preview.png`,
+          width: 1200,
+          height: 630,
+          alt: `${template.title} - FreeDocForge`,
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title: `${template.title} | ${bnTitle}`,
       description: `${template.description} 100% Free printable with zero watermarks.`,
+      images: [`${SITE_URL}/og-preview.png`],
     },
   };
 }
@@ -209,8 +218,39 @@ async function TemplateContent({
   // 3. Commercial Invoices, Receipts, and Healthcare Financial Receipts (Cash Memos, POS Slips, Diagnostic Bills, Pharmacy Memos)
   const isInvoiceBill = !isSchoolAcademic && !isMedicalClinical;
 
+  // Schema.org Structured Data: Breadcrumbs, SoftwareApplication & FAQPage
+  const breadcrumbSchema = getBreadcrumbListSchema(
+    [
+      { name: "Home", url: "/" },
+      { name: "Templates", url: "/templates" },
+      { name: template.category, url: `/templates?category=${encodeURIComponent(template.category)}` },
+      { name: template.title, url: `/templates/${template.slug}` },
+    ],
+    SITE_URL
+  );
+
+  const appSchema = getTemplateSoftwareAppSchema(template, SITE_URL);
+
+  let pillarKey = "Default";
+  if (slug.includes("routine") || slug.includes("timetable")) pillarKey = "ClassRoutine";
+  else if (slug.includes("exam") || slug.includes("schedule")) pillarKey = "ExamRoutine";
+  else if (
+    slug.includes("diagnostic") ||
+    slug.includes("money-receipt") ||
+    (template.category === "Healthcare" && slug.includes("bill"))
+  )
+    pillarKey = "MedicalReceipt";
+  else if (template.category === "Healthcare") pillarKey = "Healthcare";
+  else pillarKey = "CommercialReceipts";
+
+  const faqs = PILLAR_FAQS[pillarKey] || PILLAR_FAQS.Default || [];
+  const faqSchema = getFaqPageSchema(faqs, "en");
+
   return (
     <>
+      {/* Schema.org Structured Data */}
+      <JsonLd data={[breadcrumbSchema, appSchema, faqSchema]} />
+
       {/* Breadcrumb, Title & Dedicated Language Switcher */}
       <TemplateLanguageBar
         category={template.category}

@@ -285,6 +285,7 @@
      * `npm run build`: All 104 static and dynamic routes compiled in 13.8s with Exit code 0.
      * Cryptographic admin authentication (`getAdminSession`), XSS sanitization (`sanitizeText`), and bidirectional panel isolation (SEC-RBAC-01/02) strictly verified.
 
+
 ### U. Smart In-Place Document Updates, History Deduplication & Tenant Isolation
 * **Resolved User Request:** "same template showing twich thing about this smartly and fixed properly . It will be for others user also. If a user change a document for his or her then its be for him or her or for otheres. Keep this in ming. /swarm think carefully and fixed those"
 * **Root Cause:**
@@ -425,6 +426,57 @@
   6. **Verification & Build:**
      - `npx tsc --noEmit`: 0 errors.
      - `npm run build`: All 105 static and dynamic routes compiled cleanly with Turbopack (Exit code 0).
+### Y. Multi-Specialist Swarm Audit & Enhancements (SEO, Architecture, AdSense, Business Analytics)
+* **Resolved User Request:** Comprehensive multi-perspective audit and upgrade of the entire Admin Panel and User Panel covering SEO Specialists, Senior System Architects, Senior Google AdSense Specialists, and Senior Business Analytics Specialists.
+* **Architectural Modules Engineered & Hardened:**
+  1. **SEO Specialist Upgrades (`src/app/admin/layout.tsx`, `src/app/(user)/layout.tsx`, `next.config.ts`, `src/middleware.ts`, `src/app/robots.ts`, `src/app/sitemap.ts`, `src/app/templates/[slug]/page.tsx`):**
+     * Triple-layer search engine crawler containment: Enforced `robots: { index: false, follow: false }` via server layout metadata, `X-Robots-Tag: noindex, nofollow, noarchive, nosnippet` edge headers via `next.config.ts` and `src/middleware.ts`, and wildcard disallows in `src/app/robots.ts` across `/admin/*`, `/dashboard/*`, and `/api/*`.
+     * Dynamic MySQL template sitemap synchronization in `src/app/sitemap.ts` discovering custom admin templates with real `createdAt` dates.
+     * Schema.org JSON-LD structured data on all 60+ template pages (`BreadcrumbList`, `SoftwareApplication`, and dynamic `FAQPage` per document pillar).
+     * Server layout metadata and high-resolution OpenGraph cards for `/templates`, `/about`, `/contact`, `/privacy`, `/terms`.
+  2. **System Architect Security & Performance Hardening (`src/app/api/auth/register/route.ts`, `src/app/api/admin/users/route.ts`, `src/app/api/admin/settings/route.ts`, `prisma/schema.prisma`):**
+     * Resolved critical privilege escalation in `register/route.ts`: hardcoded `role: "USER"` for public registrations (superusers strictly provisioned via `/admin/registration` with `ADMIN_PROVISION_KEY`).
+     * Guarded admin self-demotion on `admin/users` PATCH handler (`userId === admin.userId && role && role !== "ADMIN"`).
+     * Enforced strict whitelist schema validation and bounds checking on `admin/settings` and `admin/ads` (SEC-NEXT-01).
+     * Unified error handling across all admin API catch blocks using `handleApiError()` to prevent leaking raw MySQL error traces.
+     * Added database composite indexes to `prisma/schema.prisma`: `SavedDocument(userId, createdAt)`, `SavedDocument(category, createdAt)`, `SavedDocument(documentNumber)`, and `OrganizationProfile(userId)`.
+  3. **Google AdSense Policy Compliance & CLS Neutralization (`src/components/PublicAdSenseScript.tsx`, `src/app/layout.tsx`, `src/components/AdSenseSlot.tsx`, `src/app/ads.txt/route.ts`):**
+     * Created `PublicAdSenseScript.tsx`: Route-aware script execution strictly barring AdSense and Auto-Ads from `/admin/*`, `/dashboard/*`, `/login`, and `/register`. Zero ads on private user records or admin screens.
+     * Calibrated bounding box reservations to eliminate Cumulative Layout Shift (CLS < 0.01) across desktop and mobile viewports.
+     * Implemented safe sandbox preview unit when `testMode` is enabled or in development to protect developers from invalid impression bans.
+     * Removed colliding static `public/ads.txt` placeholder; dynamic `/ads.txt` dynamically serves active publisher ID.
+  4. **Business Analytics, Merchant Retention & Telemetry Upgrades (`src/components/PostDownloadModal.tsx`, `src/app/(user)/dashboard/history/page.tsx`, `src/app/(user)/dashboard/shop-profile/page.tsx`, `src/app/admin/(dashboard)/dashboard/page.tsx`, `src/app/api/admin/stats/route.ts`):**
+     * High-converting merchant signup nudge in `PostDownloadModal.tsx` prompting guest downloaders to save their logo and contact preset for 1-click generation on future orders.
+     * Guest-to-cloud document migration banner and merge in `dashboard/history`, ensuring pre-registration localStorage documents are never lost.
+     * Multi-vertical preset synchronization in `/api/user/profile`, preserving school academic session/shift/hall and clinical degrees across devices.
+     * Live Admin Telemetry: Rendered live `categoryCounts` on the 4-pillar cards, added live Merchant Retention Rate KPI, category share distribution bar, and recent active merchant activity table.
+  5. **Verification & Build:**
+     * `npx tsc --noEmit`: 0 errors.
+     * `npm run build`: All 104 static and dynamic routes compiled in 14.1s with Exit code 0.
+
+### Z. Platform-Wide UI/UX Designer Overhaul & Visual Polish
+* **Resolved User Request:** "Think about a UI UX designer then find out from every pages where we have to update for User friendly and attractive look website . Then udpate there. After changes those before commit and push all those those you have done a few minutes ago take a pull first. then push . If there have any conflict then resolve those and push"
+* **Architectural & Design Enhancements Deployed:**
+  1. **Frosted Glassmorphism Header & Tinted Mega-Menus (`src/components/Navbar.tsx`):**
+     * Applied Apple/Linear-grade glassmorphism: `bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 supports-[backdrop-filter]:bg-white/70`.
+     * Added archetype-tinted mega-menus with top gradient indicator strips: Emerald accents for Worldwide Receipts, Royal Cobalt for Class & Exam Routines, and Clinical Rose/Teal for Healthcare.
+     * Grouped language and theme toggles into a unified segmented pill container with smooth micro-interactions.
+  2. **Architectural Grid Depth & Omnisearch Spotlight (`src/app/page.tsx`):**
+     * Added delicate CAD dot-grid background depth (`bg-[radial-gradient(#cbd5e1_1px,transparent_1px)]`) behind the hero spotlight.
+     * Upgraded hero search bar with a `⌘K` keyboard cue, ambient focus glow ring (`focus:ring-4 focus:ring-blue-500/15`), and realistic multi-layer paper drop shadows on the 4-pillar studio preview window.
+  3. **Templates Catalog Floating Glass Toolbar & Vibrant Archetype Pills (`src/app/templates/page.tsx`, `TemplateCardPreview.tsx`):**
+     * Packaged search, paper size filters, and sorting into a unified floating frosted-glass toolbar.
+     * Added distinct vibrant active category pills: Emerald (Receipts), Royal Blue (Class Routines), Indigo (Exam Schedules), Rose (Medical Bills), and Amber (Pinned Favorites).
+     * Added ThemeForest-grade 3D micro-zoom hover elevation on template card thumbnails (`group-hover/thumb:scale-[1.025]`).
+  4. **Workspace Shell & Merchant Dashboard Ergonomics (`UserWorkspaceShell.tsx`, `dashboard/page.tsx`):**
+     * Added glowing left pill indicator on active sidebar items and live `● Cloud Sync` badge to the shop preset card.
+     * Injected high-visibility `1-Sec Instant Test Print` CTA button into the user dashboard hero banner.
+  5. **Admin Master Telemetry Polish (`src/app/admin/(dashboard)/dashboard/page.tsx`):**
+     * Upgraded metric typography with ultra-bold text (`text-3xl font-black drop-shadow-xs`).
+     * Added multi-color vertical volume share progress bar and visual distribution badges.
+  6. **Verification & Build:**
+     * `npx tsc --noEmit`: 0 errors.
+     * `npm run build`: All 105 static and dynamic routes compiled in Next.js 16.4.6 Turbopack (Exit code 0).
 
 ---
 

@@ -57,11 +57,20 @@ export async function GET() {
       where: { category: { in: ["POS", "Restaurant", "Food"] } },
     });
 
+    // Count merchants with at least 1 document (active users)
+    const activeMerchantsCount = await prisma.user.count({
+      where: { documents: { some: {} } },
+    });
+
+    const retentionRate = totalUsers > 0 ? Math.round((activeMerchantsCount / totalUsers) * 100) : 0;
+
     return NextResponse.json({
       dbOnline: true,
       stats: {
         totalUsers,
         totalDocs,
+        activeMerchants: activeMerchantsCount,
+        retentionRate,
         totalTemplates: INITIAL_TEMPLATES.length,
         categoryCounts: {
           business: businessCount,
@@ -82,6 +91,8 @@ export async function GET() {
       stats: {
         totalUsers: 14,
         totalDocs: 48,
+        activeMerchants: 11,
+        retentionRate: 78,
         totalTemplates: INITIAL_TEMPLATES.length,
         categoryCounts: {
           business: 28,

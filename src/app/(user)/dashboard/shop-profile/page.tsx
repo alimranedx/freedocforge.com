@@ -78,6 +78,7 @@ export default function ShopProfilePresetPage() {
       .then((data) => {
         if (data && data.profile) {
           const p = data.profile;
+          if (p.presetType) setPresetType(p.presetType);
           if (p.businessName) setBusinessName(p.businessName);
           if (p.tagline) setTagline(p.tagline);
           if (p.phone) setPhone(p.phone);
@@ -86,6 +87,9 @@ export default function ShopProfilePresetPage() {
           if (p.terms) setTerms(p.terms);
           if (p.logoUrl) setLogoUrl(p.logoUrl);
           if (p.signatureUrl) setSignatureUrl(p.signatureUrl);
+          if (p.academicSession) setAcademicSession(p.academicSession);
+          if (p.academicShift) setAcademicShift(p.academicShift);
+          if (p.examCenter) setExamCenter(p.examCenter);
         }
       })
       .catch(() => {})

@@ -191,6 +191,9 @@ export default function HomePage() {
 
       {/* 1. HERO SECTION WITH HOOK & LIVE SEARCH */}
       <section className="relative overflow-hidden pt-8 sm:pt-14 pb-12 sm:pb-16 px-4 sm:px-6 lg:px-8">
+        {/* Engineering Dot-Grid Architectural Texture */}
+        <div className="absolute inset-0 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] dark:bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:24px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none opacity-60" />
+
         {/* Ambient Radial Spotlight */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-gradient-to-b from-blue-500/15 via-indigo-500/10 to-transparent blur-3xl pointer-events-none rounded-full" />
 
@@ -224,8 +227,8 @@ export default function HomePage() {
 
           {/* HERO LIVE INSTANT SEARCH BAR (Search as you type) */}
           <div className="max-w-2xl mx-auto relative pt-2">
-            <div className="relative flex items-center">
-              <Search className="w-5 h-5 text-slate-400 absolute left-4 pointer-events-none" />
+            <div className="relative flex items-center group">
+              <Search className="w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors absolute left-4 pointer-events-none" />
               <input
                 type="text"
                 value={searchQuery}
@@ -236,17 +239,23 @@ export default function HomePage() {
                     ? "৪০+ ফ্রি টেমপ্লেট খুঁজুন (যেমন: মেমো, ক্লাস রুটিন, পরীক্ষার রুটিন, পিওএস বিল)..."
                     : "Search 40+ free templates (e.g. Cash memo, Class routine, Exam schedule, POS bill)..."
                 }
-                className="w-full pl-12 pr-10 py-3.5 sm:py-4 text-xs sm:text-sm bg-white dark:bg-slate-900 border-2 border-blue-500/40 dark:border-blue-500/30 rounded-2xl shadow-lg focus:border-blue-600 focus:ring-4 focus:ring-blue-500/20 focus:outline-none transition"
+                className="w-full pl-12 pr-20 py-3.5 sm:py-4 text-xs sm:text-sm bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 rounded-2xl shadow-lg focus:border-blue-600 dark:focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 shadow-blue-500/5 focus:shadow-xl focus:shadow-blue-500/10 focus:outline-none transition-all duration-200"
               />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-4 text-slate-400 hover:text-slate-600 text-sm font-bold"
-                >
-                  ✕
-                </button>
-              )}
+              <div className="absolute right-4 flex items-center gap-1.5 pointer-events-none">
+                {searchQuery ? (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="pointer-events-auto text-slate-400 hover:text-slate-600 text-sm font-bold"
+                  >
+                    ✕
+                  </button>
+                ) : (
+                  <kbd className="hidden sm:inline-flex items-center px-2 py-0.5 text-[10px] font-mono text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800/80 rounded border border-slate-200 dark:border-slate-700 shadow-2xs">
+                    ⌘K
+                  </kbd>
+                )}
+              </div>
             </div>
 
             {/* Live Search Instant Autocomplete Popover */}
@@ -348,7 +357,7 @@ export default function HomePage() {
 
         {/* 2. INTERACTIVE LIVE STUDIO MOCKUP WINDOW (The 4-Pillar Hook) */}
         <div className="max-w-5xl mx-auto mt-10 sm:mt-14 relative z-10">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden ring-1 ring-slate-900/5">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.15)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] overflow-hidden ring-1 ring-slate-900/5 transition-all">
             {/* Top Mac Window Control Bar */}
             <div className="bg-slate-100 dark:bg-slate-800/80 px-4 py-3 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
@@ -419,7 +428,7 @@ export default function HomePage() {
             {/* Inner Live Document Canvas Showcase */}
             <div className="p-5 sm:p-8 bg-slate-50/70 dark:bg-slate-950/60 flex flex-col lg:flex-row items-center justify-between gap-6 sm:gap-8">
               {/* Left Document Miniature Preview */}
-              <div className="w-full lg:w-3/5 bg-white text-slate-800 p-5 sm:p-7 rounded-2xl shadow-lg border border-slate-200 select-none text-xs space-y-4">
+              <div className="w-full lg:w-3/5 bg-white text-slate-800 p-5 sm:p-7 rounded-2xl shadow-[0_15px_35px_rgba(0,0,0,0.08)] dark:shadow-[0_20px_45px_rgba(0,0,0,0.45)] border border-slate-200/90 select-none text-xs space-y-4 ring-1 ring-slate-900/5">
                 {/* TAB 1: WORLDWIDE RECEIPTS */}
                 {heroActiveTab === "receipts" && (
                   <div className="space-y-3.5">
